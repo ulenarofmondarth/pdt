@@ -1,0 +1,159 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GitHub Setup &mdash; Foundry VTT Package Developer Toolkit 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Contributing to PDT" href="contributing.html" />
+    <link rel="prev" title="Project Code Management" href="code-control.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Foundry VTT Package Developer Toolkit
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">For Users:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../user/index.html">User Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Developer Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="setup.html">Setting up a PDT development environment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="development-workflow.html">Development Workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tdd-primer.html">Test Driven Development (TDD) Primer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="testing.html">Testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="build-process.html">Build Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="code-control.html">Project Code Management</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">GitHub Setup</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#workflows">Workflows</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="contributing.html">Contributing to PDT</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Foundry VTT Package Developer Toolkit</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Developer Documentation</a></li>
+      <li class="breadcrumb-item active">GitHub Setup</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/developer/github-setup.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="github-setup">
+<h1>GitHub Setup<a class="headerlink" href="#github-setup" title="Link to this heading"></a></h1>
+<p>This project is hosted at <a class="reference external" href="https://github.com/ulenarofmondarth/pdt">https://github.com/ulenarofmondarth/pdt</a>. It is licensed under the <a class="reference external" href="https://opensource.org/license/mit">MIT License</a> which allows you to pretty much do as you like with this code.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>I recommend you create a fork of this repository if you intend to modify the source code.</p>
+</div>
+<section id="workflows">
+<span id="github-workflows"></span><h2>Workflows<a class="headerlink" href="#workflows" title="Link to this heading"></a></h2>
+<p>There are two main scenarios for automated workflows. Both start with a user commiting to <code class="docutils literal notranslate"><span class="pre">main</span></code>.</p>
+<p class="rubric">Initial responses</p>
+<p>Two workflows may respond immediately:</p>
+<ol class="arabic" id="bump-version">
+<li><p><code class="docutils literal notranslate"><span class="pre">bump-version</span></code></p>
+<p>This will check if the pushed commits require an update to the project’s version. If they do, then various ‘version’ entries in configuration files are updated, the project is then committed back with these updated files and tagged with a new version tag (this triggers the other scenario <a class="reference internal" href="#build-on-push"><span class="std std-ref">below</span></a>).</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">build-and-deploy-docs</span></code></p>
+<p>If only files under <code class="docutils literal notranslate"><span class="pre">docs/</span></code> are affected by the commits in this push, the documentation is rebuilt and deployed.</p>
+<p>This scenarion assumes that any documentation only changes remain relevant to the current version of the application.</p>
+</li>
+</ol>
+<p class="rubric">Follow-up responses</p>
+<p>If a version bump (<a class="reference internal" href="#bump-version"><span class="std std-ref">bump-version</span></a>) was executed then another <code class="docutils literal notranslate"><span class="pre">push</span></code> will occur. This push will be associated with a tag for the new release and this triggers:</p>
+<ul id="build-on-push">
+<li><p><code class="docutils literal notranslate"><span class="pre">build-on-push</span></code></p>
+<blockquote>
+<div><p>If the push it tagged (and affects files outside <code class="docutils literal notranslate"><span class="pre">docs/</span></code>—it should if it were bumped), this builds the application and publishes it to <code class="docutils literal notranslate"><span class="pre">npmjs</span></code>. It also builds and deploys the documentation.</p>
+</div></blockquote>
+</li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="code-control.html" class="btn btn-neutral float-left" title="Project Code Management" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="contributing.html" class="btn btn-neutral float-right" title="Contributing to PDT" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Ulenar of Mondarth.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

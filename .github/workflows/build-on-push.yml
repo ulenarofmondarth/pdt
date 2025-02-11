@@ -1,0 +1,93 @@
+name: Build and Deploy Image and Documentation
+
+on:
+  push:
+    branches:
+    - main
+    tags: [ "v*" ]
+    paths-ignore:
+    - "docs/**"
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+
+      
+  build-documentation:
+    uses: ./.github/workflows/build-and-deploy-docs.yml
+
+
+  build:
+    needs:
+      - build-documentation
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      packages: write
+      attestations: write
+      id-token: write
+
+
+    steps:
+    - name: Dump
+      env:
+        GHC: ${{ toJson(github) }}
+      run: 'echo "Dump: ${GHC}"'
+
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+
+
+    - name: Build PDT Application
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22.x
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Compile build
+      run: npm run build --access public
+
+    - name: Test
+      run: npm run test
+
+
+    - name: Recover Documentation Package
+      uses: dawidd6/action-download-artifact@v6
+      with:
+        workflow: build-and-deploy-docs.yml
+        workflow_conclusion: success
+        name: documentation-${{ github.sha }}
+        path: ${{ github.workspace }}/documentation-${{ github.sha }}
+        search_artifacts: true
+
+    - name: Recover Release Data
+      uses: dawidd6/action-download-artifact@v6
+      with:
+        workflow: bump-version.yml
+        workflow_conclusion: success
+        name: release-${{ github.ref_name }}
+        path: ${{ github.workspace }}/release-${{ github.ref_name }}
+        search_artifacts: true
+
+
+    - name: Publish NPM Package
+      if: ${{ !env.ACT }}
+      run: npm publish
+
+
+    - name: Release
+      if: ${{ !env.ACT }}
+      uses: softprops/action-gh-release@v1
+      with:
+        body_path: "${{ github.workspace }}/release-${{ github.ref_name }}/release-note.md"
+        tag_name: ${{ github.ref_name }}
+        files: |
+            documentation-${{ github.ref_name }}.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,8 @@
+{
+  "version": "0.1.0",
+  "path": "cz-conventional-changelog",
+  "version_files": [
+    "package.json:version",
+    "docs/conf.py:release"
+  ]
+}

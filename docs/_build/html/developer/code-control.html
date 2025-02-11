@@ -1,0 +1,154 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Project Code Management &mdash; Foundry VTT Package Developer Toolkit 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="GitHub Setup" href="github-setup.html" />
+    <link rel="prev" title="Build Process" href="build-process.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Foundry VTT Package Developer Toolkit
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">For Users:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../user/index.html">User Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Developer Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="setup.html">Setting up a PDT development environment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="development-workflow.html">Development Workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tdd-primer.html">Test Driven Development (TDD) Primer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="testing.html">Testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="build-process.html">Build Process</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Project Code Management</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#commiting">Commiting</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#husky">Husky</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#commitizen">Commitizen</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#project-pull-request">Project Pull Request</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="github-setup.html">GitHub Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributing.html">Contributing to PDT</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Foundry VTT Package Developer Toolkit</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Developer Documentation</a></li>
+      <li class="breadcrumb-item active">Project Code Management</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/developer/code-control.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="project-code-management">
+<span id="project-code-control"></span><h1>Project Code Management<a class="headerlink" href="#project-code-management" title="Link to this heading"></a></h1>
+<section id="commiting">
+<h2>Commiting<a class="headerlink" href="#commiting" title="Link to this heading"></a></h2>
+<p><a class="reference internal" href="#husky">Husky</a> is used to integrate <a class="reference internal" href="#commitizen">Commitizen</a> with <code class="docutils literal notranslate"><span class="pre">git</span></code> to ensure consitent <code class="docutils literal notranslate"><span class="pre">commit</span></code> messages are used. This in turn allows us to use Commitizen to produce accurate release notices as part of the <a class="reference internal" href="github-setup.html#github-workflows"><span class="std std-ref">Workflows</span></a>.</p>
+<section id="husky">
+<h3>Husky<a class="headerlink" href="#husky" title="Link to this heading"></a></h3>
+<p>Husky manages git hook scripts. These are put into place when <code class="docutils literal notranslate"><span class="pre">npm</span> <span class="pre">run</span> <span class="pre">prepare</span></code> is executed (see <a class="reference internal" href="setup.html#setup-prerequisites"><span class="std std-ref">Setup Prerequisites</span></a>).</p>
+</section>
+<section id="commitizen">
+<h3>Commitizen<a class="headerlink" href="#commitizen" title="Link to this heading"></a></h3>
+<p>As part of the <a class="reference internal" href="build-process.html#build-process"><span class="std std-ref">Build Process</span></a> the ([commitizen-tools/commitizen-action](<a class="reference external" href="https://github.com/commitizen-tools/commitizen-action">https://github.com/commitizen-tools/commitizen-action</a>)) is run. This will ‘bump’ the version of the project (acccording to rules prescribed in ), updating entries in files identiried in <code class="docutils literal notranslate"><span class="pre">.czrc</span></code> under <code class="docutils literal notranslate"><span class="pre">version_files</span></code>.</p>
+</section>
+</section>
+<section id="project-pull-request">
+<span id="id1"></span><h2>Project Pull Request<a class="headerlink" href="#project-pull-request" title="Link to this heading"></a></h2>
+<div class="admonition-todo admonition" id="id2">
+<p class="admonition-title">Todo</p>
+<p>Add advice on pull requests</p>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="build-process.html" class="btn btn-neutral float-left" title="Build Process" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="github-setup.html" class="btn btn-neutral float-right" title="GitHub Setup" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Ulenar of Mondarth.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
