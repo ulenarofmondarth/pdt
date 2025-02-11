@@ -1,10 +1,12 @@
-import fs from 'node:fs';
+import fg from 'fast-glob';
 import CompendiumDoc from './CompendiumDoc';
 
 export default class Compendium {
   protected static registeredDBTypes: Set<typeof Compendium> = new Set();
 
   #docs: Array<CompendiumDoc> = [];
+
+
 
   /**
    * return a Compendium found at the given path
@@ -23,6 +25,7 @@ export default class Compendium {
     return new dbType();
   }
 
+
   /**
    * Ruturns the class for the compendium detected at path
    *
@@ -40,9 +43,11 @@ export default class Compendium {
     return undefined;
   }
 
+
   get docs() {
     return this.#docs;
   }
+
 
   /**
    * Exports the content of the Compendium to the specified target path
@@ -51,6 +56,7 @@ export default class Compendium {
    *
    */
   async export(targets: string | Iterable<string>) {}
+
 
   /**
    * Imports the sources from the specified source paths
@@ -62,8 +68,10 @@ export default class Compendium {
     if (typeof sources == 'string') {
       sources = [sources];
     }
+    
+    const entries = await fg.glob([... sources]);
 
-    for (let source of sources) {
+    for (const source of entries) {
       this.#docs.push(new CompendiumDoc());
     }
   }

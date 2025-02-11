@@ -48,20 +48,30 @@ describe('Compendium', () => {
   describe('Compendium import', () => {
     test('imports a single source', async () => {
       const compendiumPath: string = `${__TEST_DATA__}/leveldb`;
-      const sourcePath: string = '';
+      const sourcePath: string = `${__TEST_DATA__}/packdata/single.json`;
       const compendium: Compendium = await Compendium.byPath(compendiumPath);
 
-      compendium.import(sourcePath);
+      await compendium.import(sourcePath);
 
       expect([...compendium.docs].length).toBeGreaterThan(0);
     });
 
-    test('imports a multiple sources', async () => {
+    test('imports multiple sources', async () => {
       const compendium_path: string = `${__TEST_DATA__}/leveldb`;
-      const source_paths: Array<string> = ['', ''];
+      const source_paths: Array<string> = [`${__TEST_DATA__}/packdata/item_one.json`, `${__TEST_DATA__}/packdata/item_two.json`];
       const compendium: Compendium = await Compendium.byPath(compendium_path);
 
-      compendium.import(source_paths);
+      await compendium.import(source_paths);
+
+      expect([...compendium.docs].length).toBeGreaterThan(1);
+    });
+
+    test('imports multiple sources by wildcard', async () => {
+      const compendium_path: string = `${__TEST_DATA__}/leveldb`;
+      const source_paths: Array<string> = [`${__TEST_DATA__}/packdata/item_*.json` ];
+      const compendium: Compendium = await Compendium.byPath(compendium_path);
+
+      await compendium.import(source_paths);
 
       expect([...compendium.docs].length).toBeGreaterThan(1);
     });

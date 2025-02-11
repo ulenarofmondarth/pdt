@@ -61,6 +61,7 @@
     "chalk": "^5.4.1",
     "classic-level": "^2.0.0",
     "config": "^3.3.12",
+    "fast-glob": "^3.3.3",
     "figlet": "^1.8.0",
     "winston": "^3.17.0",
     "yargs": "^17.7.2"
