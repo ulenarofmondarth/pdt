@@ -1,4 +1,4 @@
-import Compendium from './Compendium';
+import Compendium from './Compendium.js';
 import { ClassicLevel } from 'classic-level';
 
 class CompendiumLevelDB extends Compendium {
@@ -17,7 +17,9 @@ class CompendiumLevelDB extends Compendium {
       await db.open();
       returnType = CompendiumLevelDB;
       db.close();
-    } catch (e) {
+    } catch (
+      e // eslint-disable-line @typescript-eslint/no-unused-vars
+    ) {
       returnType = undefined;
     }
     return returnType;

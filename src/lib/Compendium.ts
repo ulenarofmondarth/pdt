@@ -1,12 +1,10 @@
 import fg from 'fast-glob';
-import CompendiumDoc from './CompendiumDoc';
+import CompendiumDoc from '@lib/CompendiumDoc.js';
 
 export default class Compendium {
   protected static registeredDBTypes: Set<typeof Compendium> = new Set();
 
   #docs: Array<CompendiumDoc> = [];
-
-
 
   /**
    * return a Compendium found at the given path
@@ -25,7 +23,6 @@ export default class Compendium {
     return new dbType();
   }
 
-
   /**
    * Ruturns the class for the compendium detected at path
    *
@@ -43,11 +40,9 @@ export default class Compendium {
     return undefined;
   }
 
-
   get docs() {
     return this.#docs;
   }
-
 
   /**
    * Exports the content of the Compendium to the specified target path
@@ -55,8 +50,8 @@ export default class Compendium {
    * @param targets - the source path patterns
    *
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async export(targets: string | Iterable<string>) {}
-
 
   /**
    * Imports the sources from the specified source paths
@@ -68,9 +63,10 @@ export default class Compendium {
     if (typeof sources == 'string') {
       sources = [sources];
     }
-    
-    const entries = await fg.glob([... sources]);
 
+    const entries = await fg.glob([...sources]);
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     for (const source of entries) {
       this.#docs.push(new CompendiumDoc());
     }

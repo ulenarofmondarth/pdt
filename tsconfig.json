@@ -1,21 +1,19 @@
 {
+  "extends": "@tsconfig/node22/tsconfig.json",
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-    "strict": true,
-    "target": "es6",
-    "module": "nodenext",
     "sourceMap": true,
-    "esModuleInterop": true,
-    "moduleResolution": "nodenext",
-    "baseUrl": "./src",
+    "baseUrl": ".",
     "resolveJsonModule": true,
     "paths": {
-      "@/*": [ "*" ],
-      "@lib/*": [ "lib/*" ]
+      "@/*": ["src/*"],
+      "@util/*": ["src/util/*"],
+      "@lib/*": ["src/lib/*"]
     }
   },
-  "include": [
-    "src/**/*"
-  ]
+  "tsc-alias": {
+    "resolveFullPaths": true
+  },
+  "include": ["src/**/*"]
 }

@@ -23,13 +23,13 @@ jobs:
       run: |
         docker run --rm -v "${{ github.workspace }}/docs":/docs ghcr.io/ulenarofmondarth/sphinx-docs:latest  make html
         cd ./docs/_build/html
-        zip -r ${{ github.workspace }}/documentation-${{ github.sha }}.zip .
+        zip -r ${{ github.workspace }}/documentation-${{ github.ref_name }}.zip .
 
     - name: Preserve Documentation
       uses: actions/upload-artifact@v4
       with:
         name: documentation-${{ github.ref_name}}
-        path: ${{ github.workspace }}/documentation-${{ github.sha }}.zip
+        path: ${{ github.workspace }}/documentation-${{ github.ref_name }}.zip
 
 
     - name: Deploy Documentation

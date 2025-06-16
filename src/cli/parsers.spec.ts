@@ -1,14 +1,12 @@
-import { parser } from './parsers';
-import { describe, test, expect } from '@jest/globals';
+import { describe, test, expect } from 'vitest';
+import { parser } from './parsers.js';
 
 describe('no command', () => {
   test('outputs validation error', async () => {
     const expected = 'At least one top level command is required.';
 
-    const argv = parser.parse('', (err: Error, argv: object, output: string) => {
+    parser.parse('', (err: Error) => {
       expect(err.message).toEqual(expected);
     });
   });
 });
-
-describe('', () => {});

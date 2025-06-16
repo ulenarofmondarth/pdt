@@ -1,5 +1,15 @@
 {
   "Logging": {
-    "filename": "pdt.log"
+    "filename": "pdt.log",
+    "level": "warn"
+  },
+  "VTT": {
+    "foundry": {
+      "server": {
+        "hostname": "localhost",
+        "port": "30000",
+        "version": "12"
+      }
+    }
   }
 }

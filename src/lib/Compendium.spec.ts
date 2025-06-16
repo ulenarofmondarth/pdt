@@ -1,7 +1,7 @@
-import { describe, test, expect } from '@jest/globals';
-import Compendium from './Compendium';
-import CompendiumLevelDB from './CompendiumLevelDB';
-import CompendiumDoc from './CompendiumDoc';
+import { describe, test, expect } from 'vitest';
+import Compendium from '@lib/Compendium.js';
+import CompendiumLevelDB from '@lib/CompendiumLevelDB.js';
+import CompendiumDoc from '@lib/CompendiumDoc.js';
 
 describe('Compendium', () => {
   test('contains a collection of compendium documents', () => {
@@ -17,14 +17,14 @@ describe('Compendium', () => {
     const path = `${__TEST_DATA__}/leveldb`;
     const expected = CompendiumLevelDB;
 
-    await expect(Compendium.probe(path)).resolves.toEqual(expected);
+    return expect(Compendium.probe(path)).resolves.toEqual(expected);
   });
 
   test('probe returns undefined if path is not a recognised compendium database', async () => {
     const path = `${__TEST_DATA__}/compendium`;
     const expected = undefined;
 
-    await expect(Compendium.probe(path)).resolves.toEqual(expected);
+    return expect(Compendium.probe(path)).resolves.toEqual(expected);
   });
 
   test('returns compendium converter given path', async () => {
@@ -58,7 +58,10 @@ describe('Compendium', () => {
 
     test('imports multiple sources', async () => {
       const compendium_path: string = `${__TEST_DATA__}/leveldb`;
-      const source_paths: Array<string> = [`${__TEST_DATA__}/packdata/item_one.json`, `${__TEST_DATA__}/packdata/item_two.json`];
+      const source_paths: Array<string> = [
+        `${__TEST_DATA__}/packdata/item_one.json`,
+        `${__TEST_DATA__}/packdata/item_two.json`,
+      ];
       const compendium: Compendium = await Compendium.byPath(compendium_path);
 
       await compendium.import(source_paths);
@@ -68,7 +71,7 @@ describe('Compendium', () => {
 
     test('imports multiple sources by wildcard', async () => {
       const compendium_path: string = `${__TEST_DATA__}/leveldb`;
-      const source_paths: Array<string> = [`${__TEST_DATA__}/packdata/item_*.json` ];
+      const source_paths: Array<string> = [`${__TEST_DATA__}/packdata/item_*.json`];
       const compendium: Compendium = await Compendium.byPath(compendium_path);
 
       await compendium.import(source_paths);
