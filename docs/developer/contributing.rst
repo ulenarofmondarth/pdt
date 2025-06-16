@@ -6,7 +6,7 @@ Contributing to PDT
 
 1. First, fork the PDT repository.
 
-2. Configure you new repostory
+2. Configure your new repostory
 
   If you want to use the existing GitHub workflows on your local repository you will need to configure a personal access token.
 
@@ -20,10 +20,11 @@ Contributing to PDT
 
     git clone <URL of your new forked repository>
     cd pdt
-    npm install
-    npm run prepare
+    pnpm install
 
   You are now set to develop PDT against your forked repository.
 
-4. Submit a pull request
+4. Do something awesome
+
+5. Submit a pull request
 

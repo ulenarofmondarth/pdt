@@ -10,10 +10,11 @@ This project uses:
 
 - `Typescript <https://www.typescriptlang.org>`_
 - `NodeJS <https://nodejs.org>`_ (`ts-node <https://typestrong.org/ts-node/docs/>`_ for smoother development workflow)
-- `Jest <https://jestjs.io/>`_ (`ts-jest <https://www.npmjs.com/package/ts-jest>`_ is used to leverage ``ts-node`` during testing)
+- `vite <https://vite.dev>`_ for building the package
+- `vitest <https://vitest.dev>`_ for testing
 - `Docker <https://www.docker.com/>`_
 
-The main tool for configuring the project is ``npm`` (installed with NodeJS).
+The main tool for configuring the project is :program:`pnpm` (which you should have installed when setting up).
 
 Documentation (this documentation), is written in `ReStructuredText <https://docutils.sourceforge.io/rst.html>`_, processed using `Sphinx <https://www.sphinx-doc.org>`_.
 
@@ -58,19 +59,19 @@ Basic Development Cycle
 
 Use of Test Driven Development (TDD) is encouraged. So, first write a test to specify the change you are going to make. For a new feature this will typically be in a ``.spec.ts`` file. For a bug this will typically be in a ``.test.ts`` file alongside the code containing the bug.
 
-.. tip:: Commit to your branch frequently (``git add <your code>`` and ``git commit -m 'My awesome edits'``). This provides a nice way to keep track of changes but more importantly gives you plenty a 'checkpoints' to roll-back to if you discover a problem with your current direction.
+.. tip:: Commit to your branch frequently (:command:`git add <your code>` and :command:`git commit -m 'My awesome edits'`). This provides a nice way to keep track of changes but more importantly gives you plenty a 'checkpoints' to roll-back to if you discover a problem with your current direction.
 
 Write code for your changes.
 
-Test using ``npm run test``.
+Test using :command:`pnpm test` (or open a separate terminal and run :command:`pnpm vitest`, which will run all tests and the watch for changes and run any tests related to the changed files).
 
-.. tip:: If you stage you changes (using ``git add``) you can use ``npm run test:ci`` to limit the tests to those related to file in the staging index.
+.. tip:: If you stage your changes (using :command:`git add`) you can use :command:`npm run test:ci` to limit the tests to those related to file in the staging index.
 
 Repeat the write test/develop/test/refactor cycle until you have completed your change.
 
 Commit the final changes to your repostory.
 
-If you have installed ``act`` (see :ref:`developer recommended installs <recommended-developer-installs>`) you can use it to run the :term:`CI` chain locally. This helps identify any potential issues *before* you offer them into the official buildk
+If you have installed :program:`act` (see :ref:`developer recommended installs <recommended-developer-installs>`) you can use it to run the :term:`CI` chain locally. This helps identify any potential issues *before* you offer them into the official buildk
 
 .. code-block::
 

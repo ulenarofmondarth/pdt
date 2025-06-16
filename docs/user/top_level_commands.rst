@@ -10,6 +10,21 @@ Top Level Commands
 
 The main interface of the PDT is the command line.
 
+.. _pdt_tlc_create:
+
+create
+------
+
+Set up a new package template and initialise it for use with :program:`pdt`.
+
+.. _pdt_tlc_init:
+
+init
+----
+
+Initialise a project for :program:`pdt`.
+
+This ensures vasious data is created to ensure projects do not collide (e.g. you can run multiple Foundry VTT serevers with different configurations without them interfering with one another, :program:`pdt` will also ensure you :program:`vite` development server connects tot he correct backend Foundry server).
 
 .. _pdt_tlc_config:
 
@@ -194,33 +209,50 @@ Options
 +++++++
 
 
+.. _pdt_tlc_serve:
+
+serve
+-----
+
+Interface with :program:`pdt` controlled Foundry VTT instance to provide 'server-side' extension. This allows various modules to provide features in development that are not normally avaiable in Foundry. For example, the :program:`pdt` server allows modules to copy, move, replace, and delete files in the various data directories (this makes packing modules much simpler from a user perspective as the MAIDE module can shuffle assets into the module and compendiums without the user needing to do this manually).
+
+.. todo:: This :program:`pdt` server becomes available to the VTT. Could use the p2p approach or simply set the port on which it is available to the running VTT. Using the prp connection would make it easier fo it to use the MAIDE proxy for interacting with the VTT. Could do both, this woulc allow :program:`pdt` to interact with the VTT from the command line
 
 
-.. _pdt_tlc_server:
+.. _pdt_tlc_vtt:
 
-server
-------
+vtt
+---
 
-:command:`server [init|launch]`
+:command:`vtt [init|launch]status|install`
 
 Controls a Foundry VTT instance.
 
 
-server init
+vtt init
+~~~~~~~~
+
+:command:`vtt init`
+
+
+vtt launch
+~~~~~~~~~~
+
+:command:`vtt launch`
+
+
+vtt status
+~~~~~~~~~~
+
+:command:`vtt status`
+
+Display the current status of the VTT; one of "running", "stopped", "missing".
+
+vtt install
 ~~~~~~~~~~~
 
-:command:`server init`
+:command:`vtt install`
 
+Install a configuration of modules. The specification can be captured using EMMA. Can also enforce a set of settings for the installed modules.
 
-server launch
-~~~~~~~~~~~~~~
-
-:command:`server launch`
-
-
-server status
-~~~~~~~~~~~~~
-
-:command:`server status`
-
-
+If :command:`vtt install` is used while the VTT is running it wil be stopped, the modules installed, any settings installed, then the VTT will be restarted.

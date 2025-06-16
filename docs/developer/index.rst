@@ -9,9 +9,11 @@ This documentation is intended for anyone wanting to develop the ``pdt`` applica
    setup.rst
    development-workflow.rst
    tdd-primer.rst
+   design-philosophy.rst
    error-handling.rst
    testing.rst
    build-process.rst
    code-control.rst
    github-setup.rst
+   faq.rst
    contributing.rst

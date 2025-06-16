@@ -43,7 +43,7 @@ The TDD Treadmill
 
 .. _tdd write code:
 
-2. Write the minimum code that gets this code to pass.
+2. Write the minimum code that gets this test to pass.
 
    This may not be the end of the task but if the test passes the specification has been met. Add a more refined test/specification if needed and repeat from step one.
 
@@ -74,11 +74,18 @@ Why go to all this trouble?
 
 It may seem like a lot of trouble to create test/specifications, then code to 'fix' them but there is method in this madness.
 
-Firstly, we end up with a fairly comprehesive set of tests for our code. More importantly, these tests give us more confidence when making changes in the future (or indded during development).
+Firstly, we end up with a fairly comprehesive set of tests for our code. More importantly, these tests give us more confidence when making changes in the future (or indeed during development).
 
 The established test suite acts as a guarantee that any change I make in the future will not inadvertantly break my code. If I make a change and one of the existing tests fails then I know that my change has 'broken' the system since these tests specify the correct behaviour for the code (hence a failure tells me, 'this code no longer meets the specification').
 
 Finally, but by no means least, the specification first approach encouraged us to think about how the code we write will be used. It forces us to consider *how* our code will be used. If the interface to our code is poor then it will be difficult to test [#f1]_.
+
+Mocks and Spies
+---------------
+
+It is common to resort to mocking and spying when testing at lower levels. Some advocate *never* using mocks or spies. I think that these tools are useful but a 'code smell'. In other words, there is no point tying yourself in knots trying to avoid using mocks and spies when testing (this often has this can have the opposite effect and drive bad design). Rather you should consider any time you need a mock as a warning that perhaps you need to sethink your design. Think it through, if it still seems that your first thought is fine, go ahead and make that mock in your test.
+
+The closer you get to interfacing with external systems the more likely a mock is the right answer (at least in unit testing).
 
 What about the overheads?
 -------------------------
@@ -114,9 +121,6 @@ There are myriad ways that I can implement this test. The test itself does not n
 
    expect(getAplhabeticListOfBooksInLibrary().asArray).toBe([ 'another book', 'book', 'some book', 'xray book'])
 
-.. sidebar:: Stuff
-
-   Blam
 
 The ``createLibrary``, ``addBookToLibrary``, and ``getAlphabeticListOfBooksInLibrary`` are all `test` functions, not actual implementation functions.
 
@@ -127,7 +131,7 @@ In another library, that we 'inject' into our tests, we write these `test` adapt
 
 In a trivial caes, it is. In a real system though it is worthwhile.
 
-Let's say I implement my ``library`` as an class backed by a ``mongodb``. I implement mu test poxies witht his specific imlementation. Then A decide it should be functional ans use a relationatl database. No problem, I implement my adapters (``createLibrary``, ``addBookToLibrary``, and ``getAlphabeticListOfBooksInLibrary``) with the new implementation and inject this. The `test itself` remains untouched.
+Let's say I implement my ``library`` as an class backed by a ``mongodb``. I implement my test proxies with this specific imlementation. Then A decide it should be functional and use a relationatl database. No problem, I implement my adapters (``createLibrary``, ``addBookToLibrary``, and ``getAlphabeticListOfBooksInLibrary``) with the new implementation and inject this. The `test itself` remains untouched.
 
 The mindset is the same as any implementation; the test is expressed in the problem domain, leave specific implementation to the adapter layer.
 

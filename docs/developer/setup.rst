@@ -3,6 +3,8 @@ Setting up a PDT development environment
 
 This section covers briefly how to get started developing the PDT itself.
 
+.. autofunction:: createServer
+
 PDT is a ``nodejs`` tool.
 
 .. _setup prerequisites:
@@ -23,8 +25,9 @@ On you host machine install:
    .. note:: PDT currently used NodeJS v22.8.0
 
 
-Nodejs will also install ``npm`` the Node package manager, which we use next to set up the development environment.
+Nodejs will also install :program:`npm` the Node package manager, which we use next to set up the development environment. However, the alternative package manager `pnpm <https://pnpm.io>`_ is more efficient, so this project uses :program:`pnpm`. To install :program:`pnpm` refer to `pnpm installation <https://pnpm.io/installation>`_.
 
+Once :program:`pnpm` is installed the main project can be installed.
 
 
 .. highlight:: shell
@@ -33,8 +36,7 @@ Nodejs will also install ``npm`` the Node package manager, which we use next to 
 
   git clone https://github.com/ulenarofmondarth/pdt.git
   cd pdt
-  npm install
-  npm run prepare
+  pnpm install
 
 Your environment is now ready (See :ref:`Contributing to PDT`).
 
