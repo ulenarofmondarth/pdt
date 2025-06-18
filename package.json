@@ -18,7 +18,7 @@
     "build:clean": "pnpm run clean && pnpm run build",
     "test": "vitest --typecheck --run",
     "clean": "rimraf dist/",
-    "copy-files": "copyfiles -u 1 -e src/**/custom-environment-variables.json src/**/*.json dist/",
+    "copy-files": "copyfiles -u 1 src/pdt-internal-config/**/*.json dist/",
     "test:ci": "vitest run --related",
     "prepare": "husky",
     "build:docs": "docker run --rm --user \"$(id -u):$(id -g)\" -v \"$(pwd)/docs\":/docs ghcr.io/ulenarofmondarth/sphinx-docs make html",
