@@ -11,6 +11,7 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, './src'),
       '@util': path.resolve(import.meta.dirname, './src/util'),
       '@lib': path.resolve(import.meta.dirname, './src/lib'),
+      '@schema': path.resolve(import.meta.dirname, './src/schema'),
     },
   },
   define: {

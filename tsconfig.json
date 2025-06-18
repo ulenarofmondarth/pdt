@@ -9,7 +9,8 @@
     "paths": {
       "@/*": ["src/*"],
       "@util/*": ["src/util/*"],
-      "@lib/*": ["src/lib/*"]
+      "@lib/*": ["src/lib/*"],
+      "@schema/*": ["src/schema/*"]
     }
   },
   "tsc-alias": {

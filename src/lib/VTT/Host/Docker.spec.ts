@@ -10,7 +10,7 @@ describe('DockerHost', () => {
   let server: VTTServer;
 
   beforeAll(() => {
-    const standardServer: VTTServerConfig = { type: 'foundry', name: 'docker-test-server' };
+    const standardServer: VTTServerConfig = { type: 'foundry', name: 'test-server' };
     server = createServer(standardServer);
   });
   afterEach(() => {

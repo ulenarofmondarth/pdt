@@ -1,1 +1,23 @@
-{}
+{
+  "VTT": {
+    "test-server": {
+      "server": {
+        "type": "foundry",
+        "hostname": "localhost",
+        "version": "12",
+        "port": "auto"
+      },
+      "host": {
+        "type": "docker",
+        "image": "felddy/foundryvtt-docker",
+        "version": "VTT.prj.server.version",
+        "ports": [
+          {
+            "internal": 30000,
+            "external": "auto"
+          }
+        ]
+      }
+    }
+  }
+}

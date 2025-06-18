@@ -4,12 +4,38 @@
     "level": "warn"
   },
   "VTT": {
-    "foundry": {
+    "prj": {
       "server": {
+        "type": "foundry",
         "hostname": "localhost",
-        "port": "30000",
-        "version": "12"
+        "version": "12",
+        "port": "auto"
+      },
+      "host": {
+        "type": "docker",
+        "image": "felddy/foundryvtt-docker",
+        "version": "VTT.prj.server.version",
+        "ports": [
+          {
+            "internal": 30000,
+            "external": "auto"
+          }
+        ]
       }
+    }
+  },
+  "DOCS": {
+    "host": {
+      "type": "docker",
+      "repository": "ghcr.io",
+      "image": "ulenarofmondarth/sphinx-docs",
+      "version": "latest",
+      "ports": [
+        {
+          "internal": 8000,
+          "external": "auto"
+        }
+      ]
     }
   }
 }
