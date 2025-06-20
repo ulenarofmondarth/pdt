@@ -1,3 +1,4 @@
+import { paraglideVitePlugin } from '@inlang/paraglide-js';
 /// <reference types="vitest/config" />
 import path from 'node:path';
 import { defineConfig } from 'vite';
@@ -12,12 +13,14 @@ export default defineConfig({
       '@util': path.resolve(import.meta.dirname, './src/util'),
       '@lib': path.resolve(import.meta.dirname, './src/lib'),
       '@schema': path.resolve(import.meta.dirname, './src/schema'),
+      '@i18n': path.resolve(import.meta.dirname, './src/paraglide'),
     },
   },
   define: {
     __TEST_DATA__: JSON.stringify('./testdata'),
   },
   build: {
+    target: 'es2022',
     lib: {
       entry: 'src/index.ts',
       fileName(_format, entryName) {
@@ -35,5 +38,9 @@ export default defineConfig({
       ],
     },
   },
-  plugins: [tsconfigPaths(), nodeExternals()],
+  plugins: [
+    paraglideVitePlugin({ project: './project.inlang', outdir: './src/paraglide' }),
+    tsconfigPaths(),
+    nodeExternals(),
+  ],
 });

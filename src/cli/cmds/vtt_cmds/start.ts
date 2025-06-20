@@ -1,16 +1,18 @@
 import { Argv, CommandModule, Arguments } from 'yargs';
+import logger from '@util/logger.js';
+import { m } from '@i18n/messages.js';
 
 const module: CommandModule = {
   command: 'start [vtt] [options]',
 
-  describe: 'Start a vtt in the current project',
+  describe: m['ui.cmd.start.description'](),
 
   builder(yargs: Argv) {
-    return yargs.positional('vtt', { describe: 'The VTT identity', type: 'string', default: 'prj' });
+    return yargs.positional('vtt', { describe: m['ui.cmd.arg.vtt.description'](), type: 'string', default: 'prj' });
   },
 
   handler(argv: Arguments) {
-    console.log(`Nested ${JSON.stringify(argv)}`);
+    logger.debug(m['debug.running']({ argv: JSON.stringify(argv) }));
   },
 };
 

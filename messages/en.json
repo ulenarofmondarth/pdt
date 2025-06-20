@@ -1,0 +1,31 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "ui": {
+    "cmd": {
+      "option": {
+        "name": "option"
+      },
+      "arg": {
+        "vtt": {
+          "description": "The VTT identity"
+        }
+      },
+      "vtt": {
+        "description": "Control a project scored VTT"
+      },
+      "start": {
+        "description": "Start a VTT in the current prolect"
+      }
+    }
+  },
+  "warn": {
+    "noPdtRoot": "Unable to find a PDT root directory. Perhaps you forgot to 'init' this project?"
+  },
+  "fatal": {
+    "shouldNeverRun": "Should never run {argv}",
+    "noPdtRoot": "Unable to find a PDT root directory. Perhaps you forgot to 'init' this project?"
+  },
+  "debug": {
+    "running": "Running parsed command {argv}"
+  }
+}
