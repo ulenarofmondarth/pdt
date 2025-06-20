@@ -1,10 +1,10 @@
 import config from '@util/config.js';
+import { fs } from '@util/runtime-config.js';
 import path from 'node:path';
 import winston from 'winston';
+import { m } from '@i18n/messages.js';
 
-const __dirname = import.meta.dirname;
-
-const log_file = `${path.resolve(__dirname, String(config.get('Logging.filename')))}`;
+const log_file = `${path.resolve(fs.pdtConfigDir ?? process.cwd(), String(config.get('Logging.filename')))}`;
 
 const logger = winston.createLogger({
   level: config.get('Logging.level'),
@@ -16,6 +16,14 @@ const logger = winston.createLogger({
       format: winston.format.cli(),
     }),
   ],
+});
+
+if (fs.pdtConfigDir === undefined) {
+  logger.warn(m['warn.noPdtRoot']());
+}
+
+process.on('exit', () => {
+  logger.close();
 });
 
 export default logger;
