@@ -35,5 +35,6 @@ todo_emit_warnings = True
 
 rst_prolog = """
 .. |LSP| replace:: :abbr:`LSP (Language Server Protocol)` 
+.. |pdt| replace:: :program:`pdt`
 """
 

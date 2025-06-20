@@ -12,6 +12,9 @@ This documentation is intended for anyone wanting to develop the ``pdt`` applica
    design-philosophy.rst
    error-handling.rst
    testing.rst
+   i18n.rst
+   logging.rst
+   configuration.rst
    build-process.rst
    code-control.rst
    github-setup.rst

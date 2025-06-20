@@ -1,0 +1,6 @@
+Internationalisation
+====================
+
+All message strings are defined in ``messages/en.json``.
+
+
