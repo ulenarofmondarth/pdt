@@ -16,7 +16,7 @@ class CompendiumLevelDB extends Compendium {
       const db = new ClassicLevel(path, { createIfMissing: false });
       await db.open();
       returnType = CompendiumLevelDB;
-      db.close();
+      await db.close();
     } catch (
       e // eslint-disable-line @typescript-eslint/no-unused-vars
     ) {
