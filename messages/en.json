@@ -2,9 +2,6 @@
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "ui": {
     "cmd": {
-      "option": {
-        "name": "option"
-      },
       "arg": {
         "vtt": {
           "description": "The VTT identity"
@@ -15,11 +12,14 @@
       },
       "start": {
         "description": "Start a VTT in the current prolect"
+      },
+      "init": {
+        "description": "Initialise an existing project as a PDT project.",
+        "dir": {
+          "description": "An existing project directory."
+        }
       }
     }
-  },
-  "warn": {
-    "noPdtRoot": "Unable to find a PDT root directory. Perhaps you forgot to 'init' this project?"
   },
   "fatal": {
     "shouldNeverRun": "Should never run {argv}",
