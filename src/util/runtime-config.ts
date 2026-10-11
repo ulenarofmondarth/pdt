@@ -19,7 +19,11 @@ function findConfig(): string | undefined {
   const dir = process.cwd();
   const home = process.env.HOME;
 
-  const pdtRoot = findUpSync(PDT.PROJECT_RTD_DIR_NAME, { cwd: dir, stopAt: home, type: 'directory' });
+  const pdtRoot = findUpSync(PDT.PROJECT_RTD_DIR_NAME, {
+    cwd: dir,
+    type: 'directory',
+    ...(home === undefined ? {} : { stopAt: home }),
+  });
 
   return pdtRoot;
 }

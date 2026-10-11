@@ -10,7 +10,7 @@ class CompendiumLevelDB extends Compendium {
     Compendium.registeredDBTypes.add(this);
   }
 
-  static async probe(path: string): Promise<typeof Compendium | undefined> {
+  static override async probe(path: string): Promise<typeof Compendium | undefined> {
     let returnType: typeof CompendiumLevelDB | undefined = undefined;
     try {
       const db = new ClassicLevel(path, { createIfMissing: false });

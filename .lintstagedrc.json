@@ -1,5 +1,5 @@
 {
   "*.json": ["pnpm prettier:format"],
   "*.{css,scss}": ["pnpm prettier:format"],
-  "*.{js,ts,mjs,svelte}": ["pnpm prettier:format", "pnpm lint", "vitest related"]
+  "*.{js,ts,mjs,svelte}": ["pnpm prettier:format", "pnpm lint", "bash -c 'pnpm typecheck'", "vitest related --run"]
 }
