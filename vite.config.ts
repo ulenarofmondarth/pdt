@@ -6,7 +6,16 @@ import { nodeExternals } from 'rollup-plugin-node-externals';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
-  test: {},
+  test: {
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.ts'],
+      exclude: ['src/paraglide/**', 'src/tests/**', '**/*.spec.ts', '**/*.d.ts'],
+      reporter: ['text', 'html', 'lcov'],
+      // Floor set just below the measured baseline; ratchet upward as tests are added.
+      thresholds: { statements: 65, branches: 80, functions: 45, lines: 65 },
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, './src'),
