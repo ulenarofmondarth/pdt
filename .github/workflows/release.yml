@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    name: Semantic release
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # semantic-release pushes with its own token (below).
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Release
+        if: ${{ !env.ACT }}
+        run: pnpm exec semantic-release
+        env:
+          # A PAT is needed so the release commit can be pushed to a protected main.
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          # The release commit is generated; skip the local commit hooks.
+          HUSKY: 0
+
+      # semantic-release builds the docs only when it cuts a release.
+      - name: Build documentation
+        run: |
+          if [ ! -d docs/_build/html ]; then pnpm build:docs; fi
+
+      - name: Deploy documentation
+        if: ${{ !env.ACT }}
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/_build/html

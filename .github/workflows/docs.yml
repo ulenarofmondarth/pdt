@@ -1,0 +1,27 @@
+name: Docs
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # All Python tooling lives in the Sphinx image; nothing is installed on the runner.
+      - name: Build documentation
+        run: |
+          docker run --rm --user "$(id -u):$(id -g)" \
+            -v "${{ github.workspace }}/docs":/docs \
+            ghcr.io/ulenarofmondarth/sphinx-docs:latest make html
+
+      - name: Upload documentation
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: docs/_build/html
+          retention-days: 7
