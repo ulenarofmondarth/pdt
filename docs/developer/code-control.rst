@@ -7,7 +7,7 @@ Project Code Management
 Commiting
 ---------
 
-`Husky`_ is used to integrate `Commitizen`_ with ``git`` to ensure consitent ``commit`` messages are used. This in turn allows us to use Commitizen to produce accurate release notices as part of the :ref:`GitHub Workflows`.
+`Husky`_ is used to integrate `Commitizen`_ with ``git`` to ensure consitent ``commit`` messages are used. This in turn allows semantic-release to work out version numbers and produce accurate release notes as part of the :ref:`GitHub Workflows`.
 
 Husky
 ~~~~~
@@ -17,7 +17,11 @@ Husky manages git hook scripts. These are put into place when ``pnpm run prepare
 Commitizen
 ~~~~~~~~~~
 
-As part of the :ref:`build-process` the (`commitizen-tools/commitizen-action <https://github.com/commitizen-tools/commitizen-action>`_) is run. This will 'bump' the version of the project, updating entries in files identified in ``.czrc`` under ``version_files``.
+Commitizen prompts for a `Conventional Commits <https://www.conventionalcommits.org>`_ message when you commit, and ``commitlint`` rejects any message that does not conform.
+
+Commitizen does not change version numbers. Versioning is done by semantic-release in the :ref:`release workflow <release-workflow>`.
+
+The pre-commit hook runs Prettier, ESLint, the type check and the tests related to the staged files.
 
 
 .. _project-pull-request:

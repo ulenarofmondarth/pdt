@@ -12,31 +12,49 @@ This project is hosted at https://github.com/ulenarofmondarth/pdt. It is license
 Workflows
 ---------
 
-There are two main scenarios for automated workflows. Both start with a user commiting to ``main``.
+There are three workflows under ``.github/workflows``.
 
-.. rubric:: Initial responses
+.. _ci-workflow:
 
-Two workflows may respond immediately:
+``ci``
+~~~~~~
 
-.. _bump-version:
+Runs on every pull request and on every push to ``dev``. It is also called by the :ref:`release <release-workflow>` workflow. The jobs run in parallel:
 
-1. ``bump-version``
+- **Typecheck** with TypeScript 7, then again with the TypeScript 6 fallback (see :ref:`typescript-compilers`).
+- **Lint** with ESLint (warnings fail the job) and a Prettier formatting check.
+- **Unit tests** with the coverage gate, on Node 22 and Node 24. The coverage report is kept as an artifact.
+- **Build** of the bundle, followed by a smoke test of the built CLI. ``dist`` is kept as an artifact.
+- **Docs**, which calls the ``docs`` workflow.
 
-   This will check if the pushed commits require an update to the project's version. If they do, then various 'version' entries in configuration files are updated, the project is then committed back with these updated files and tagged with a new version tag (this triggers the other scenario :ref:`below <build-on-push>`).
+Superseded runs for the same pull request are cancelled.
 
-2. ``build-and-deploy-docs``
+``docs``
+~~~~~~~~
 
-   If only files under ``docs/`` are affected by the commits in this push, the documentation is rebuilt and deployed.
+Builds the documentation inside the Sphinx Docker image and keeps the HTML as an artifact. It is called by ``ci`` and can be started by hand.
 
-   This scenarion assumes that any documentation only changes remain relevant to the current version of the application.
+.. _release-workflow:
 
+``release``
+~~~~~~~~~~~
 
-.. rubric:: Follow-up responses
+Runs on every push to ``main``. It first runs the whole of ``ci``; only if that passes does it run `semantic-release <https://semantic-release.gitbook.io>`_, which:
 
-If a version bump (:ref:`bump-version <bump-version>`) was executed then another ``push`` will occur. This push will be associated with a tag for the new release and this triggers:
+1. Works out the next version from the commit messages since the last release tag (``fix`` gives a patch, ``feat`` a minor, and ``BREAKING CHANGE:`` or ``!`` a major release). If no commit warrants a release it stops here.
+2. Writes the release notes and updates ``CHANGELOG.md``.
+3. Sets the new version in ``package.json`` and ``docs/conf.py``.
+4. Builds the bundle and the documentation, and zips the documentation.
+5. Commits ``CHANGELOG.md``, ``package.json`` and ``docs/conf.py`` back to ``main`` as ``chore(release): <version> [skip ci]`` and tags the commit ``v<version>``.
+6. Creates a GitHub release with the documentation zip attached.
 
-.. _build-on-push:
+The workflow then deploys the documentation to GitHub Pages, whether or not a release was cut.
 
-- ``build-on-push``
+The pipeline is configured in ``release.config.js``. Publishing to ``npmjs`` is switched off there (``npmPublish: false``).
 
-   If the push it tagged (and affects files outside ``docs/``---it should if it were bumped), this builds the application and publishes it to ``npmjs``. It also builds and deploys the documentation.
+.. rubric:: Repository requirements
+
+- A ``PERSONAL_ACCESS_TOKEN`` secret with permission to push to ``main``. semantic-release uses it to push the release commit and tag, and to create the release.
+- A ``v0.1.0`` tag on ``main`` before the first release. semantic-release finds the previous version from git tags; with no tag at all the first release would be ``1.0.0``.
+
+.. tip:: ``pnpm exec semantic-release --dry-run --no-ci`` checks the configuration locally without releasing anything.
