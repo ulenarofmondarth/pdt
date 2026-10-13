@@ -13,7 +13,7 @@
     "pdt": "./dist/index.js"
   },
   "engines": {
-    "node": ">=22.14"
+    "node": ">=24"
   },
   "scripts": {
     "preinstall": "npx only-allow pnpm",
@@ -77,6 +77,8 @@
     "vitest": "^3.2.7"
   },
   "dependencies": {
+    "@inquirer/prompts": "^8.7.3",
+    "@mondarth/create-fvtt-module": "^0.3.0",
     "chalk": "^5.4.1",
     "classic-level": "^2.0.0",
     "config": "^3.3.12",

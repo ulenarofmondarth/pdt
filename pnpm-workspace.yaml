@@ -4,3 +4,5 @@ allowBuilds:
   esbuild: false
   protobufjs: false
   ssh2: false
+minimumReleaseAgeExclude:
+  - '@mondarth/create-fvtt-module@0.3.0'

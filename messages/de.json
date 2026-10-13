@@ -14,7 +14,7 @@
         "description": "Ein VTT im aktuellen Projekt starten"
       },
       "init": {
-        "description": "Ein bestehendes Projekt als PDT-Projekt initialisieren.",
+        "description": "Ein Projekt als PDT-Projekt initialisieren. In einem leeren Verzeichnis wird zuerst ein neues Foundry-VTT-Modul angelegt.",
         "dir": {
           "description": "Ein bestehendes Projektverzeichnis."
         }
@@ -25,14 +25,16 @@
     }
   },
   "info": {
-    "pdtInitialised": "PDT für {path} initialisiert"
+    "pdtInitialised": "PDT für {path} initialisiert",
+    "creatingModule": "{path} ist leer. Dort wird ein neues Foundry-VTT-Modul angelegt."
   },
   "warn": {
     "pdtParentExists": "Versuch, ein PDT-Unterprojekt anzulegen (mit -f erzwingen).\n  Übergeordnetes Projekt unter {path}",
     "alreadyExists": "{description} existiert bereits."
   },
   "error": {
-    "notInPdtProject": "Kein PDT-Projekt."
+    "notInPdtProject": "Kein PDT-Projekt.",
+    "needsTerminal": "Zum Anlegen eines neuen Moduls werden Fragen gestellt; dafür wird ein interaktives Terminal benötigt."
   },
   "fatal": {
     "shouldNeverRun": "Sollte niemals ausgeführt werden: {argv}",

@@ -6,7 +6,7 @@ import logger, { exit } from '@util/logger.js';
 import { parser } from './cli/parsers.js';
 
 try {
-  parser.parseSync(process.argv.slice(2), function (err: object, argv: Arguments, output: string) {
+  await parser.parseAsync(process.argv.slice(2), function (err: object, argv: Arguments, output: string) {
     if (output) {
       console.log(output);
     }

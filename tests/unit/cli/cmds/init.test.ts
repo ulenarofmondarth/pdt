@@ -5,12 +5,19 @@ import yargs from 'yargs';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import initCommand from '@/cli/cmds/init.js';
 import PDT from '@/constants.js';
+import { createModule } from '@lib/ModuleGenerator.js';
 import logger, { setLogDirectory } from '@util/logger.js';
+import { terminalPrompter } from '@util/prompt.js';
 import { m } from '@i18n/messages.js';
 
 const mocks = vi.hoisted(() => ({
   pfs: { userDataDir: '/unused', pdtConfigDir: undefined as string | undefined },
+  canPrompt: vi.fn(() => true),
 }));
+
+// No test may run the real generator or wait on a real terminal.
+vi.mock('@lib/ModuleGenerator.js', () => ({ createModule: vi.fn() }));
+vi.mock('@util/prompt.js', () => ({ canPrompt: mocks.canPrompt, terminalPrompter: { name: 'terminal prompter' } }));
 
 vi.mock('@util/runtime-config.js', () => ({ pfs: mocks.pfs }));
 vi.mock('@util/logger.js', async () => (await import('@tests/unit/mocks/logger.js')).createLoggerModuleMock());
@@ -29,7 +36,11 @@ describe('init command', () => {
     project = path.join(sandbox, 'project');
     projectData = path.join(project, PDT.PROJECT_RTD_DIR_NAME);
     fs.mkdirSync(project);
+    // An existing project has content; an empty directory is a different case, covered below.
+    fs.writeFileSync(path.join(project, 'package.json'), '{}');
     mocks.pfs.pdtConfigDir = undefined;
+    mocks.canPrompt.mockReturnValue(true);
+    vi.mocked(createModule).mockResolvedValue({ destination: project, files: [] });
   });
 
   afterEach(() => {
@@ -38,6 +49,13 @@ describe('init command', () => {
   });
 
   describe('in a directory that is not yet a project', () => {
+    test('does not create a new module', async () => {
+      await runInit(project);
+
+      expect(createModule).not.toHaveBeenCalled();
+      expect(fs.readdirSync(project).sort()).toEqual([PDT.PROJECT_RTD_DIR_NAME, 'package.json']);
+    });
+
     test('creates the project data directory', async () => {
       await runInit(project);
 
@@ -61,6 +79,83 @@ describe('init command', () => {
     });
   });
 
+  describe.each([
+    { state: 'an empty directory', exists: true },
+    { state: 'a directory that does not exist yet', exists: false },
+  ])('in $state', ({ exists }) => {
+    let fresh: string;
+    let freshData: string;
+
+    beforeEach(() => {
+      fresh = path.join(sandbox, 'new-module');
+      freshData = path.join(fresh, PDT.PROJECT_RTD_DIR_NAME);
+      if (exists) fs.mkdirSync(fresh);
+      vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      // Stand in for the generator: it creates the destination and writes the module into it.
+      vi.mocked(createModule).mockImplementation(async (destination, _prompter, onStep) => {
+        fs.mkdirSync(destination, { recursive: true });
+        fs.writeFileSync(path.join(destination, 'module.json'), '{}');
+        onStep?.('wrote 1 files');
+        return { destination, files: ['module.json'] };
+      });
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    test('creates a new module there, asking in the terminal', async () => {
+      await runInit(fresh);
+
+      expect(createModule).toHaveBeenCalledExactlyOnceWith(fresh, terminalPrompter, expect.any(Function));
+      expect(fs.existsSync(path.join(fresh, 'module.json'))).toBe(true);
+    });
+
+    test('makes the new module a project only after it has been generated', async () => {
+      const generate = vi.mocked(createModule).getMockImplementation()!;
+      let dataExistedDuringGeneration: boolean | undefined;
+      vi.mocked(createModule).mockImplementation(async (...args) => {
+        dataExistedDuringGeneration = fs.existsSync(freshData);
+        return generate(...args);
+      });
+
+      await runInit(fresh);
+
+      expect(dataExistedDuringGeneration).toBe(false);
+      expect(fs.statSync(freshData).isDirectory()).toBe(true);
+      expect(setLogDirectory).toHaveBeenCalledExactlyOnceWith(freshData);
+      expect(logger.info).toHaveBeenCalledExactlyOnceWith(m['info.pdtInitialised']({ path: fresh }));
+    });
+
+    test("tells the user what it is doing and shows the generator's progress", async () => {
+      await runInit(fresh);
+
+      expect(vi.mocked(console.log).mock.calls.flat()).toEqual([
+        m['info.creatingModule']({ path: fresh }),
+        '✔ wrote 1 files',
+      ]);
+    });
+
+    test('fails without touching anything when there is no terminal to ask in', async () => {
+      mocks.canPrompt.mockReturnValue(false);
+
+      await expect(runInit(fresh)).rejects.toThrow(m['error.needsTerminal']());
+
+      expect(createModule).not.toHaveBeenCalled();
+      expect(fs.existsSync(freshData)).toBe(false);
+      expect(fs.existsSync(fresh)).toBe(exists);
+    });
+
+    test("fails with the generator's error and does not make a project", async () => {
+      vi.mocked(createModule).mockRejectedValue(new Error('Invalid moduleId'));
+
+      await expect(runInit(fresh)).rejects.toThrow('Invalid moduleId');
+
+      expect(fs.existsSync(freshData)).toBe(false);
+      expect(logger.info).not.toHaveBeenCalled();
+    });
+  });
+
   describe('in a directory that is already a project', () => {
     beforeEach(() => {
       fs.mkdirSync(projectData);
@@ -69,6 +164,7 @@ describe('init command', () => {
 
     test('warns and leaves the project alone', async () => {
       fs.writeFileSync(path.join(projectData, 'keep.txt'), 'existing data');
+      fs.rmSync(path.join(project, 'package.json'));
 
       await runInit(project);
 
@@ -78,6 +174,8 @@ describe('init command', () => {
       expect(fs.readdirSync(projectData)).toEqual(['keep.txt']);
       expect(logger.info).not.toHaveBeenCalled();
       expect(setLogDirectory).not.toHaveBeenCalled();
+      // Even though nothing but the data directory is there, it is not treated as empty.
+      expect(createModule).not.toHaveBeenCalled();
     });
   });
 
@@ -87,6 +185,7 @@ describe('init command', () => {
     beforeEach(() => {
       nested = path.join(project, 'packages', 'inner');
       fs.mkdirSync(nested, { recursive: true });
+      fs.writeFileSync(path.join(nested, 'package.json'), '{}');
       fs.mkdirSync(projectData);
       mocks.pfs.pdtConfigDir = projectData;
     });
@@ -96,6 +195,15 @@ describe('init command', () => {
 
       expect(logger.warn).toHaveBeenCalledExactlyOnceWith(m['warn.pdtParentExists']({ path: project }));
       expect(fs.existsSync(path.join(nested, PDT.PROJECT_RTD_DIR_NAME))).toBe(false);
+    });
+
+    test('refuses before creating a module, even when the directory is empty', async () => {
+      fs.rmSync(path.join(nested, 'package.json'));
+
+      await runInit(nested);
+
+      expect(createModule).not.toHaveBeenCalled();
+      expect(fs.readdirSync(nested)).toEqual([]);
     });
 
     test('creates the nested project when forced', async () => {

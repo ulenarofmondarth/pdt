@@ -14,7 +14,7 @@
         "description": "Start a VTT in the current prolect"
       },
       "init": {
-        "description": "Initialise an existing project as a PDT project.",
+        "description": "Initialise a project as a PDT project. In an empty directory, create a new Foundry VTT module first.",
         "dir": {
           "description": "An existing project directory."
         }
@@ -25,14 +25,16 @@
     }
   },
   "info": {
-    "pdtInitialised": "PDT initialised for {path}"
+    "pdtInitialised": "PDT initialised for {path}",
+    "creatingModule": "{path} is empty. Creating a new Foundry VTT module there."
   },
   "warn": {
     "pdtParentExists": "Attempt to create sub-PDT project (use -f to force).\n  Parent project at {path}",
     "alreadyExists": "The {description} already exists."
   },
   "error": {
-    "notInPdtProject": "Not a PDT project."
+    "notInPdtProject": "Not a PDT project.",
+    "needsTerminal": "Creating a new module asks questions, so it needs an interactive terminal."
   },
   "fatal": {
     "shouldNeverRun": "Should never run {argv}",
