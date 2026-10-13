@@ -16,14 +16,17 @@ const mocks = vi.hoisted(() => ({
 }));
 
 // No test may run the real generator or wait on a real terminal.
-vi.mock('@lib/ModuleGenerator.js', () => ({ createModule: vi.fn() }));
+vi.mock('@lib/ModuleGenerator.js', async importOriginal => ({
+  ...(await importOriginal<typeof import('@lib/ModuleGenerator.js')>()),
+  createModule: vi.fn(),
+}));
 vi.mock('@util/prompt.js', () => ({ canPrompt: mocks.canPrompt, terminalPrompter: { name: 'terminal prompter' } }));
 
 vi.mock('@util/runtime-config.js', () => ({ pfs: mocks.pfs }));
 vi.mock('@util/logger.js', async () => (await import('@tests/unit/mocks/logger.js')).createLoggerModuleMock());
 
-function runInit(dir: string, force?: boolean) {
-  return initCommand.handler({ _: ['init'], $0: 'pdt', dir, f: force });
+function runInit(dir: string, force?: boolean, more: Record<string, unknown> = {}) {
+  return initCommand.handler({ _: ['init'], $0: 'pdt', dir, f: force, ...more });
 }
 
 describe('init command', () => {
@@ -92,10 +95,10 @@ describe('init command', () => {
       if (exists) fs.mkdirSync(fresh);
       vi.spyOn(console, 'log').mockImplementation(() => undefined);
       // Stand in for the generator: it creates the destination and writes the module into it.
-      vi.mocked(createModule).mockImplementation(async (destination, _prompter, onStep) => {
+      vi.mocked(createModule).mockImplementation(async (destination, options) => {
         fs.mkdirSync(destination, { recursive: true });
         fs.writeFileSync(path.join(destination, 'module.json'), '{}');
-        onStep?.('wrote 1 files');
+        options?.onStep?.('wrote 1 files');
         return { destination, files: ['module.json'] };
       });
     });
@@ -107,8 +110,35 @@ describe('init command', () => {
     test('creates a new module there, asking in the terminal', async () => {
       await runInit(fresh);
 
-      expect(createModule).toHaveBeenCalledExactlyOnceWith(fresh, terminalPrompter, expect.any(Function));
+      expect(createModule).toHaveBeenCalledExactlyOnceWith(fresh, {
+        given: {},
+        prompter: terminalPrompter,
+        onStep: expect.any(Function),
+      });
       expect(fs.existsSync(path.join(fresh, 'module.json'))).toBe(true);
+    });
+
+    test('passes on the answers given as options, and nothing else from the command line', async () => {
+      await runInit(fresh, undefined, { moduleId: 'given-id', 'module-id': 'given-id', gitInit: false, y: undefined });
+
+      expect(vi.mocked(createModule).mock.calls[0]![1]).toMatchObject({
+        given: { moduleId: 'given-id', gitInit: false },
+      });
+    });
+
+    test('does not ask when told not to with --yes', async () => {
+      await runInit(fresh, undefined, { y: true, yes: true });
+
+      expect(vi.mocked(createModule).mock.calls[0]![1]).not.toHaveProperty('prompter');
+    });
+
+    test('does not ask when there is no terminal to ask in', async () => {
+      mocks.canPrompt.mockReturnValue(false);
+
+      await runInit(fresh);
+
+      expect(vi.mocked(createModule).mock.calls[0]![1]).not.toHaveProperty('prompter');
+      expect(fs.statSync(freshData).isDirectory()).toBe(true);
     });
 
     test('makes the new module a project only after it has been generated', async () => {
@@ -134,16 +164,6 @@ describe('init command', () => {
         m['info.creatingModule']({ path: fresh }),
         '✔ wrote 1 files',
       ]);
-    });
-
-    test('fails without touching anything when there is no terminal to ask in', async () => {
-      mocks.canPrompt.mockReturnValue(false);
-
-      await expect(runInit(fresh)).rejects.toThrow(m['error.needsTerminal']());
-
-      expect(createModule).not.toHaveBeenCalled();
-      expect(fs.existsSync(freshData)).toBe(false);
-      expect(fs.existsSync(fresh)).toBe(exists);
     });
 
     test("fails with the generator's error and does not make a project", async () => {
@@ -236,6 +256,49 @@ describe('init command', () => {
 
     test.each(['-f', '--force'])('accept %s to force initialisation', async flag => {
       await expect(parse(`init some/dir ${flag}`)).resolves.toMatchObject({ f: true, force: true });
+    });
+
+    test.each(['-y', '--yes'])('accept %s to skip the questions', async flag => {
+      await expect(parse(`init ${flag}`)).resolves.toMatchObject({ y: true, yes: true });
+    });
+
+    test('accept the generator answers as options', async () => {
+      const parsed = await parse(
+        'init --module-id arcane-ledger --description "Keeps the accounts." --ui-framework lit --no-install --git-init',
+      );
+
+      expect(parsed).toMatchObject({
+        moduleId: 'arcane-ledger',
+        description: 'Keeps the accounts.',
+        uiFramework: 'lit',
+        install: false,
+        gitInit: true,
+      });
+    });
+
+    test('leave an answer that is not given undefined, so that it is asked for', async () => {
+      const parsed = await parse('init');
+
+      expect(parsed['moduleId']).toBeUndefined();
+      expect(parsed['install']).toBeUndefined();
+    });
+
+    test('reject a value that is not one of the choices of a selection', async () => {
+      await expect(parse('init --language cobol')).rejects.toThrow('cobol');
+    });
+
+    test('offer every option the generator has', async () => {
+      const { generatorOptions } = await import('@lib/ModuleGenerator.js');
+      const help = await new Promise<string>(resolve => {
+        yargs()
+          .command(initCommand)
+          .parse('init --help', (_err: unknown, _argv: unknown, output: string) => resolve(output));
+      });
+
+      expect(generatorOptions().length).toBeGreaterThan(10);
+      for (const option of generatorOptions()) {
+        expect(help).toContain(`--${option.name}`);
+      }
     });
   });
 });

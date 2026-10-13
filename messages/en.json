@@ -17,7 +17,14 @@
         "description": "Initialise a project as a PDT project. In an empty directory, create a new Foundry VTT module first.",
         "dir": {
           "description": "An existing project directory."
-        }
+        },
+        "force": {
+          "description": "Initialise a project inside another PDT project."
+        },
+        "yes": {
+          "description": "Do not ask questions. Use the default for anything not given as an option."
+        },
+        "newModuleGroup": "New module options (empty directory only):"
       },
       "info": {
         "description": "Show runtime information for an existing PDT project."
@@ -34,7 +41,8 @@
   },
   "error": {
     "notInPdtProject": "Not a PDT project.",
-    "needsTerminal": "Creating a new module asks questions, so it needs an interactive terminal."
+    "optionRequired": "{option} is required when the questions are not asked.",
+    "optionInvalid": "Invalid {option} \"{value}\": {reason}"
   },
   "fatal": {
     "shouldNeverRun": "Should never run {argv}",

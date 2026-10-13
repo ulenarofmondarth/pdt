@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { collectAnswers, createModule } from '@lib/ModuleGenerator.js';
+import { collectAnswers, createModule, generatorOptions, pickGivenAnswers } from '@lib/ModuleGenerator.js';
+import { m } from '@i18n/messages.js';
 import { createPrompterMock } from '@tests/unit/mocks/prompter.js';
 
 import type { Question } from '@mondarth/create-fvtt-module';
@@ -67,7 +68,7 @@ describe('collectAnswers', () => {
   test('asks every question in the order the generator lists them, except the destination', async () => {
     const { prompter, input, confirm, select } = createPrompterMock();
 
-    await collectAnswers(DESTINATION, prompter);
+    await collectAnswers(DESTINATION, {}, prompter);
 
     const asked = [...askedBy(input), ...askedBy(confirm), ...askedBy(select)]
       .sort((a, b) => a.order - b.order)
@@ -89,7 +90,7 @@ describe('collectAnswers', () => {
     confirm.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
     select.mockResolvedValueOnce('javascript').mockResolvedValueOnce('none');
 
-    await expect(collectAnswers(DESTINATION, prompter)).resolves.toEqual({
+    await expect(collectAnswers(DESTINATION, {}, prompter)).resolves.toEqual({
       destination: DESTINATION,
       moduleId: 'my-module',
       moduleTitle: 'My Module',
@@ -105,7 +106,7 @@ describe('collectAnswers', () => {
     test('offers the name of the destination directory when it is a valid ID', async () => {
       const { prompter, input } = createPrompterMock();
 
-      await collectAnswers(DESTINATION, prompter);
+      await collectAnswers(DESTINATION, {}, prompter);
 
       expect(input).toHaveBeenNthCalledWith(1, expect.objectContaining({ default: 'arcane-ledger' }));
     });
@@ -114,7 +115,7 @@ describe('collectAnswers', () => {
       const { prompter, input } = createPrompterMock();
       input.mockResolvedValueOnce('typed-by-hand');
 
-      await collectAnswers(path.resolve('/work/My Module'), prompter);
+      await collectAnswers(path.resolve('/work/My Module'), {}, prompter);
 
       expect(input.mock.calls[0]![0]).not.toHaveProperty('default');
     });
@@ -122,7 +123,7 @@ describe('collectAnswers', () => {
     test("is checked with the generator's own validation", async () => {
       const { prompter, input } = createPrompterMock();
 
-      await collectAnswers(DESTINATION, prompter);
+      await collectAnswers(DESTINATION, {}, prompter);
 
       expect(input).toHaveBeenNthCalledWith(1, expect.objectContaining({ validate: mocks.validateModuleId }));
     });
@@ -132,7 +133,7 @@ describe('collectAnswers', () => {
     const { prompter, input } = createPrompterMock();
     input.mockResolvedValueOnce('chosen-id');
 
-    await collectAnswers(DESTINATION, prompter);
+    await collectAnswers(DESTINATION, {}, prompter);
 
     expect(input).toHaveBeenNthCalledWith(2, expect.objectContaining({ default: 'Title of chosen-id' }));
   });
@@ -140,7 +141,7 @@ describe('collectAnswers', () => {
   test('passes neither a default nor a validator when the generator has none', async () => {
     const { prompter, input } = createPrompterMock();
 
-    await collectAnswers(DESTINATION, prompter);
+    await collectAnswers(DESTINATION, {}, prompter);
 
     expect(input).toHaveBeenNthCalledWith(3, { message: 'Author email:' });
   });
@@ -148,7 +149,7 @@ describe('collectAnswers', () => {
   test('offers the choices and default of a selection', async () => {
     const { prompter, select } = createPrompterMock();
 
-    await collectAnswers(DESTINATION, prompter);
+    await collectAnswers(DESTINATION, {}, prompter);
 
     expect(select).toHaveBeenNthCalledWith(1, {
       message: 'Language:',
@@ -158,6 +159,160 @@ describe('collectAnswers', () => {
       ],
       default: 'typescript',
     });
+  });
+});
+
+describe('collectAnswers with answers given up front', () => {
+  test('uses a given answer without asking for it', async () => {
+    const { prompter, input, confirm, select } = createPrompterMock();
+
+    const answers = await collectAnswers(
+      DESTINATION,
+      { moduleId: 'given-id', restrictToSystem: true, language: 'javascript' },
+      prompter,
+    );
+
+    expect(answers).toMatchObject({ moduleId: 'given-id', restrictToSystem: true, language: 'javascript' });
+    expect(input.mock.calls.map(([question]) => question.message)).toEqual(['Module title:', 'Author email:']);
+    expect(confirm.mock.calls.map(([question]) => question.message)).toEqual(['Initialise git?']);
+    expect(select.mock.calls.map(([question]) => question.message)).toEqual(['UI framework:']);
+  });
+
+  test('derives later defaults from a given answer', async () => {
+    const { prompter, input } = createPrompterMock();
+
+    await collectAnswers(DESTINATION, { moduleId: 'given-id' }, prompter);
+
+    expect(input).toHaveBeenNthCalledWith(1, expect.objectContaining({ default: 'Title of given-id' }));
+  });
+
+  test('accepts false and an empty string as given answers', async () => {
+    const { prompter, input, confirm } = createPrompterMock();
+
+    const answers = await collectAnswers(DESTINATION, { authorEmail: '', gitInit: false }, prompter);
+
+    expect(answers).toMatchObject({ authorEmail: '', gitInit: false });
+    expect(input.mock.calls.map(([question]) => question.message)).not.toContain('Author email:');
+    expect(confirm.mock.calls.map(([question]) => question.message)).not.toContain('Initialise git?');
+  });
+
+  test('rejects a given answer that fails validation, naming the option and the reason', async () => {
+    const { prompter, input } = createPrompterMock();
+
+    await expect(collectAnswers(DESTINATION, { moduleId: 'Bad ID' }, prompter)).rejects.toThrow(
+      m['error.optionInvalid']({ option: '--module-id', value: 'Bad ID', reason: 'Use lowercase words and hyphens' }),
+    );
+    expect(input).not.toHaveBeenCalled();
+  });
+
+  test('rejects a given selection that is not one of the choices, listing them', async () => {
+    const { prompter } = createPrompterMock();
+
+    await expect(collectAnswers(DESTINATION, { uiFramework: 'lit' }, prompter)).rejects.toThrow(
+      m['error.optionInvalid']({ option: '--ui-framework', value: 'lit', reason: 'Choose one of: svelte, none' }),
+    );
+  });
+});
+
+describe('collectAnswers without anyone to ask', () => {
+  test('takes the default for everything that is not given', async () => {
+    await expect(collectAnswers(DESTINATION)).resolves.toEqual({
+      destination: DESTINATION,
+      moduleId: 'arcane-ledger',
+      moduleTitle: 'Title of arcane-ledger',
+      authorEmail: '',
+      restrictToSystem: false,
+      language: 'typescript',
+      uiFramework: 'svelte',
+      gitInit: true,
+    });
+  });
+
+  test('prefers what is given to the defaults', async () => {
+    await expect(
+      collectAnswers(DESTINATION, { moduleId: 'given-id', uiFramework: 'none', gitInit: false }),
+    ).resolves.toMatchObject({
+      moduleId: 'given-id',
+      moduleTitle: 'Title of given-id',
+      uiFramework: 'none',
+      gitInit: false,
+    });
+  });
+
+  test('fails, naming the option, when a required answer has no default and is not given', async () => {
+    await expect(collectAnswers(path.resolve('/work/My Module'))).rejects.toThrow(
+      m['error.optionRequired']({ option: '--module-id' }),
+    );
+  });
+});
+
+describe('generatorOptions', () => {
+  test('describes every answer except the destination as an option, in question order', () => {
+    expect(generatorOptions().map(option => option.name)).toEqual([
+      'module-id',
+      'module-title',
+      'author-email',
+      'restrict-to-system',
+      'language',
+      'ui-framework',
+      'git-init',
+    ]);
+  });
+
+  test('makes a text answer a string option described by its question, without the punctuation', () => {
+    expect(generatorOptions()).toContainEqual({
+      name: 'module-id',
+      answer: 'moduleId',
+      type: 'string',
+      describe: 'Module ID',
+    });
+  });
+
+  test('makes a yes or no answer a boolean option', () => {
+    expect(generatorOptions()).toContainEqual({
+      name: 'restrict-to-system',
+      answer: 'restrictToSystem',
+      type: 'boolean',
+      describe: 'Require the system',
+    });
+  });
+
+  test('lists the accepted values of a selection', () => {
+    expect(generatorOptions()).toContainEqual({
+      name: 'ui-framework',
+      answer: 'uiFramework',
+      type: 'string',
+      describe: 'UI framework',
+      choices: ['svelte', 'none'],
+    });
+  });
+});
+
+describe('pickGivenAnswers', () => {
+  test('picks the generator answers out of parsed command line values', () => {
+    const parsed = {
+      _: ['init'],
+      $0: 'pdt',
+      dir: '.',
+      f: true,
+      moduleId: 'my-module',
+      'module-id': 'my-module',
+      gitInit: false,
+    };
+
+    expect(pickGivenAnswers(parsed)).toEqual({ moduleId: 'my-module', gitInit: false });
+  });
+
+  test('leaves out options that were not given', () => {
+    expect(pickGivenAnswers({ moduleId: undefined, gitInit: undefined })).toEqual({});
+  });
+
+  test('never takes the destination from the command line values', () => {
+    expect(pickGivenAnswers({ destination: '/somewhere/else' })).toEqual({});
+  });
+
+  test('ignores a value of the wrong type for its option', () => {
+    expect(pickGivenAnswers({ moduleId: true, gitInit: 'yes' })).toEqual({});
   });
 });
 
@@ -172,7 +327,7 @@ describe('createModule', () => {
   test('generates with the collected answers and reports what was written', async () => {
     const { prompter } = createPrompterMock();
 
-    await expect(createModule(DESTINATION, prompter)).resolves.toBe(RESULT);
+    await expect(createModule(DESTINATION, { prompter })).resolves.toBe(RESULT);
 
     expect(mocks.generate).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ destination: DESTINATION, moduleId: 'arcane-ledger', language: 'typescript' }),
@@ -183,7 +338,7 @@ describe('createModule', () => {
   test('generates into the absolute path of a relative destination', async () => {
     const { prompter } = createPrompterMock();
 
-    await createModule('some/relative-dir', prompter);
+    await createModule('some/relative-dir', { prompter });
 
     expect(mocks.generate).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ destination: path.resolve('some/relative-dir') }),
@@ -195,7 +350,7 @@ describe('createModule', () => {
     const { prompter } = createPrompterMock();
     const onStep = vi.fn();
 
-    await createModule(DESTINATION, prompter, onStep);
+    await createModule(DESTINATION, { prompter, onStep });
 
     expect(mocks.generate).toHaveBeenCalledExactlyOnceWith(expect.anything(), { onStep });
   });
@@ -203,7 +358,7 @@ describe('createModule', () => {
   test('never asks the generator to overwrite existing content', async () => {
     const { prompter } = createPrompterMock();
 
-    await createModule(DESTINATION, prompter, vi.fn());
+    await createModule(DESTINATION, { prompter, onStep: vi.fn() });
 
     expect(mocks.generate.mock.calls[0]![1]).not.toHaveProperty('force');
   });
@@ -212,14 +367,28 @@ describe('createModule', () => {
     const { prompter } = createPrompterMock();
     mocks.generate.mockRejectedValue(new Error('Invalid moduleId'));
 
-    await expect(createModule(DESTINATION, prompter)).rejects.toThrow('Invalid moduleId');
+    await expect(createModule(DESTINATION, { prompter })).rejects.toThrow('Invalid moduleId');
+  });
+
+  test('generates from given answers and defaults when there is nobody to ask', async () => {
+    await createModule(DESTINATION, { given: { moduleId: 'given-id', gitInit: false } });
+
+    expect(mocks.generate).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ moduleId: 'given-id', gitInit: false, language: 'typescript' }),
+      {},
+    );
+  });
+
+  test('generates nothing when a given answer is invalid', async () => {
+    await expect(createModule(DESTINATION, { given: { moduleId: 'Bad ID' } })).rejects.toThrow('--module-id');
+    expect(mocks.generate).not.toHaveBeenCalled();
   });
 
   test('generates nothing when the user abandons the questions', async () => {
     const { prompter, confirm } = createPrompterMock();
     confirm.mockRejectedValue(new Error('User force closed the prompt'));
 
-    await expect(createModule(DESTINATION, prompter)).rejects.toThrow('User force closed the prompt');
+    await expect(createModule(DESTINATION, { prompter })).rejects.toThrow('User force closed the prompt');
     expect(mocks.generate).not.toHaveBeenCalled();
   });
 });

@@ -17,7 +17,14 @@
         "description": "Ein Projekt als PDT-Projekt initialisieren. In einem leeren Verzeichnis wird zuerst ein neues Foundry-VTT-Modul angelegt.",
         "dir": {
           "description": "Ein bestehendes Projektverzeichnis."
-        }
+        },
+        "force": {
+          "description": "Ein Projekt innerhalb eines anderen PDT-Projekts initialisieren."
+        },
+        "yes": {
+          "description": "Keine Fragen stellen. Für alles, was nicht als Option angegeben ist, den Standardwert verwenden."
+        },
+        "newModuleGroup": "Optionen für ein neues Modul (nur in einem leeren Verzeichnis):"
       },
       "info": {
         "description": "Laufzeitinformationen zu einem bestehenden PDT-Projekt anzeigen."
@@ -34,7 +41,8 @@
   },
   "error": {
     "notInPdtProject": "Kein PDT-Projekt.",
-    "needsTerminal": "Zum Anlegen eines neuen Moduls werden Fragen gestellt; dafür wird ein interaktives Terminal benötigt."
+    "optionRequired": "{option} ist erforderlich, wenn die Fragen nicht gestellt werden.",
+    "optionInvalid": "Ungültiger Wert für {option} \"{value}\": {reason}"
   },
   "fatal": {
     "shouldNeverRun": "Sollte niemals ausgeführt werden: {argv}",
