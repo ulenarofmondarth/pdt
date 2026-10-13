@@ -1,5 +1,13 @@
 # pdt — Foundry VTT Package Developer Toolkit
 
+[![Release](https://github.com/ulenarofmondarth/pdt/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/ulenarofmondarth/pdt/actions/workflows/release.yml)
+[![Latest release](https://img.shields.io/github/v/release/ulenarofmondarth/pdt)](https://github.com/ulenarofmondarth/pdt/releases/latest)
+[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://ulenarofmondarth.github.io/pdt/)
+[![License: MIT](https://img.shields.io/github/license/ulenarofmondarth/pdt)](LICENSE)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D22.14-brightgreen?logo=node.js&logoColor=white)](package.json)
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-fe5196?logo=conventionalcommits&logoColor=white)](https://www.conventionalcommits.org)
+[![semantic-release](https://img.shields.io/badge/semantic--release-conventionalcommits-e10079?logo=semantic-release)](https://github.com/semantic-release/semantic-release)
+
 `pdt` is a command line tool that supports the development of [Foundry VTT](https://foundryvtt.com) packages (systems and modules).
 
 > **Status: early development.** Only a few commands exist so far, their behaviour will change, and the package is not yet published to npm.
