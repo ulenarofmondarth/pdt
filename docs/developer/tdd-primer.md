@@ -71,15 +71,15 @@ This is a matter of judgement, but basically if there is more functionality need
 
 It may seem like a lot of trouble to create test/specifications, then code to 'fix' them but there is method in this madness.
 
-Firstly, we end up with a fairly comprehesive set of tests for our code. More importantly, these tests give us more confidence when making changes in the future (or indeed during development).
+Firstly, we end up with a fairly comprehensive set of tests for our code. More importantly, these tests give us more confidence when making changes in the future (or indeed during development).
 
-The established test suite acts as a guarantee that any change I make in the future will not inadvertantly break my code. If I make a change and one of the existing tests fails then I know that my change has 'broken' the system since these tests specify the correct behaviour for the code (hence a failure tells me, 'this code no longer meets the specification').
+The established test suite acts as a guarantee that any change I make in the future will not inadvertently break my code. If I make a change and one of the existing tests fails then I know that my change has 'broken' the system since these tests specify the correct behaviour for the code (hence a failure tells me, 'this code no longer meets the specification').
 
 Finally, but by no means least, the specification first approach encouraged us to think about how the code we write will be used. It forces us to consider *how* our code will be used. If the interface to our code is poor then it will be difficult to test [^f2].
 
 ## Mocks and Spies
 
-It is common to resort to mocking and spying when testing at lower levels. Some advocate *never* using mocks or spies. I think that these tools are useful but a 'code smell'. In other words, there is no point tying yourself in knots trying to avoid using mocks and spies when testing (this often has this can have the opposite effect and drive bad design). Rather you should consider any time you need a mock as a warning that perhaps you need to sethink your design. Think it through, if it still seems that your first thought is fine, go ahead and make that mock in your test.
+It is common to resort to mocking and spying when testing at lower levels. Some advocate *never* using mocks or spies. I think that these tools are useful but a 'code smell'. In other words, there is no point tying yourself in knots trying to avoid using mocks and spies when testing (this can have the opposite effect and drive bad design). Rather you should consider any time you need a mock as a warning that perhaps you need to rethink your design. Think it through, if it still seems that your first thought is fine, go ahead and make that mock in your test.
 
 The closer you get to interfacing with external systems the more likely a mock is the right answer (at least in unit testing).
 
@@ -95,12 +95,12 @@ Some details on separating tests from implementation
 
 If a test is specifying a low level function (e.g. how a specific function/method is to work) then your test will inevitably be more tied to the specifics of your code.
 
-For example if I entend my function to return a `Promise` then I really have no choice but to test this specific. For higher level test though I can decouple my tests from their implementation.
+For example if I intend my function to return a `Promise` then I really have no choice but to test this specific. For higher level test though I can decouple my tests from their implementation.
 
 Say I specify that my 'library' contains 'books' and that I can get a list of 'book titles' in alphabetic order. This is a high level specification of a feature. My test boils down to:
 
 ```text
-Given my Libary
+Given my Library
 When I request an alphabetic list of book titles
 Then I receive a sorted list of book titles
 ```
@@ -114,7 +114,7 @@ addBookToLibrary('another book')
 addBookToLibrary('book')
 addBookToLibrary('xray book')
 
-expect(getAplhabeticListOfBooksInLibrary().asArray).toBe([ 'another book', 'book', 'some book', 'xray book'])
+expect(getAlphabeticListOfBooksInLibrary().asArray).toBe([ 'another book', 'book', 'some book', 'xray book'])
 ```
 
 The `createLibrary`, `addBookToLibrary`, and `getAlphabeticListOfBooksInLibrary` are all `test` functions, not actual implementation functions.
@@ -124,13 +124,13 @@ In another library, that we 'inject' into our tests, we write these `test` adapt
 ```{rubric} Damn that seems redundant
 ```
 
-In a trivial caes, it is. In a real system though it is worthwhile.
+In a trivial case, it is. In a real system though it is worthwhile.
 
-Let's say I implement my `library` as an class backed by a `mongodb`. I implement my test proxies with this specific imlementation. Then A decide it should be functional and use a relationatl database. No problem, I implement my adapters (`createLibrary`, `addBookToLibrary`, and `getAlphabeticListOfBooksInLibrary`) with the new implementation and inject this. The `test itself` remains untouched.
+Let's say I implement my `library` as a class backed by a `mongodb`. I implement my test proxies with this specific implementation. Then I decide it should be functional and use a relational database. No problem, I implement my adapters (`createLibrary`, `addBookToLibrary`, and `getAlphabeticListOfBooksInLibrary`) with the new implementation and inject this. The `test itself` remains untouched.
 
 The mindset is the same as any implementation; the test is expressed in the problem domain, leave specific implementation to the adapter layer.
 
 ```{rubric} Footnotes
 ```
 
-[^f2]: If you have ever had the misfotune to have to code tests for poorly designed code you will know what a pain it can be. Endless mocking, spys, monkey patching, etc. If you need to invade the code to this extent just to test it then, in the imortal words ot the South Park ski instructor, "you're gonna have a bad time".
+[^f2]: If you have ever had the misfortune to have to code tests for poorly designed code you will know what a pain it can be. Endless mocking, spies, monkey patching, etc. If you need to invade the code to this extent just to test it then, in the immortal words of the South Park ski instructor, "you're gonna have a bad time".

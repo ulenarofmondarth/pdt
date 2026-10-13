@@ -8,15 +8,15 @@ PDT is a `nodejs` tool.
 
 ## Prerequisites
 
-On you host machine install:
+On your host machine install:
 
 1. `git`
 
-   You can get `git`, along with installation instuctions and documentation, from <https://git-scm.com/> or install using a package manager.
+   You can get `git`, along with installation instructions and documentation, from <https://git-scm.com/> or install using a package manager.
 
 2. `nodejs`
 
-   Nodejs can be obtained, along with installation instuctions and documentation, from <https://nodejs.org/en/download/>.
+   Nodejs can be obtained, along with installation instructions and documentation, from <https://nodejs.org/en/download/>.
 
    :::{note}
    PDT needs NodeJS 24 or later

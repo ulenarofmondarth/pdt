@@ -92,7 +92,7 @@ The generated project's own `CONTRIBUTING.md` and `docs/developers/setup.md` des
 
 ### Why initialise
 
-This ensures vasious data are created to ensure projects do not collide (e.g. you can run multiple Foundry VTT servers with different configurations without them interfering with one another, {program}`pdt` will also ensure you {program}`vite` development server connects tot he correct backend Foundry server).
+This ensures various data are created to ensure projects do not collide (e.g. you can run multiple Foundry VTT servers with different configurations without them interfering with one another, {program}`pdt` will also ensure your {program}`vite` development server connects to the correct backend Foundry server).
 
 (pdt_tlc_info)=
 
@@ -106,13 +106,13 @@ Display the current project's runtime configuration.
 
 {command}`config [options] [show|get|set]`
 
-Manipulates the PDT configuraion. An initial 'user' configuration is created when a module is initialised in PDT.
+Manipulates the PDT configuration. An initial 'user' configuration is created when a module is initialised in PDT.
 
 ### Options
 
 -e, --environment
 
-: Sub-commands operate on the configuration file for the specifiend envirnment.
+: Sub-commands operate on the configuration file for the specified environment.
 
   :::{admonition} Examples
   `pdt config -e DEV get logger.filename` will return the configuration value appropriate for the `DEV` environment. This could be from user's defaults `pdt.config.json` or the environment specific `pdt.dev.config.json`.
@@ -130,7 +130,7 @@ Manipulates the PDT configuraion. An initial 'user' configuration is created whe
 
 Shows the current status including:
 
-- Defaults supplied 'out of the box' by PTD
+- Defaults supplied 'out of the box' by PDT
 - User supplied defaults from user config file
 - User supplied values from environment variables
 
@@ -171,7 +171,7 @@ Shows the current status including:
 
 : The value to be assigned to the `PARAM`.
 
-  Strings containing spaces should be enclosed in quotation marks (single of double).
+  Strings containing spaces should be enclosed in quotation marks (single or double).
 
 (pdt_tlc_pack)=
 
@@ -187,7 +187,7 @@ Manipulates Foundry compendium databases (commonly referred to as 'packs').
 
 Lists packs currently in the {term}`PUD`.
 
-Unless the `--configured` option it used
+Unless the `--configured` option is used
 
 #### Options
 
@@ -199,7 +199,7 @@ Unless the `--configured` option it used
 
 {command}`pack import [options] [SRC] [DST]`
 
-One or both of `SRC` or `DST` must be provided. In only one is provided the other will be inferred from the {term}`PUD`.
+One or both of `SRC` or `DST` must be provided. If only one is provided the other will be inferred from the {term}`PUD`.
 
 #### Parameters
 
@@ -209,7 +209,7 @@ One or both of `SRC` or `DST` must be provided. In only one is provided the othe
 
 **DST**
 
-: Destintation to which the `SRC` will be exported.
+: Destination to which the `SRC` will be exported.
 
 #### Options
 
@@ -217,7 +217,7 @@ One or both of `SRC` or `DST` must be provided. In only one is provided the othe
 
 {command}`pack export [options] [SRC] [DST]`
 
-One or both of `SRC` or `DST` must be provided. In only one is provided the other will be inferred from the {term}`PUD`.
+One or both of `SRC` or `DST` must be provided. If only one is provided the other will be inferred from the {term}`PUD`.
 
 By default the `DST` is deleted before the export, see `--keep`.
 
@@ -235,7 +235,7 @@ By default the `DST` is deleted before the export, see `--keep`.
 
 {command}`pack reconcile [options] [SRC] [DST]`
 
-One or both of `SRC` or `DST` must be provided. In only one is provided the other will be inferred from the {term}`PUD`.
+One or both of `SRC` or `DST` must be provided. If only one is provided the other will be inferred from the {term}`PUD`.
 
 **SRC**
 
@@ -247,17 +247,17 @@ One or both of `SRC` or `DST` must be provided. In only one is provided the othe
 
 ## serve
 
-Interface with {program}`pdt` controlled Foundry VTT instance to provide 'server-side' extension. This allows various modules to provide features in development that are not normally avaiable in Foundry. For example, the {program}`pdt` server allows modules to copy, move, replace, and delete files in the various data directories (this makes packing modules much simpler from a user perspective as the MAIDE module can shuffle assets into the module and compendiums without the user needing to do this manually).
+Interface with {program}`pdt` controlled Foundry VTT instance to provide 'server-side' extension. This allows various modules to provide features in development that are not normally available in Foundry. For example, the {program}`pdt` server allows modules to copy, move, replace, and delete files in the various data directories (this makes packing modules much simpler from a user perspective as the MAIDE module can shuffle assets into the module and compendiums without the user needing to do this manually).
 
 ```{todo}
-This {program}`pdt` server becomes available to the VTT. Could use the p2p approach or simply set the port on which it is available to the running VTT. Using the prp connection would make it easier fo it to use the MAIDE proxy for interacting with the VTT. Could do both, this woulc allow {program}`pdt` to interact with the VTT from the command line
+This {program}`pdt` server becomes available to the VTT. Could use the p2p approach or simply set the port on which it is available to the running VTT. Using the prp connection would make it easier for it to use the MAIDE proxy for interacting with the VTT. Could do both, this would allow {program}`pdt` to interact with the VTT from the command line
 ```
 
 (pdt_tlc_vtt)=
 
 ## vtt
 
-{command}`vtt [init|launch]status|install`
+{command}`vtt [init|launch|status|install]`
 
 Controls a Foundry VTT instance.
 
@@ -281,4 +281,4 @@ Display the current status of the VTT; one of "running", "stopped", "missing".
 
 Install a configuration of modules. The specification can be captured using EMMA. Can also enforce a set of settings for the installed modules.
 
-If {command}`vtt install` is used while the VTT is running it wil be stopped, the modules installed, any settings installed, then the VTT will be restarted.
+If {command}`vtt install` is used while the VTT is running it will be stopped, the modules installed, any settings installed, then the VTT will be restarted.

@@ -4,12 +4,12 @@
 
 1. First, fork the PDT repository.
 
-2. Configure your new repostory
+2. Configure your new repository
 
    If you want to use the existing GitHub workflows on your local repository you will need to configure a personal access token.
 
    ```{todo}
-   Add detail of presona access token
+   Add detail of personal access token
    ```
 
 3. Create a local development environment for your new repository.

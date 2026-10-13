@@ -2,9 +2,9 @@
 
 # Project Code Management
 
-## Commiting
+## Committing
 
-[Husky](https://typicode.github.io/husky/) is used to integrate [Commitizen](https://commitizen.github.io/cz-cli/) with `git` to ensure consitent `commit` messages are used. This in turn allows semantic-release to work out version numbers and produce accurate release notes as part of the {ref}`GitHub Workflows <github-workflows>`.
+[Husky](https://typicode.github.io/husky/) is used to integrate [Commitizen](https://commitizen.github.io/cz-cli/) with `git` to ensure consistent `commit` messages are used. This in turn allows semantic-release to work out version numbers and produce accurate release notes as part of the {ref}`GitHub Workflows <github-workflows>`.
 
 ### Husky
 

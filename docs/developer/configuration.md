@@ -25,7 +25,7 @@ block-beta
 
 ## Runtime Configuration
 
-In addition to user supplied configuration {{pdt}} also uses a runtime configuraton. This is, by default, held in the `.pdt` directory in the root of each project that is using {{pdt}}. A 'global' runtime configuration is maintained in the application data directory. This global data coordinates things like port assignments across all projects.
+In addition to user supplied configuration {{pdt}} also uses a runtime configuration. This is, by default, held in the `.pdt` directory in the root of each project that is using {{pdt}}. A 'global' runtime configuration is maintained in the application data directory. This global data coordinates things like port assignments across all projects.
 
 This runtime configuration is maintained by {{pdt}} and should not generally be edited by the user. Instead the various commands in {{pdt}} will manipulate the runtime configuration.
 

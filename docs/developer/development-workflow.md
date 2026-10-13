@@ -61,22 +61,22 @@ flowchart LR
 Use of Test Driven Development (TDD) is encouraged. So, first write a test to specify the change you are going to make. Tests live in `tests/unit/`, in a `.test.ts` file at the path that mirrors the source file (see {doc}`testing`). For a bug, first add a test that reproduces it.
 
 :::{tip}
-Commit to your branch frequently ({command}`git add <your code>` and {command}`git commit -m 'My awesome edits'`). This provides a nice way to keep track of changes but more importantly gives you plenty a 'checkpoints' to roll-back to if you discover a problem with your current direction.
+Commit to your branch frequently ({command}`git add <your code>` and {command}`git commit -m 'My awesome edits'`). This provides a nice way to keep track of changes but more importantly gives you plenty of 'checkpoints' to roll-back to if you discover a problem with your current direction.
 :::
 
 Write code for your changes.
 
-Test using {command}`pnpm test` (or open a separate terminal and run {command}`pnpm vitest`, which will run all tests and the watch for changes and run any tests related to the changed files).
+Test using {command}`pnpm test` (or open a separate terminal and run {command}`pnpm vitest`, which will run all tests and then watch for changes and run any tests related to the changed files).
 
 :::{tip}
-If you stage your changes (using {command}`git add`) you can use {command}`npm run test:ci` to limit the tests to those related to file in the staging index.
+If you stage your changes (using {command}`git add`) you can use {command}`npm run test:ci` to limit the tests to those related to files in the staging index.
 :::
 
 Repeat the write test/develop/test/refactor cycle until you have completed your change.
 
-Commit the final changes to your repostory.
+Commit the final changes to your repository.
 
-If you have installed {program}`act` (see {ref}`developer recommended installs <recommended-developer-installs>`) you can use it to run the {term}`CI` chain locally. This helps identify any potential issues *before* you offer them into the official buildk
+If you have installed {program}`act` (see {ref}`developer recommended installs <recommended-developer-installs>`) you can use it to run the {term}`CI` chain locally. This helps identify any potential issues *before* you offer them into the official build.
 
 ```shell
 act
