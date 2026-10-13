@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import { Arguments } from 'yargs';
 import { prettyData } from '@util/diagnostic.js';
-import logger from '@util/logger.js';
+import PDT from '@/constants.js';
+import logger, { exit } from '@util/logger.js';
 import { parser } from './cli/parsers.js';
 
 try {
@@ -15,4 +16,5 @@ try {
   });
 } catch (e) {
   logger.error((e as Error).message);
+  await exit(PDT.EXITCODE.ERROR);
 }
