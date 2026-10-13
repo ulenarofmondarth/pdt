@@ -54,9 +54,27 @@ jobs:
         run: |
           if [ ! -d docs/_build/html ]; then pnpm build:docs; fi
 
-      - name: Deploy documentation
+      - name: Upload documentation for GitHub Pages
         if: ${{ !env.ACT }}
-        uses: peaceiris/actions-gh-pages@v4
+        uses: actions/upload-pages-artifact@v5
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs/_build/html
+          path: docs/_build/html
+
+  deploy-docs:
+    name: Publish documentation
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # Nothing is published when the workflow is run locally with act.
+      - uses: actions/configure-pages@v6
+        if: ${{ !env.ACT }}
+      - name: Deploy to GitHub Pages
+        if: ${{ !env.ACT }}
+        id: deployment
+        uses: actions/deploy-pages@v5

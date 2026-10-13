@@ -4,6 +4,9 @@ on:
   workflow_call:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build documentation
@@ -12,12 +15,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # All Python tooling lives in the Sphinx image; nothing is installed on the runner.
+      - uses: docker/setup-buildx-action@v4
+
+      # All Python tooling lives in the image built from docs/Dockerfile; nothing is
+      # installed on the runner.
+      - name: Build the Sphinx image
+        uses: docker/build-push-action@v7
+        with:
+          context: docs
+          tags: pdt-docs
+          load: true
+          cache-from: type=gha,scope=docs
+          cache-to: type=gha,scope=docs,mode=max
+
+      # Warnings fail the build (see docs/Makefile).
       - name: Build documentation
         run: |
-          docker run --rm --user "$(id -u):$(id -g)" \
-            -v "${{ github.workspace }}/docs":/docs \
-            ghcr.io/ulenarofmondarth/sphinx-docs:latest make html
+          DOCS_UID=$(id -u) DOCS_GID=$(id -g) \
+            docker compose -f docs/compose.yaml run --rm --no-deps -T docs make html
 
       - name: Upload documentation
         uses: actions/upload-artifact@v4
