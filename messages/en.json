@@ -8,10 +8,10 @@
         }
       },
       "vtt": {
-        "description": "Control a project scored VTT"
+        "description": "Control a project scoped VTT"
       },
       "start": {
-        "description": "Start a VTT in the current prolect"
+        "description": "Start a VTT in the current project"
       },
       "init": {
         "description": "Initialise a project as a PDT project. In an empty directory, create a new Foundry VTT module first.",
