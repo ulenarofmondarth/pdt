@@ -59,6 +59,46 @@ describe('init command', () => {
       expect(fs.readdirSync(project).sort()).toEqual([PDT.PROJECT_RTD_DIR_NAME, 'package.json']);
     });
 
+    describe('when new module options are given', () => {
+      test('warns that no module is generated, naming the options', async () => {
+        await runInit(project, undefined, { moduleId: 'given-id', gitInit: false, y: true });
+
+        expect(logger.warn).toHaveBeenCalledExactlyOnceWith(
+          m['warn.moduleNotGenerated']({ path: project, options: '--module-id, --no-git-init, --yes' }),
+        );
+        expect(createModule).not.toHaveBeenCalled();
+      });
+
+      test('names a yes or no option that was turned on without the no- prefix', async () => {
+        await runInit(project, undefined, { install: true });
+
+        expect(logger.warn).toHaveBeenCalledExactlyOnceWith(
+          m['warn.moduleNotGenerated']({ path: project, options: '--install' }),
+        );
+      });
+
+      test('warns for --yes on its own', async () => {
+        await runInit(project, undefined, { y: true });
+
+        expect(logger.warn).toHaveBeenCalledExactlyOnceWith(
+          m['warn.moduleNotGenerated']({ path: project, options: '--yes' }),
+        );
+      });
+
+      test('still makes the directory a project', async () => {
+        await runInit(project, undefined, { moduleId: 'given-id' });
+
+        expect(fs.statSync(projectData).isDirectory()).toBe(true);
+        expect(logger.info).toHaveBeenCalledExactlyOnceWith(m['info.pdtInitialised']({ path: project }));
+      });
+    });
+
+    test('does not warn about --force, which is not a new module option', async () => {
+      await runInit(project, true);
+
+      expect(logger.warn).not.toHaveBeenCalled();
+    });
+
     test('creates the project data directory', async () => {
       await runInit(project);
 
@@ -110,6 +150,7 @@ describe('init command', () => {
     test('creates a new module there, asking in the terminal', async () => {
       await runInit(fresh);
 
+      expect(logger.warn).not.toHaveBeenCalled();
       expect(createModule).toHaveBeenCalledExactlyOnceWith(fresh, {
         given: {},
         prompter: terminalPrompter,
@@ -127,7 +168,9 @@ describe('init command', () => {
     });
 
     test('does not ask when told not to with --yes', async () => {
-      await runInit(fresh, undefined, { y: true, yes: true });
+      await runInit(fresh, undefined, { y: true, yes: true, moduleId: 'given-id' });
+
+      expect(logger.warn).not.toHaveBeenCalled();
 
       expect(vi.mocked(createModule).mock.calls[0]![1]).not.toHaveProperty('prompter');
     });
@@ -196,6 +239,15 @@ describe('init command', () => {
       expect(setLogDirectory).not.toHaveBeenCalled();
       // Even though nothing but the data directory is there, it is not treated as empty.
       expect(createModule).not.toHaveBeenCalled();
+    });
+
+    test('also warns that no module is generated when new module options are given', async () => {
+      await runInit(project, undefined, { uiFramework: 'lit' });
+
+      expect(vi.mocked(logger.warn).mock.calls.flat()).toEqual([
+        m['warn.moduleNotGenerated']({ path: project, options: '--ui-framework' }),
+        m['warn.alreadyExists']({ description: 'PDT data directory' }),
+      ]);
     });
   });
 

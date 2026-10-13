@@ -37,7 +37,8 @@
   },
   "warn": {
     "pdtParentExists": "Attempt to create sub-PDT project (use -f to force).\n  Parent project at {path}",
-    "alreadyExists": "The {description} already exists."
+    "alreadyExists": "The {description} already exists.",
+    "moduleNotGenerated": "{path} is not empty, so no module is generated there. Ignored: {options}"
   },
   "error": {
     "notInPdtProject": "Not a PDT project.",

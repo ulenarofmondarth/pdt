@@ -22,6 +22,19 @@ function isEmpty(dir: string): boolean {
   return !fs.existsSync(dir) || fs.readdirSync(dir).length === 0;
 }
 
+/**
+ * The new module options present on the command line, as the user would type them.
+ */
+function newModuleOptionsGiven(argv: Arguments): string[] {
+  const given = pickGivenAnswers(argv);
+  const flags = generatorOptions()
+    .filter(option => option.answer in given)
+    // A yes or no option that was turned off was typed with its no- prefix.
+    .map(option => (given[option.answer] === false ? `--no-${option.name}` : `--${option.name}`));
+
+  return argv.y === true ? [...flags, '--yes'] : flags;
+}
+
 const module: CommandModule = {
   command: 'init [dir] [options]',
 
@@ -51,6 +64,14 @@ const module: CommandModule = {
     const argv = args as unknown as Arguments;
     const pdtPath = path.resolve(argv.dir, PDT.PROJECT_RTD_DIR_NAME);
     const attempingSubPdt = pfs.pdtConfigDir != undefined && pfs.pdtConfigDir !== pdtPath;
+
+    if (!isEmpty(argv.dir)) {
+      // A module is only generated into an empty directory, so these options do nothing here.
+      const ignored = newModuleOptionsGiven(argv);
+      if (ignored.length > 0) {
+        logger.warn(m['warn.moduleNotGenerated']({ path: argv.dir, options: ignored.join(', ') }));
+      }
+    }
 
     if (attempingSubPdt && !argv.f) {
       logger.warn(m['warn.pdtParentExists']({ path: path.dirname(pfs.pdtConfigDir!) }));

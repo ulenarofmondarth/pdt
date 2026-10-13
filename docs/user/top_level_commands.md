@@ -64,7 +64,7 @@ If a required answer is missing or a value is not acceptable, {program}`pdt` sto
 
 #### New module options
 
-These are the generator's answers. They are used only when a new module is created, and are ignored when the directory already has content. {command}`pdt init --help` always lists the current set.
+These are the generator's answers. They are used only when a new module is created. If any of them, or `--yes`, is given for a directory that already has content, {program}`pdt` warns that no module is generated and names the options it ignored; the directory is still initialised. {command}`pdt init --help` always lists the current set.
 
 | Option | Answer | Default |
 | --- | --- | --- |
