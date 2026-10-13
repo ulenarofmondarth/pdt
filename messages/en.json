@@ -21,6 +21,13 @@
       }
     }
   },
+  "info": {
+    "pdtInitialised": "PDT initialised for {path}"
+  },
+  "warn": {
+    "pdtParentExists": "Attempt to create sub-PDT project (use -f to force).\n  Parent project at {path}",
+    "alreadyExists": "The {description} already exists."
+  },
   "fatal": {
     "shouldNeverRun": "Should never run {argv}",
     "noPdtRoot": "Unable to find a PDT root directory. Perhaps you forgot to 'init' this project?"
