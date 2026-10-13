@@ -1,6 +1,5 @@
 # local
 docs/_build/
-testdata/doesnotexist/
 
 # Logs
 logs
