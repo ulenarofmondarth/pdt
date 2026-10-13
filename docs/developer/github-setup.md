@@ -16,7 +16,7 @@ There are three workflows under `.github/workflows`.
 
 ### `ci`
 
-Runs on every pull request and on every push to `dev`. It is also called by the {ref}`release <release-workflow>` workflow. The jobs run in parallel:
+Runs on every pull request. It is also called by the {ref}`release <release-workflow>` workflow, which covers every push to `main`. Work happens on short-lived branches (`feat/...`, `fix/...`) that reach `main` through a pull request. The jobs run in parallel:
 
 - **Typecheck** with TypeScript 7, then again with the TypeScript 6 fallback (see {ref}`typescript-compilers`).
 - **Lint** with ESLint (warnings fail the job) and a Prettier formatting check.
