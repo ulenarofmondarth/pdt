@@ -8,7 +8,7 @@ const LOG_FILE = 'pdt.log';
 /** Each test gets its own logger instance, because closing the logger is terminal. */
 async function loadLogger() {
   vi.resetModules();
-  return await import('./logger.js');
+  return await import('@util/logger.js');
 }
 
 function logged(dir: string): string[] {

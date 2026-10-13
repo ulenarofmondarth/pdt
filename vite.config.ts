@@ -7,13 +7,14 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
   test: {
+    include: ['tests/unit/**/*.test.ts'],
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],
-      exclude: ['src/paraglide/**', 'src/tests/**', '**/*.spec.ts', '**/*.d.ts'],
+      exclude: ['src/paraglide/**', '**/*.d.ts'],
       reporter: ['text', 'html', 'lcov'],
-      // Floor set just below the measured baseline; ratchet upward as tests are added.
-      thresholds: { statements: 65, branches: 80, functions: 45, lines: 65 },
+      // Floor set just below the measured level; ratchet upward as tests are added.
+      thresholds: { statements: 98, branches: 95, functions: 90, lines: 98 },
     },
   },
   resolve: {
@@ -23,6 +24,7 @@ export default defineConfig({
       '@lib': path.resolve(import.meta.dirname, './src/lib'),
       '@schema': path.resolve(import.meta.dirname, './src/schema'),
       '@i18n': path.resolve(import.meta.dirname, './src/paraglide'),
+      '@tests': path.resolve(import.meta.dirname, './tests'),
     },
   },
   define: {

@@ -16,15 +16,15 @@
     "resolveJsonModule": true,
     "allowJs": true,
 
-    "rootDir": "src",
     "noEmit": true,
     "paths": {
       "@/*": ["./src/*"],
       "@util/*": ["./src/util/*"],
       "@lib/*": ["./src/lib/*"],
       "@schema/*": ["./src/schema/*"],
-      "@i18n/*": ["./src/paraglide/*"]
+      "@i18n/*": ["./src/paraglide/*"],
+      "@tests/*": ["./tests/*"]
     }
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "tests/**/*"]
 }
