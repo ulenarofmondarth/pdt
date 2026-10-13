@@ -1,0 +1,208 @@
+(pdt_tlc)=
+
+# Top Level Commands
+
+The main interface of the PDT is the command line.
+
+(pdt_tlc_create)=
+
+## create
+
+Set up a new package template and initialise it for use with {program}`pdt`.
+
+(pdt_tlc_init)=
+
+## init
+
+Initialise a project for {program}`pdt`.
+
+This ensures vasious data are created to ensure projects do not collide (e.g. you can run multiple Foundry VTT servers with different configurations without them interfering with one another, {program}`pdt` will also ensure you {program}`vite` development server connects tot he correct backend Foundry server).
+
+(pdt_tlc_info)=
+
+## info
+
+Display the current project's runtime configuration.
+
+(pdt_tlc_config)=
+
+## config
+
+{command}`config [options] [show|get|set]`
+
+Manipulates the PDT configuraion. An initial 'user' configuration is created when a module is initialised in PDT.
+
+### Options
+
+-e, --environment
+
+: Sub-commands operate on the configuration file for the specifiend envirnment.
+
+  :::{admonition} Examples
+  `pdt config -e DEV get logger.filename` will return the configuration value appropriate for the `DEV` environment. This could be from user's defaults `pdt.config.json` or the environment specific `pdt.dev.config.json`.
+
+  `pdt config -e DEV set logger.filename my-pdt.log` will set the `logger.filename` to `my-pdt.log` in the `pdt.dev.config.json` file.
+  :::
+
+  :::{note}
+  The environment value is normalised to lowercase (see examples above).
+  :::
+
+### config show
+
+{command}`config show [options]`
+
+Shows the current status including:
+
+- Defaults supplied 'out of the box' by PTD
+- User supplied defaults from user config file
+- User supplied values from environment variables
+
+  - From shell
+  - From `.env`
+
+#### Options
+
+-s, --source
+
+: Show where each configuration value was assigned.
+
+### config get
+
+{command}`config get [options] PARAM`
+
+**PARAM**
+
+: The configuration parameter to be returned.
+
+  Returns an error if the `PARAM` does not exist.
+
+#### Options
+
+-s, --source
+
+: Show where each configuration value was assigned.
+
+### config set
+
+{command}`config set PARAM VALUE`
+
+**PARAM**
+
+: The configuration parameter to be set. This is a simple dot-separated path within this configuration.
+
+**VALUE**
+
+: The value to be assigned to the `PARAM`.
+
+  Strings containing spaces should be enclosed in quotation marks (single of double).
+
+(pdt_tlc_pack)=
+
+## pack
+
+{command}`pack [list|import|export|reconcile]`
+
+Manipulates Foundry compendium databases (commonly referred to as 'packs').
+
+### pack list
+
+{command}`pack list [options]`
+
+Lists packs currently in the {term}`PUD`.
+
+Unless the `--configured` option it used
+
+#### Options
+
+-c, --configured
+
+: Limit the packs to those configured in the `module.json`.
+
+### pack import
+
+{command}`pack import [options] [SRC] [DST]`
+
+One or both of `SRC` or `DST` must be provided. In only one is provided the other will be inferred from the {term}`PUD`.
+
+#### Parameters
+
+**SRC**
+
+: The source for the pack. This can be an absolute or relative path. By default relative paths are relative to the currently configured pack source root.
+
+**DST**
+
+: Destintation to which the `SRC` will be exported.
+
+#### Options
+
+### pack export
+
+{command}`pack export [options] [SRC] [DST]`
+
+One or both of `SRC` or `DST` must be provided. In only one is provided the other will be inferred from the {term}`PUD`.
+
+By default the `DST` is deleted before the export, see `--keep`.
+
+**SRC**
+
+**DST**
+
+#### Options
+
+--keep
+
+: Leaves the `DST` intact at the start of the export. Existing files *are* overwritten but none are deleted.
+
+### pack reconcile
+
+{command}`pack reconcile [options] [SRC] [DST]`
+
+One or both of `SRC` or `DST` must be provided. In only one is provided the other will be inferred from the {term}`PUD`.
+
+**SRC**
+
+**DST**
+
+#### Options
+
+(pdt_tlc_serve)=
+
+## serve
+
+Interface with {program}`pdt` controlled Foundry VTT instance to provide 'server-side' extension. This allows various modules to provide features in development that are not normally avaiable in Foundry. For example, the {program}`pdt` server allows modules to copy, move, replace, and delete files in the various data directories (this makes packing modules much simpler from a user perspective as the MAIDE module can shuffle assets into the module and compendiums without the user needing to do this manually).
+
+```{todo}
+This {program}`pdt` server becomes available to the VTT. Could use the p2p approach or simply set the port on which it is available to the running VTT. Using the prp connection would make it easier fo it to use the MAIDE proxy for interacting with the VTT. Could do both, this woulc allow {program}`pdt` to interact with the VTT from the command line
+```
+
+(pdt_tlc_vtt)=
+
+## vtt
+
+{command}`vtt [init|launch]status|install`
+
+Controls a Foundry VTT instance.
+
+### vtt init
+
+{command}`vtt init`
+
+### vtt launch
+
+{command}`vtt launch`
+
+### vtt status
+
+{command}`vtt status`
+
+Display the current status of the VTT; one of "running", "stopped", "missing".
+
+### vtt install
+
+{command}`vtt install`
+
+Install a configuration of modules. The specification can be captured using EMMA. Can also enforce a set of settings for the installed modules.
+
+If {command}`vtt install` is used while the VTT is running it wil be stopped, the modules installed, any settings installed, then the VTT will be restarted.

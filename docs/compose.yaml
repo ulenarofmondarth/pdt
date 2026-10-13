@@ -1,0 +1,15 @@
+# Documentation toolchain. Run from the repository root:
+#
+#   pnpm build:docs      build the HTML into docs/_build/html
+#   pnpm devserve:docs   live preview on http://localhost:8088
+services:
+  docs:
+    build:
+      context: .
+    image: pdt-docs
+    # Build as the calling user so the output is not owned by root.
+    user: '${DOCS_UID:-1000}:${DOCS_GID:-1000}'
+    volumes:
+      - .:/docs
+    ports:
+      - '${DOCS_PORT:-8088}:8000'
