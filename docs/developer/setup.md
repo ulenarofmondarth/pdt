@@ -19,7 +19,7 @@ On you host machine install:
    Nodejs can be obtained, along with installation instuctions and documentation, from <https://nodejs.org/en/download/>.
 
    :::{note}
-   PDT currently used NodeJS v22.8.0
+   PDT needs NodeJS 24 or later
    :::
 
 Nodejs will also install {program}`npm` the Node package manager, which we use next to set up the development environment. However, the alternative package manager [pnpm](https://pnpm.io) is more efficient, so this project uses {program}`pnpm`. To install {program}`pnpm` refer to [pnpm installation](https://pnpm.io/installation).

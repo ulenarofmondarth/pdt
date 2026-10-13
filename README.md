@@ -4,7 +4,7 @@
 [![Latest release](https://img.shields.io/github/v/release/ulenarofmondarth/pdt)](https://github.com/ulenarofmondarth/pdt/releases/latest)
 [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://ulenarofmondarth.github.io/pdt/)
 [![License: MIT](https://img.shields.io/github/license/ulenarofmondarth/pdt)](LICENSE)
-[![Node.js](https://img.shields.io/badge/node-%3E%3D22.14-brightgreen?logo=node.js&logoColor=white)](package.json)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D24-brightgreen?logo=node.js&logoColor=white)](package.json)
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-fe5196?logo=conventionalcommits&logoColor=white)](https://www.conventionalcommits.org)
 [![semantic-release](https://img.shields.io/badge/semantic--release-conventionalcommits-e10079?logo=semantic-release)](https://github.com/semantic-release/semantic-release)
 
@@ -14,17 +14,17 @@
 
 ## What it does today
 
-| Command         | Purpose                                                                  |
-| --------------- | ------------------------------------------------------------------------ |
-| `pdt init`      | Mark a directory as a PDT project by creating its `.pdt` data directory. |
-| `pdt info`      | Placeholder; will show a project's runtime configuration.                |
-| `pdt vtt start` | Placeholder; will start a project-scoped Foundry VTT instance in Docker. |
+| Command         | Purpose                                                                                                |
+| --------------- | ------------------------------------------------------------------------------------------------------ |
+| `pdt init`      | Mark a directory as a PDT project. In an empty directory, first create a new Foundry VTT module there. |
+| `pdt info`      | Placeholder; will show a project's runtime configuration.                                              |
+| `pdt vtt start` | Placeholder; will start a project-scoped Foundry VTT instance in Docker.                               |
 
 Run `pdt --help` for the current list. The documentation also describes commands that are planned but not yet built.
 
 ## Requirements
 
-- [Node.js](https://nodejs.org) 22.14 or later
+- [Node.js](https://nodejs.org) 24 or later
 - [pnpm](https://pnpm.io)
 - [Docker](https://www.docker.com), for the documentation build and for the commands that manage a Foundry VTT instance
 

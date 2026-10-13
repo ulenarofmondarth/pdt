@@ -20,7 +20,7 @@ Runs on every pull request. It is also called by the {ref}`release <release-work
 
 - **Typecheck** with TypeScript 7, then again with the TypeScript 6 fallback (see {ref}`typescript-compilers`).
 - **Lint** with ESLint (warnings fail the job) and a Prettier formatting check.
-- **Unit tests** with the coverage gate, on Node 22 and Node 24. The coverage report is kept as an artifact.
+- **Unit tests** with the coverage gate, on Node 24. The coverage report is kept as an artifact.
 - **Build** of the bundle, followed by a smoke test of the built CLI. `dist` is kept as an artifact.
 - **Docs**, which calls the `docs` workflow.
 

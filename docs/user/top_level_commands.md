@@ -4,17 +4,48 @@
 
 The main interface of the PDT is the command line.
 
-(pdt_tlc_create)=
-
-## create
-
-Set up a new package template and initialise it for use with {program}`pdt`.
-
 (pdt_tlc_init)=
 
 ## init
 
+{command}`init [dir] [options]`
+
 Initialise a project for {program}`pdt`.
+
+**dir**
+
+: The project directory. Defaults to the current directory.
+
+What happens depends on what is in the directory:
+
+- **It has content.** The directory is treated as an existing project and is marked as a {program}`pdt` project. Nothing in it is changed.
+- **It is empty, or does not exist yet.** {program}`pdt` first creates a new Foundry VTT module there, then marks it as a {program}`pdt` project. See {ref}`pdt_tlc_init_new`.
+
+A directory inside an existing {program}`pdt` project is refused unless `--force` is given.
+
+### Options
+
+-f, --force
+
+: Initialise a project inside another {program}`pdt` project.
+
+(pdt_tlc_init_new)=
+
+### Creating a new module
+
+In an empty directory {program}`pdt` runs the [create-fvtt-module](https://github.com/ulenarofmondarth/create-fvtt-module) generator. You are asked about the module (its ID, title, author, the Foundry VTT build to develop against, TypeScript or JavaScript, the UI framework, and whether to initialise git and install dependencies), and a complete project is generated from the answers. The name of the directory is offered as the module ID.
+
+```shell
+mkdir arcane-ledger
+cd arcane-ledger
+pdt init
+```
+
+The questions need an interactive terminal. Without one, for example in a script, {program}`pdt` stops with an error and changes nothing.
+
+The generated project's own `CONTRIBUTING.md` and `docs/developers/setup.md` describe what to do next.
+
+### Why initialise
 
 This ensures vasious data are created to ensure projects do not collide (e.g. you can run multiple Foundry VTT servers with different configurations without them interfering with one another, {program}`pdt` will also ensure you {program}`vite` development server connects tot he correct backend Foundry server).
 

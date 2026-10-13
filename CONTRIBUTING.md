@@ -6,7 +6,7 @@ The developer documentation at <https://ulenarofmondarth.github.io/pdt/> (source
 
 ## Getting set up
 
-You need Node.js 22.14 or later, [pnpm](https://pnpm.io) and Docker.
+You need Node.js 24 or later, [pnpm](https://pnpm.io) and Docker.
 
 ```shell
 git clone <URL of your fork>
