@@ -1,4 +1,44 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-  "example_message": "Guten Tag {username}"
+  "ui": {
+    "cmd": {
+      "arg": {
+        "vtt": {
+          "description": "Die Kennung des VTT"
+        }
+      },
+      "vtt": {
+        "description": "Ein projektbezogenes VTT steuern"
+      },
+      "start": {
+        "description": "Ein VTT im aktuellen Projekt starten"
+      },
+      "init": {
+        "description": "Ein bestehendes Projekt als PDT-Projekt initialisieren.",
+        "dir": {
+          "description": "Ein bestehendes Projektverzeichnis."
+        }
+      },
+      "info": {
+        "description": "Laufzeitinformationen zu einem bestehenden PDT-Projekt anzeigen."
+      }
+    }
+  },
+  "info": {
+    "pdtInitialised": "PDT für {path} initialisiert"
+  },
+  "warn": {
+    "pdtParentExists": "Versuch, ein PDT-Unterprojekt anzulegen (mit -f erzwingen).\n  Übergeordnetes Projekt unter {path}",
+    "alreadyExists": "{description} existiert bereits."
+  },
+  "error": {
+    "notInPdtProject": "Kein PDT-Projekt."
+  },
+  "fatal": {
+    "shouldNeverRun": "Sollte niemals ausgeführt werden: {argv}",
+    "noPdtRoot": "Es wurde kein PDT-Stammverzeichnis gefunden. Wurde für dieses Projekt vielleicht noch kein 'init' ausgeführt?"
+  },
+  "debug": {
+    "running": "Geparster Befehl wird ausgeführt: {argv}"
+  }
 }
