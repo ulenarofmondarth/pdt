@@ -58,7 +58,7 @@ flowchart LR
    click id6 href "tdd-primer.html#tdd-refactor"
 ```
 
-Use of Test Driven Development (TDD) is encouraged. So, first write a test to specify the change you are going to make. For a new feature this will typically be in a `.spec.ts` file. For a bug this will typically be in a `.test.ts` file alongside the code containing the bug.
+Use of Test Driven Development (TDD) is encouraged. So, first write a test to specify the change you are going to make. Tests live in `tests/unit/`, in a `.test.ts` file at the path that mirrors the source file (see {doc}`testing`). For a bug, first add a test that reproduces it.
 
 :::{tip}
 Commit to your branch frequently ({command}`git add <your code>` and {command}`git commit -m 'My awesome edits'`). This provides a nice way to keep track of changes but more importantly gives you plenty a 'checkpoints' to roll-back to if you discover a problem with your current direction.

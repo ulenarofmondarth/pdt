@@ -45,7 +45,7 @@ CI runs all of these on every pull request.
 - All source is TypeScript in strict mode. Do not add JavaScript source files or use `any`.
 - User-facing text goes in `messages/en.json`, never hardcoded.
 - Log through `@util/logger.js`, not `console.log`. To exit the process, use `exit()` from that module in place of `process.exit()`.
-- Tests sit next to the code they cover, in `*.spec.ts` files.
+- Unit tests live in `tests/unit/`, mirroring `src/`, in `*.test.ts` files. Shared mocks are in `tests/unit/mocks/`.
 
 ## Commit messages
 
