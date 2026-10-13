@@ -6,7 +6,7 @@ PDT Command Line Interface
    :maxdepth: 2
    :caption: Content:
 
-   top_level_commands
+   top_level_commands.rst
 
 
 The main interface of the PDT is the command line.
