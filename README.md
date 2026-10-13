@@ -38,6 +38,14 @@ pnpm build
 node dist/index.js --help
 ```
 
+## Translations
+
+Messages are written in English and translated into German, French and Spanish.
+
+> **The translations are unreviewed.** They were produced by machine translation and have not been checked by a speaker of the language. Expect awkward or incorrect wording. Corrections are welcome; the files are in [`messages/`](messages/).
+
+`pdt` does not yet choose a language for you, so it currently always runs in English. The text of the questions asked when creating a new module comes from the module generator and is English only.
+
 ## Documentation
 
 User and developer documentation is published at <https://ulenarofmondarth.github.io/pdt/>.

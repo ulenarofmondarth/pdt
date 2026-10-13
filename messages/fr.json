@@ -1,0 +1,55 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "ui": {
+    "cmd": {
+      "arg": {
+        "vtt": {
+          "description": "L'identifiant du VTT"
+        }
+      },
+      "vtt": {
+        "description": "Contrôler un VTT propre au projet"
+      },
+      "start": {
+        "description": "Démarrer un VTT dans le projet courant"
+      },
+      "init": {
+        "description": "Initialiser un projet en tant que projet PDT. Dans un répertoire vide, créer d'abord un nouveau module Foundry VTT.",
+        "dir": {
+          "description": "Un répertoire de projet existant."
+        },
+        "force": {
+          "description": "Initialiser un projet à l'intérieur d'un autre projet PDT."
+        },
+        "yes": {
+          "description": "Ne poser aucune question. Utiliser la valeur par défaut pour tout ce qui n'est pas fourni en option."
+        },
+        "newModuleGroup": "Options du nouveau module (répertoire vide uniquement) :"
+      },
+      "info": {
+        "description": "Afficher les informations d'exécution d'un projet PDT existant."
+      }
+    }
+  },
+  "info": {
+    "pdtInitialised": "PDT initialisé pour {path}",
+    "creatingModule": "{path} est vide. Création d'un nouveau module Foundry VTT à cet emplacement."
+  },
+  "warn": {
+    "pdtParentExists": "Tentative de création d'un sous-projet PDT (utiliser -f pour forcer).\n  Projet parent dans {path}",
+    "alreadyExists": "{description} existe déjà.",
+    "moduleNotGenerated": "{path} n'est pas vide ; aucun module n'y est donc généré. Options ignorées : {options}"
+  },
+  "error": {
+    "notInPdtProject": "Ce n'est pas un projet PDT.",
+    "optionRequired": "{option} est obligatoire lorsque les questions ne sont pas posées.",
+    "optionInvalid": "Valeur invalide pour {option} « {value} » : {reason}"
+  },
+  "fatal": {
+    "shouldNeverRun": "Ne devrait jamais être exécuté : {argv}",
+    "noPdtRoot": "Impossible de trouver un répertoire racine PDT. Avez-vous oublié d'exécuter « init » pour ce projet ?"
+  },
+  "debug": {
+    "running": "Exécution de la commande analysée : {argv}"
+  }
+}
