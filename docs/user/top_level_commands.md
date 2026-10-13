@@ -29,11 +29,15 @@ A directory inside an existing {program}`pdt` project is refused unless `--force
 
 : Initialise a project inside another {program}`pdt` project.
 
+-y, --yes
+
+: Do not ask questions when creating a new module. Use the default for anything not given as an option.
+
 (pdt_tlc_init_new)=
 
 ### Creating a new module
 
-In an empty directory {program}`pdt` runs the [create-fvtt-module](https://github.com/ulenarofmondarth/create-fvtt-module) generator. You are asked about the module (its ID, title, author, the Foundry VTT build to develop against, TypeScript or JavaScript, the UI framework, and whether to initialise git and install dependencies), and a complete project is generated from the answers. The name of the directory is offered as the module ID.
+In an empty directory {program}`pdt` runs the [create-fvtt-module](https://github.com/ulenarofmondarth/create-fvtt-module) generator. You are asked about the module, and a complete project is generated from the answers. The name of the directory is offered as the module ID.
 
 ```shell
 mkdir arcane-ledger
@@ -41,7 +45,48 @@ cd arcane-ledger
 pdt init
 ```
 
-The questions need an interactive terminal. Without one, for example in a script, {program}`pdt` stops with an error and changes nothing.
+Any answer can be given as an option instead, in which case it is not asked for:
+
+```shell
+pdt init --ui-framework lit --no-install
+```
+
+With `--yes`, or when there is no interactive terminal (in a script, for example), nothing is asked: every answer not given takes its default. Three answers can be without a default, so give them as options:
+
+```shell
+pdt init arcane-ledger --yes \
+  --description "Keeps the party accounts." \
+  --author-name "A. Scribe" \
+  --github-owner Scribes-Guild
+```
+
+If a required answer is missing or a value is not acceptable, {program}`pdt` stops with an error naming the option and creates nothing.
+
+#### New module options
+
+These are the generator's answers. They are used only when a new module is created, and are ignored when the directory already has content. {command}`pdt init --help` always lists the current set.
+
+| Option | Answer | Default |
+| --- | --- | --- |
+| `--module-id` | The Foundry package ID | The directory name, if it is a valid ID |
+| `--module-title` | The title shown in Foundry | Derived from the module ID |
+| `--description` | One-line description | None; required |
+| `--author-name` | Author name | Your git `user.name`; required if that is not set |
+| `--author-email` | Author email, published in `module.json` | Empty |
+| `--author-url` | Author website | Empty |
+| `--author-discord` | Author Discord username | Empty |
+| `--github-owner` | GitHub user or organisation that will own the repository | None; required |
+| `--repo-name` | GitHub repository name | The module ID |
+| `--foundry-version` | Foundry VTT build to develop and test against | The generator's current default |
+| `--system-id` | Game system for the end-to-end test world | `dnd5e` |
+| `--system-url` | Release `.zip` of that system, pinned for the tests | Known for `dnd5e`; required for any other system |
+| `--restrict-to-system` | Whether the module requires that game system | No |
+| `--language` | `typescript` or `javascript` | `typescript` |
+| `--ui-framework` | `svelte`, `lit` or `none` | `svelte` |
+| `--git-init` | Initialise a git repository in the new project | Yes |
+| `--install` | Run `pnpm install` in the new project | Yes |
+
+The yes or no options can be turned off with a `no-` prefix, for example `--no-git-init`.
 
 The generated project's own `CONTRIBUTING.md` and `docs/developers/setup.md` describe what to do next.
 
