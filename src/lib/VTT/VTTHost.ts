@@ -7,7 +7,7 @@ export type VTTHostConfig = {
 /**
  * Base class for all VTT Hosts these are created using {@link lib/VTT/VTTHostFactory.createHost | createHost}
  *
- * A VTT Host reresents the environment in which a {@link lib/VTT/VTTServer.VTTServer | VTTServer} runs.
+ * A VTT Host represents the environment in which a {@link lib/VTT/VTTServer.VTTServer | VTTServer} runs.
  */
 export default abstract class VTTHost {
   /**
@@ -33,7 +33,7 @@ export default abstract class VTTHost {
   /**
    * Check if server is running on host
    *
-   * Note: This does not guarantee that the server is accessible, only that it is running on the hosr.
+   * Note: This does not guarantee that the server is accessible, only that it is running on the host.
    */
   abstract isRunning(server: VTTServer): Promise<boolean>;
 }

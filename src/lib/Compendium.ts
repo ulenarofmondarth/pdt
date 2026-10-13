@@ -9,7 +9,7 @@ export default class Compendium {
   /**
    * return a Compendium found at the given path
    *
-   * @param path - path to the compendiul database
+   * @param path - path to the compendium database
    *
    * @return a Compendium appropriate to the database at ``path``
    */
@@ -24,11 +24,11 @@ export default class Compendium {
   }
 
   /**
-   * Ruturns the class for the compendium detected at path
+   * Returns the class for the compendium detected at path
    *
    * @param path - Path to be tested
    *
-   * @returns The class for the Compendium type of undefined
+   * @returns The class for the Compendium type or undefined
    */
   static async probe(path: string): Promise<typeof Compendium | undefined> {
     for (const dbType of this.registeredDBTypes) {

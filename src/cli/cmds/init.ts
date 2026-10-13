@@ -63,7 +63,7 @@ const module: CommandModule = {
   async handler(args) {
     const argv = args as unknown as Arguments;
     const pdtPath = path.resolve(argv.dir, PDT.PROJECT_RTD_DIR_NAME);
-    const attempingSubPdt = pfs.pdtConfigDir != undefined && pfs.pdtConfigDir !== pdtPath;
+    const attemptingSubPdt = pfs.pdtConfigDir != undefined && pfs.pdtConfigDir !== pdtPath;
 
     if (!isEmpty(argv.dir)) {
       // A module is only generated into an empty directory, so these options do nothing here.
@@ -73,7 +73,7 @@ const module: CommandModule = {
       }
     }
 
-    if (attempingSubPdt && !argv.f) {
+    if (attemptingSubPdt && !argv.f) {
       logger.warn(m['warn.pdtParentExists']({ path: path.dirname(pfs.pdtConfigDir!) }));
     } else {
       if (fs.existsSync(pdtPath)) {

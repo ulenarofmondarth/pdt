@@ -6,9 +6,9 @@ import type { FoundryVTTServerConfig } from '@lib/VTT/Server/FoundryVTTServer.js
 import type { VTTServerConfig } from '@lib/VTT/VTTServer.js';
 
 /**
- * Magic mapppens
+ * Magic happens
  *
- * @param host The nost
+ * @param host The host
  *
  *
  *

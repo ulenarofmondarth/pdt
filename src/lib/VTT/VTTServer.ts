@@ -1,7 +1,7 @@
 /**
  * Base class for all VTT Servers these are created using {@link lib/VTT/VTTServerFactory.createServer | createServer}
  *
- * VTT Srevers generally represent the application that runs your VTT. VTTCServers run inside a {@link lib/VTT/VTTHost.VTTHost | VTTHost}.
+ * VTT Servers generally represent the application that runs your VTT. VTTServers run inside a {@link lib/VTT/VTTHost.VTTHost | VTTHost}.
  */
 import VTTHost from '@lib/VTT/VTTHost.js';
 

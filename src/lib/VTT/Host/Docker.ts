@@ -1,9 +1,9 @@
 /**
-r* A restricted Docker hosting, limited to a container from the felddy/foundryvtt-docker image.
+ * A restricted Docker hosting, limited to a container from the felddy/foundryvtt-docker image.
  *
  * User can vary the version.
  *
- * Root directory for data can be set. Each container will map a <root>/<instance name>/foundry-data directory to /data in the continer
+ * Root directory for data can be set. Each container will map a <root>/<instance name>/foundry-data directory to /data in the container
  */
 import VTTHost from '@lib/VTT/VTTHost.js';
 import Docker, { Container } from 'dockerode';
