@@ -26,6 +26,15 @@ Initialise a project for :program:`pdt`.
 
 This ensures vasious data are created to ensure projects do not collide (e.g. you can run multiple Foundry VTT servers with different configurations without them interfering with one another, :program:`pdt` will also ensure you :program:`vite` development server connects tot he correct backend Foundry server).
 
+.. _pdt_tlc_info:
+
+
+info
+----
+
+Display the current project's runtime configuration.
+
+
 .. _pdt_tlc_config:
 
 config

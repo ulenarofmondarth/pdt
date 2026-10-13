@@ -18,6 +18,9 @@
         "dir": {
           "description": "An existing project directory."
         }
+      },
+      "info": {
+        "description": "Show runtime information for an existing PDT project."
       }
     }
   },
@@ -27,6 +30,9 @@
   "warn": {
     "pdtParentExists": "Attempt to create sub-PDT project (use -f to force).\n  Parent project at {path}",
     "alreadyExists": "The {description} already exists."
+  },
+  "error": {
+    "notInPdtProject": "Not a PDT project."
   },
   "fatal": {
     "shouldNeverRun": "Should never run {argv}",
