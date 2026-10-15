@@ -1,7 +1,6 @@
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
-/// <reference types="vitest/config" />
 import path from 'node:path';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import { nodeExternals } from 'rollup-plugin-node-externals';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
@@ -40,7 +39,7 @@ export default defineConfig({
         return `${pathOffset}${path.basename(entryName)}.js`;
       },
     },
-    rollupOptions: {
+    rolldownOptions: {
       output: [
         {
           dir: 'dist',

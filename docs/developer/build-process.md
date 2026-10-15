@@ -26,7 +26,7 @@ Two TypeScript compilers are installed:
 | {command}`pnpm typecheck`, the pre-commit hook, the CI type check | TypeScript 7 ({command}`tsc`) |
 | {command}`pnpm typecheck:fallback` (CI only, keeps the fallback honest) | TypeScript 6 ({command}`tsc6`) |
 | ESLint (`typescript-eslint`), `typedoc`, the paraglide plugin | TypeScript 6 (via `import 'typescript'`) |
-| {command}`pnpm build` and {command}`pnpm test` | Neither; {program}`vite` and {program}`vitest` strip types with esbuild |
+| {command}`pnpm build` and {command}`pnpm test` | Neither; {program}`vite` and {program}`vitest` strip types with Oxc (through Rolldown) |
 
 ```{todo}
 Remove the TypeScript 6 fallback once `typescript-eslint`, `typedoc` and paraglide support TypeScript 7 natively.
