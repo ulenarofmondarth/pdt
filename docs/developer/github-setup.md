@@ -58,7 +58,16 @@ The pipeline is configured in `release.config.js`. Publishing to `npmjs` is swit
 - GitHub Pages enabled for the repository with the source set to "GitHub Actions" (Settings → Pages).
 - A `v0.1.0` tag on `main` before the first release. semantic-release finds the previous version from git tags; with no tag at all the first release would be `1.0.0`.
 
-Recommended: a branch protection rule (or ruleset) on `main` that requires a pull request and the `ci` checks to pass, so nothing reaches a release without CI. If it blocks direct pushes, the token's owner must be allowed to bypass it, or the release commit cannot be pushed.
+`main` is protected by the repository ruleset "Protect main" (Settings → Rules → Rulesets):
+
+- Changes need a pull request, merged with a merge commit. No approving review is required.
+- The `ci` jobs must pass on the pull request, from GitHub Actions: `Typecheck`, `Lint`, `Unit tests (Node 24.x)`, `Build` and `Docs / Build documentation`. The branch must be up to date with `main`.
+- Force pushes and deleting the branch are blocked.
+- Repository admins can bypass the ruleset. This lets semantic-release push the release commit with the admin's `PERSONAL_ACCESS_TOKEN`.
+
+:::{important}
+The required checks are matched by job name. When a job in `ci.yml` is renamed, or the Node matrix changes, update the ruleset too, or pull requests into `main` will wait for a check that never reports.
+:::
 
 :::{tip}
 `pnpm exec semantic-release --dry-run --no-ci` checks the configuration locally without releasing anything.
