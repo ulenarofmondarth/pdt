@@ -13,8 +13,6 @@ class CompendiumLevelDB extends Compendium {
   }
 
   static override async probe(path: string): Promise<typeof Compendium | undefined> {
-    let returnType: typeof CompendiumLevelDB | undefined = undefined;
-
     // Every LevelDB database has a CURRENT file. Check for it before opening anything: merely
     // opening a path makes LevelDB create the directory and write lock and log files into it.
     try {
@@ -26,14 +24,11 @@ class CompendiumLevelDB extends Compendium {
     try {
       const db = new ClassicLevel(path, { createIfMissing: false });
       await db.open();
-      returnType = CompendiumLevelDB;
       await db.close();
-    } catch (
-      e // eslint-disable-line @typescript-eslint/no-unused-vars
-    ) {
-      returnType = undefined;
+      return CompendiumLevelDB;
+    } catch {
+      return undefined;
     }
-    return returnType;
   }
 }
 
