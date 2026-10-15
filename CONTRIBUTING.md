@@ -30,15 +30,15 @@ Keep pull requests small and focused, and update the documentation alongside the
 
 ## Checks
 
-| Command               | What it checks                                                  |
-| --------------------- | --------------------------------------------------------------- |
-| `pnpm typecheck`      | Types, with TypeScript 7                                        |
-| `pnpm lint`           | ESLint                                                          |
-| `pnpm prettier:check` | Formatting (`pnpm prettier:format` fixes it)                    |
-| `pnpm test`           | Unit tests                                                      |
-| `pnpm test:coverage`  | Unit tests with coverage; fails below the configured thresholds |
-| `pnpm build`          | The bundle builds                                               |
-| `pnpm build:docs`     | The documentation builds with no warnings                       |
+| Command              | What it checks                                                  |
+| -------------------- | --------------------------------------------------------------- |
+| `pnpm typecheck`     | Types, with TypeScript 7                                        |
+| `pnpm lint`          | ESLint                                                          |
+| `pnpm format:check`  | Formatting (`pnpm format` fixes it)                             |
+| `pnpm test`          | Unit tests                                                      |
+| `pnpm test:coverage` | Unit tests with coverage; fails below the configured thresholds |
+| `pnpm build`         | The bundle builds                                               |
+| `pnpm build:docs`    | The documentation builds with no warnings                       |
 
 CI runs all of these on every pull request.
 
@@ -79,7 +79,7 @@ git commit --no-verify -m "fix(scope): describe the change"
 Before you push, fix whatever blocked the hooks, then revalidate:
 
 ```shell
-pnpm prettier:check && pnpm lint && pnpm typecheck && pnpm test
+pnpm format:check && pnpm lint && pnpm typecheck && pnpm test
 git commit --amend --no-edit
 ```
 

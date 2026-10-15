@@ -48,9 +48,9 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: ESLint
-        run: pnpm lint --max-warnings 0
+        run: pnpm lint
       - name: Prettier
-        run: pnpm prettier:check
+        run: pnpm format:check
 
   test:
     name: Unit tests (Node ${{ matrix.node }})

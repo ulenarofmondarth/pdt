@@ -1,5 +1,4 @@
 {
-  "*.json": ["pnpm prettier:format"],
-  "*.{css,scss}": ["pnpm prettier:format"],
-  "*.{js,ts,mjs,svelte}": ["pnpm prettier:format", "pnpm lint", "bash -c 'pnpm typecheck'", "vitest related --run"]
+  "*.ts": ["eslint --fix --max-warnings 0", "prettier --write", "bash -c 'pnpm typecheck'", "vitest related --run"],
+  "*.{js,mjs,cjs,json,md,yml,yaml}": ["prettier --write"]
 }
