@@ -65,6 +65,8 @@ The pipeline is configured in `release.config.js`. Publishing to `npmjs` is swit
 - Force pushes and deleting the branch are blocked.
 - Repository admins can bypass the ruleset. This lets semantic-release push the release commit with the admin's `PERSONAL_ACCESS_TOKEN`.
 
+`dev` is protected by the ruleset "Protect dev": changes need a pull request, merged with a merge commit. Repository admins can bypass it, which lets the release workflow merge `main` back into `dev`.
+
 :::{important}
 The required checks are matched by job name. When a job in `ci.yml` is renamed, or the Node matrix changes, update the ruleset too, or pull requests into `main` will wait for a check that never reports.
 :::
