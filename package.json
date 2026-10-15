@@ -96,7 +96,7 @@
     "config": "^3.3.12",
     "dockerode": "^5.0.1",
     "fast-glob": "^3.3.3",
-    "figlet": "^1.8.0",
+    "figlet": "^1.12.0",
     "find-up": "^8.0.0",
     "winston": "^3.19.0",
     "yargs": "^18.2.0",
