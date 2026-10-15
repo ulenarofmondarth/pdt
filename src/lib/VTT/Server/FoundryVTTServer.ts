@@ -25,6 +25,14 @@ export default class FoundryVTTServer extends VTTServer {
     this._port = vttConfig.port || config.get(`VTT.${this._name}.server.port`);
   }
 
+  get name(): string {
+    return this._name;
+  }
+
+  get version(): string {
+    return this._version ?? '';
+  }
+
   async start() {
     if (!this._host) {
       throw new Error('No host environment provided');

@@ -12,6 +12,16 @@ export type VTTServerConfig = {
 };
 
 export default abstract class VTTServer {
+  /**
+   * Name of this server, unique among the servers of a project.
+   */
+  abstract get name(): string;
+
+  /**
+   * Version of the VTT application this server runs, or an empty string when none is known.
+   */
+  abstract get version(): string;
+
   abstract start(): void;
 
   abstract stop(): void;

@@ -17,10 +17,12 @@ const mocks = vi.hoisted(() => ({ Docker: vi.fn() }));
 
 // No test in this file may reach a real Docker engine.
 vi.mock('dockerode', () => ({ default: mocks.Docker }));
+// Servers built here must not pick up values from the real configuration.
+vi.mock('@util/config.js', () => ({ default: { get: vi.fn() } }));
 
 const HOST_CONFIG: DockerHostConfig = { type: 'docker', socketPath: '/var/run/docker.sock' };
 const IMAGE = 'felddy/foundryvtt:12';
-const CONTAINER_NAME = 'interesting-name';
+const CONTAINER_NAME = 'test-server';
 
 describe('DockerHost', () => {
   let container: ContainerMock;
@@ -38,10 +40,17 @@ describe('DockerHost', () => {
     server.host = createHostMock();
   });
 
-  test('connects to the Docker engine with the options it was given', () => {
+  test('connects to the Docker engine through the socket it was given', () => {
     new DockerHost(HOST_CONFIG);
 
-    expect(mocks.Docker).toHaveBeenCalledExactlyOnceWith(HOST_CONFIG);
+    expect(mocks.Docker).toHaveBeenCalledExactlyOnceWith({ socketPath: '/var/run/docker.sock' });
+  });
+
+  test('does not pass the image settings to the Docker engine connection', () => {
+    // dockerode reads `version` as the Docker API version, not the image tag.
+    new DockerHost({ ...HOST_CONFIG, image: 'felddy/foundryvtt', version: 'VTT.test-server.server.version' });
+
+    expect(mocks.Docker).toHaveBeenCalledExactlyOnceWith({ socketPath: '/var/run/docker.sock' });
   });
 
   describe('isAccessible', () => {
@@ -129,6 +138,53 @@ describe('DockerHost', () => {
       expect(created.start).toHaveBeenCalledOnce();
     });
 
+    test('names the container after the server and tags the image with its version', async () => {
+      container.inspect.mockRejectedValue(dockerError(404));
+      const other = new FoundryVTTServer({
+        type: 'foundry',
+        name: 'other-server',
+        version: '13.351',
+        hostname: 'h',
+        port: '1',
+      });
+      const host = new DockerHost(HOST_CONFIG);
+
+      await host.start(other);
+
+      expect(docker.pull).toHaveBeenCalledExactlyOnceWith('felddy/foundryvtt:13.351', {});
+      expect(docker.getContainer).toHaveBeenCalledWith('other-server');
+      expect(docker.createContainer).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ name: 'other-server', Image: 'felddy/foundryvtt:13.351' }),
+      );
+    });
+
+    test.each([
+      [{ image: 'example/foundry' }, 'example/foundry:12'],
+      [{ image: 'felddy/foundryvtt', repository: 'ghcr.io' }, 'ghcr.io/felddy/foundryvtt:12'],
+    ])('uses the image configured for the host (%o)', async (imageConfig, expected) => {
+      container.inspect.mockRejectedValue(dockerError(404));
+      const host = new DockerHost({ ...HOST_CONFIG, ...imageConfig });
+
+      await host.start(server);
+
+      expect(docker.pull).toHaveBeenCalledExactlyOnceWith(expected, {});
+      expect(docker.createContainer).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ Image: expected }));
+    });
+
+    test('fails without touching Docker when the server has no version', async () => {
+      const unversioned = new FoundryVTTServer({
+        type: 'foundry',
+        name: 'test-server',
+        version: '',
+        hostname: 'h',
+        port: '1',
+      });
+      const host = new DockerHost(HOST_CONFIG);
+
+      await expect(host.start(unversioned)).rejects.toThrow('Server test-server has no version to run on Docker Host');
+      expect(docker.pull).not.toHaveBeenCalled();
+    });
+
     test('creates the container detached from all standard streams', async () => {
       container.inspect.mockRejectedValue(dockerError(404));
       const host = new DockerHost(HOST_CONFIG);
@@ -165,7 +221,6 @@ describe('DockerHost', () => {
     });
 
     test.todo('fails when a newly created container cannot be started');
-    test.todo('names the container and image after the server it is given');
   });
 
   test.todo('stop stops the server container');

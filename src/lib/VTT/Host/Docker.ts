@@ -1,7 +1,8 @@
 /**
- * A restricted Docker hosting, limited to a container from the felddy/foundryvtt-docker image.
+ * A restricted Docker hosting, limited to a container from the felddy/foundryvtt image.
  *
- * User can vary the version.
+ * Each server runs in a container named after the server, from the image tagged with the server's version.
+ * The image and its registry can be configured.
  *
  * Root directory for data can be set. Each container will map a <root>/<instance name>/foundry-data directory to /data in the container
  */
@@ -13,9 +14,18 @@ import type { ContainerCreateOptions } from 'dockerode';
 import type { VTTHostConfig } from '../VTTHost.js';
 
 export type DockerHostConfig = VTTHostConfig & {
+  /** Docker engine socket; dockerode's default when not given. */
   socketPath?: string;
+  /** Registry to pull the image from; Docker Hub when not given. */
+  repository?: string;
+  /** Image to run, without a tag. */
+  image?: string;
+  /** Present in the configuration but not used: the image tag is the server's version. */
   version?: string;
 };
+
+/** Image run when the host configuration does not name one. */
+export const DEFAULT_IMAGE = 'felddy/foundryvtt';
 
 export default class DockerHost extends VTTHost {
   options: DockerHostConfig;
@@ -25,7 +35,23 @@ export default class DockerHost extends VTTHost {
     super();
 
     this.options = options;
-    this.docker = new Docker(this.options);
+    // Only connection settings go to dockerode, which would read other keys, such as `version`, as its own.
+    this.docker = new Docker(options.socketPath === undefined ? {} : { socketPath: options.socketPath });
+  }
+
+  /**
+   * Full reference of the image that runs `server`.
+   *
+   * @param server - Server whose version tags the image
+   * @throws When the server has no version, since an untagged pull would fetch every tag
+   */
+  imageFor(server: VTTServer): string {
+    if (!server.version) {
+      throw new Error(`Server ${server.name} has no version to run on Docker Host`);
+    }
+    const image = this.options.image ?? DEFAULT_IMAGE;
+    const registry = this.options.repository ? `${this.options.repository}/` : '';
+    return `${registry}${image}:${server.version}`;
   }
 
   async isAccessible(): Promise<boolean> {
@@ -35,26 +61,25 @@ export default class DockerHost extends VTTHost {
       .catch(() => false);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async isRunning(server: VTTServer): Promise<boolean> {
     return this.docker
-      .getContainer('interesting-name')
+      .getContainer(server.name)
       .inspect()
       .then(info => info.State.Running)
       .catch(() => false);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async start(server: VTTServer) {
     // Ask server for dataFactory
     // Ask dataFactory for Docker config
     // Check if running
     // If not then start container
-    await this._pullImageIfMissing('felddy/foundryvtt:12');
+    const image = this.imageFor(server);
+    await this._pullImageIfMissing(image);
 
     const serverOptions = {
-      name: 'interesting-name',
-      Image: 'felddy/foundryvtt:12',
+      name: server.name,
+      Image: image,
       AttachStdin: false,
       AttachStdout: false,
       AttachStderr: false,
