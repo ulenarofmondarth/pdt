@@ -1,0 +1,105 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    name: Semantic release
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # semantic-release pushes with its own token (below).
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Release
+        if: ${{ !env.ACT }}
+        run: pnpm exec semantic-release
+        env:
+          # A PAT is needed so the release commit can be pushed to a protected main.
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          # The release commit is generated; skip the local commit hooks.
+          HUSKY: 0
+
+      # semantic-release builds the docs only when it cuts a release.
+      - name: Build documentation
+        run: |
+          if [ ! -d docs/_build/html ]; then pnpm build:docs; fi
+
+      - name: Upload documentation for GitHub Pages
+        if: ${{ !env.ACT }}
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: docs/_build/html
+
+  # The release commit lands on main only. Merging it back keeps dev a superset of main,
+  # so the next dev -> main pull request does not conflict on the version or CHANGELOG.
+  sync-dev:
+    name: Merge main back into dev
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        if: ${{ !env.ACT }}
+        with:
+          ref: dev
+          fetch-depth: 0
+          # Pushes with the PAT so that an open dev -> main pull request re-runs CI.
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+      - name: Merge main into dev
+        if: ${{ !env.ACT }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          git merge --no-edit origin/main
+          git push origin HEAD:dev
+
+  deploy-docs:
+    name: Publish documentation
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # Nothing is published when the workflow is run locally with act.
+      - uses: actions/configure-pages@v6
+        if: ${{ !env.ACT }}
+      - name: Deploy to GitHub Pages
+        if: ${{ !env.ACT }}
+        id: deployment
+        uses: actions/deploy-pages@v5

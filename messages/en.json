@@ -1,0 +1,55 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "ui": {
+    "cmd": {
+      "arg": {
+        "vtt": {
+          "description": "The VTT identity"
+        }
+      },
+      "vtt": {
+        "description": "Control a project scoped VTT"
+      },
+      "start": {
+        "description": "Start a VTT in the current project"
+      },
+      "init": {
+        "description": "Initialise a project as a PDT project. In an empty directory, create a new Foundry VTT module first.",
+        "dir": {
+          "description": "An existing project directory."
+        },
+        "force": {
+          "description": "Initialise a project inside another PDT project."
+        },
+        "yes": {
+          "description": "Do not ask questions. Use the default for anything not given as an option."
+        },
+        "newModuleGroup": "New module options (empty directory only):"
+      },
+      "info": {
+        "description": "Show runtime information for an existing PDT project."
+      }
+    }
+  },
+  "info": {
+    "pdtInitialised": "PDT initialised for {path}",
+    "creatingModule": "{path} is empty. Creating a new Foundry VTT module there."
+  },
+  "warn": {
+    "pdtParentExists": "Attempt to create sub-PDT project (use -f to force).\n  Parent project at {path}",
+    "alreadyExists": "The {description} already exists.",
+    "moduleNotGenerated": "{path} is not empty, so no module is generated there. Ignored: {options}"
+  },
+  "error": {
+    "notInPdtProject": "Not a PDT project.",
+    "optionRequired": "{option} is required when the questions are not asked.",
+    "optionInvalid": "Invalid {option} \"{value}\": {reason}"
+  },
+  "fatal": {
+    "shouldNeverRun": "Should never run {argv}",
+    "noPdtRoot": "Unable to find a PDT root directory. Perhaps you forgot to 'init' this project?"
+  },
+  "debug": {
+    "running": "Running parsed command {argv}"
+  }
+}

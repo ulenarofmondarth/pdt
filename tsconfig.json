@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "lib": ["esnext"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "types": ["node"],
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowJs": true,
+
+    "noEmit": true,
+    "paths": {
+      "@/*": ["./src/*"],
+      "@util/*": ["./src/util/*"],
+      "@lib/*": ["./src/lib/*"],
+      "@schema/*": ["./src/schema/*"],
+      "@i18n/*": ["./src/paraglide/*"],
+      "@tests/*": ["./tests/*"]
+    }
+  },
+  "include": ["src/**/*", "tests/**/*"]
+}

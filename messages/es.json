@@ -1,0 +1,55 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "ui": {
+    "cmd": {
+      "arg": {
+        "vtt": {
+          "description": "El identificador del VTT"
+        }
+      },
+      "vtt": {
+        "description": "Controlar un VTT propio del proyecto"
+      },
+      "start": {
+        "description": "Iniciar un VTT en el proyecto actual"
+      },
+      "init": {
+        "description": "Inicializar un proyecto como proyecto PDT. En un directorio vacío, crear primero un nuevo módulo de Foundry VTT.",
+        "dir": {
+          "description": "Un directorio de proyecto existente."
+        },
+        "force": {
+          "description": "Inicializar un proyecto dentro de otro proyecto PDT."
+        },
+        "yes": {
+          "description": "No hacer preguntas. Usar el valor predeterminado para todo lo que no se indique como opción."
+        },
+        "newModuleGroup": "Opciones del nuevo módulo (solo en un directorio vacío):"
+      },
+      "info": {
+        "description": "Mostrar la información de ejecución de un proyecto PDT existente."
+      }
+    }
+  },
+  "info": {
+    "pdtInitialised": "PDT inicializado para {path}",
+    "creatingModule": "{path} está vacío. Se crea allí un nuevo módulo de Foundry VTT."
+  },
+  "warn": {
+    "pdtParentExists": "Intento de crear un subproyecto PDT (use -f para forzarlo).\n  Proyecto principal en {path}",
+    "alreadyExists": "{description} ya existe.",
+    "moduleNotGenerated": "{path} no está vacío, por lo que no se genera ningún módulo allí. Opciones ignoradas: {options}"
+  },
+  "error": {
+    "notInPdtProject": "No es un proyecto PDT.",
+    "optionRequired": "{option} es obligatoria cuando no se hacen las preguntas.",
+    "optionInvalid": "Valor no válido para {option} \"{value}\": {reason}"
+  },
+  "fatal": {
+    "shouldNeverRun": "Nunca debería ejecutarse: {argv}",
+    "noPdtRoot": "No se encontró un directorio raíz de PDT. ¿Quizá olvidó ejecutar 'init' en este proyecto?"
+  },
+  "debug": {
+    "running": "Ejecutando el comando analizado: {argv}"
+  }
+}

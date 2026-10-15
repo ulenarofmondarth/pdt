@@ -1,0 +1,55 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "ui": {
+    "cmd": {
+      "arg": {
+        "vtt": {
+          "description": "Die Kennung des VTT"
+        }
+      },
+      "vtt": {
+        "description": "Ein projektbezogenes VTT steuern"
+      },
+      "start": {
+        "description": "Ein VTT im aktuellen Projekt starten"
+      },
+      "init": {
+        "description": "Ein Projekt als PDT-Projekt initialisieren. In einem leeren Verzeichnis wird zuerst ein neues Foundry-VTT-Modul angelegt.",
+        "dir": {
+          "description": "Ein bestehendes Projektverzeichnis."
+        },
+        "force": {
+          "description": "Ein Projekt innerhalb eines anderen PDT-Projekts initialisieren."
+        },
+        "yes": {
+          "description": "Keine Fragen stellen. Für alles, was nicht als Option angegeben ist, den Standardwert verwenden."
+        },
+        "newModuleGroup": "Optionen für ein neues Modul (nur in einem leeren Verzeichnis):"
+      },
+      "info": {
+        "description": "Laufzeitinformationen zu einem bestehenden PDT-Projekt anzeigen."
+      }
+    }
+  },
+  "info": {
+    "pdtInitialised": "PDT für {path} initialisiert",
+    "creatingModule": "{path} ist leer. Dort wird ein neues Foundry-VTT-Modul angelegt."
+  },
+  "warn": {
+    "pdtParentExists": "Versuch, ein PDT-Unterprojekt anzulegen (mit -f erzwingen).\n  Übergeordnetes Projekt unter {path}",
+    "alreadyExists": "{description} existiert bereits.",
+    "moduleNotGenerated": "{path} ist nicht leer, daher wird dort kein Modul angelegt. Ignoriert: {options}"
+  },
+  "error": {
+    "notInPdtProject": "Kein PDT-Projekt.",
+    "optionRequired": "{option} ist erforderlich, wenn die Fragen nicht gestellt werden.",
+    "optionInvalid": "Ungültiger Wert für {option} \"{value}\": {reason}"
+  },
+  "fatal": {
+    "shouldNeverRun": "Sollte niemals ausgeführt werden: {argv}",
+    "noPdtRoot": "Es wurde kein PDT-Stammverzeichnis gefunden. Wurde für dieses Projekt vielleicht noch kein 'init' ausgeführt?"
+  },
+  "debug": {
+    "running": "Geparster Befehl wird ausgeführt: {argv}"
+  }
+}
