@@ -5,7 +5,9 @@ import {
   createContainerMock,
   createDockerMock,
   dockerError,
+  failingPullStream,
   inspectInfo,
+  pullStream,
   type ContainerMock,
   type DockerMock,
 } from '@tests/unit/mocks/dockerode.js';
@@ -94,6 +96,37 @@ describe('DockerHost', () => {
   });
 
   describe('start', () => {
+    test('waits for a pull whose progress messages are split across chunks', async () => {
+      container.inspect.mockResolvedValue(inspectInfo(true));
+      docker.pull.mockResolvedValue(
+        pullStream('{"status":"Pulling fr', 'om library/image"}\n{"status":"Downloaded"}\n{"sta', 'tus":"Done"}\n'),
+      );
+      const host = new DockerHost(HOST_CONFIG);
+
+      await expect(host.start(server)).resolves.toBeUndefined();
+    });
+
+    test('fails when the image pull stream fails', async () => {
+      const cause = new Error('connection reset');
+      docker.pull.mockResolvedValue(failingPullStream(cause));
+      const host = new DockerHost(HOST_CONFIG);
+
+      await expect(host.start(server)).rejects.toBe(cause);
+      expect(container.inspect).not.toHaveBeenCalled();
+    });
+
+    test('fails when Docker reports an error in the pull progress', async () => {
+      docker.pull.mockResolvedValue(
+        pullStream('{"status":"Pulling from library/image"}\n{"error":"unauthorized: authentication required"}\n'),
+      );
+      const host = new DockerHost(HOST_CONFIG);
+
+      await expect(host.start(server)).rejects.toThrow(
+        `Could not pull ${IMAGE}: unauthorized: authentication required`,
+      );
+      expect(container.inspect).not.toHaveBeenCalled();
+    });
+
     test('pulls the server image before touching the container', async () => {
       container.inspect.mockResolvedValue(inspectInfo(true));
       const host = new DockerHost(HOST_CONFIG);

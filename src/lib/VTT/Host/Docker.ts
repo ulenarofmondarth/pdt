@@ -121,16 +121,28 @@ export default class DockerHost extends VTTHost {
 
   async restart() {}
 
-  async _pullImageIfMissing(image: string): Promise<NodeJS.ReadableStream> {
+  /**
+   * Pulls `image` and waits until Docker has finished.
+   *
+   * Docker reports progress as newline-delimited JSON, and a chunk of the stream can hold several
+   * messages or part of one, so the stream is read with dockerode's `followProgress`.
+   *
+   * @param image - Full image reference, including the tag
+   * @throws When the stream fails, or when Docker reports an error in the progress
+   */
+  async _pullImageIfMissing(image: string): Promise<void> {
     const pullStream = await this.docker.pull(image, {});
-    return new Promise(resolve => {
-      pullStream
-        .on('data', chunk => {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const data = JSON.parse(chunk.toString());
-          //  console.log(data.status)
-        })
-        .on('end', resolve);
+    const progress = await new Promise<unknown[]>((resolve, reject) => {
+      this.docker.modem.followProgress(pullStream, (err: Error | null, output: unknown[]) =>
+        err ? reject(err) : resolve(output),
+      );
     });
+    // A failed pull can still end normally, with the failure as a message in the stream.
+    const failure = progress.find(
+      (message): message is { error: unknown } => typeof message === 'object' && message !== null && 'error' in message,
+    );
+    if (failure) {
+      throw new Error(`Could not pull ${image}: ${String(failure.error)}`);
+    }
   }
 }

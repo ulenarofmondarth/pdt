@@ -3,6 +3,11 @@ import { vi } from 'vitest';
 import type Docker from 'dockerode';
 import type { Container, ContainerInspectInfo } from 'dockerode';
 
+// The real progress parser, so tests see how dockerode splits Docker's progress stream into
+// messages. Creating a client does not connect to anything.
+const { default: ActualDocker } = await vi.importActual<{ default: typeof Docker }>('dockerode');
+const actualModem = new ActualDocker({ socketPath: '/nonexistent/docker.sock' }).modem;
+
 /**
  * Stand-in for a dockerode `Container`, limited to the methods pdt uses.
  *
@@ -33,6 +38,7 @@ export function createDockerMock(container: ContainerMock = createContainerMock(
     pull: vi
       .fn<(image: string, options: object) => Promise<NodeJS.ReadableStream>>()
       .mockImplementation(async () => pullProgress()),
+    modem: { followProgress: actualModem.followProgress.bind(actualModem) },
   } satisfies Partial<Record<keyof Docker, unknown>>;
 }
 
@@ -59,5 +65,28 @@ export function dockerError(statusCode: number): Error & { statusCode: number } 
 
 /** A finished image pull: one progress message, then end of stream. */
 export function pullProgress(): NodeJS.ReadableStream {
-  return Readable.from([Buffer.from(JSON.stringify({ status: 'Pulling from library/image' }))]);
+  return pullStream(`${JSON.stringify({ status: 'Pulling from library/image' })}\n`);
+}
+
+/**
+ * An image pull whose progress arrives in the given chunks. Docker sends newline-delimited JSON,
+ * and a chunk can end part way through a message.
+ *
+ * @param chunks - Raw text of each chunk, in order
+ */
+export function pullStream(...chunks: string[]): NodeJS.ReadableStream {
+  return Readable.from(chunks.map(chunk => Buffer.from(chunk)));
+}
+
+/**
+ * An image pull that fails part way through.
+ *
+ * @param error - Error the stream emits
+ */
+export function failingPullStream(error: Error): NodeJS.ReadableStream {
+  return new Readable({
+    read() {
+      this.destroy(error);
+    },
+  });
 }

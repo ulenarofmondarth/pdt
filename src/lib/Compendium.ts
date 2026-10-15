@@ -66,9 +66,7 @@ export default class Compendium {
 
     const entries = await fg.glob([...sources]);
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    for (const source of entries) {
-      this.#docs.push(new CompendiumDoc());
-    }
+    // One document per matching file. Reading the file into the document is still to be done.
+    this.#docs.push(...entries.map(() => new CompendiumDoc()));
   }
 } // ...Compendium
