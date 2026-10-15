@@ -19,7 +19,7 @@ Documentation (this documentation), is written in Markdown ([MyST](https://myst-
 ## Basic Development Cycle
 
 :::{important}
-Before working on the code, create a new branch (`git switch my_new_branch`) to work on.
+Before working on the code, create a new branch from `dev` (`git switch -c my_new_branch dev`) to work on. See {ref}`project-branches`.
 
 This will ensure you don't run into problems later.
 

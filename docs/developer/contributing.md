@@ -24,4 +24,4 @@
 
 4. Do something awesome
 
-5. Submit a pull request
+5. Submit a pull request against `dev` (see {ref}`project-pull-request`)

@@ -16,7 +16,7 @@ There are three workflows under `.github/workflows`.
 
 ### `ci`
 
-Runs on every pull request. It is also called by the {ref}`release <release-workflow>` workflow, which covers every push to `main`. Work happens on short-lived branches (`feat/...`, `fix/...`) that reach `main` through a pull request. The jobs run in parallel:
+Runs on every pull request, whether into `dev` or from `dev` into `main` (see {ref}`project-branches`). It is also called by the {ref}`release <release-workflow>` workflow, which covers every push to `main`. The jobs run in parallel:
 
 - **Typecheck** with TypeScript 7, then again with the TypeScript 6 fallback (see {ref}`typescript-compilers`).
 - **Lint** with ESLint (warnings fail the job) and a Prettier formatting check.
@@ -43,16 +43,22 @@ Runs on every push to `main`. It first runs the whole of `ci`; only if that pass
 5. Commits `CHANGELOG.md`, `package.json` and `docs/conf.py` back to `main` as `chore(release): <version> [skip ci]` and tags the commit `v<version>`.
 6. Creates a GitHub release with the documentation zip attached.
 
-The workflow then publishes the documentation to GitHub Pages, whether or not a release was cut. Publishing uses GitHub's own Pages actions; there is no `gh-pages` branch.
+Once semantic-release has finished, the workflow merges `main` back into `dev`, so that a release commit is on both branches. When nothing was released this is a fast-forward of `dev` to the pull request's merge commit. If the merge conflicts, the job fails and the merge has to be done by hand.
+
+The workflow publishes the documentation to GitHub Pages, whether or not a release was cut. Publishing uses GitHub's own Pages actions; there is no `gh-pages` branch.
 
 The pipeline is configured in `release.config.js`. Publishing to `npmjs` is switched off there (`npmPublish: false`).
 
 ```{rubric} Repository requirements
 ```
 
-- A `PERSONAL_ACCESS_TOKEN` secret with permission to push to `main`. semantic-release uses it to push the release commit and tag, and to create the release.
+- A `PERSONAL_ACCESS_TOKEN` secret with permission to push to `main` and `dev`. semantic-release uses it to push the release commit and tag, and to create the release; the workflow uses it to merge `main` back into `dev`.
+- A `dev` branch on GitHub.
+- Merge commits allowed for pull requests (Settings → General → Pull Requests). Squash and rebase merging should be turned off; see {ref}`project-pull-request` for why.
 - GitHub Pages enabled for the repository with the source set to "GitHub Actions" (Settings → Pages).
 - A `v0.1.0` tag on `main` before the first release. semantic-release finds the previous version from git tags; with no tag at all the first release would be `1.0.0`.
+
+Recommended: a branch protection rule (or ruleset) on `main` that requires a pull request and the `ci` checks to pass, so nothing reaches a release without CI. If it blocks direct pushes, the token's owner must be allowed to bypass it, or the release commit cannot be pushed.
 
 :::{tip}
 `pnpm exec semantic-release --dry-run --no-ci` checks the configuration locally without releasing anything.

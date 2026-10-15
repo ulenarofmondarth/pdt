@@ -18,13 +18,15 @@ pnpm install
 
 ## Workflow
 
-1. Fork the repository and create a short-lived branch from `main`, named for the change: `feat/...`, `fix/...`, `docs/...`.
+1. Fork the repository and create a short-lived branch from `dev`, named for the change: `feat/...`, `fix/...`, `docs/...`.
 2. Write a failing test first, then the change. A bug fix starts with a test that reproduces the bug.
 3. Run the checks (below).
 4. Commit using Conventional Commits.
-5. Open a pull request against `main`. CI must pass before it is merged.
+5. Open a pull request against `dev`. CI must pass before it is merged.
 
 Keep pull requests small and focused, and update the documentation alongside the code.
+
+`dev` is where work is integrated; `main` holds what has been released. Releases are made by the maintainer through a pull request from `dev` into `main`, merged with a merge commit (never squashed or rebased, since the individual commit messages decide the version).
 
 ## Checks
 
@@ -60,7 +62,7 @@ Commits must follow [Conventional Commits](https://www.conventionalcommits.org).
 
 When you commit from a terminal, Commitizen prompts you for the parts of the message. `commitlint` then rejects any message that does not conform. Reference issues with `Closes #N` in the body so that the release notes link to them.
 
-Releases are fully automated: merging to `main` runs CI and then semantic-release, which versions, tags and publishes. Never edit the version number or `CHANGELOG.md` by hand.
+Releases are fully automated: merging `dev` into `main` runs CI and then semantic-release, which versions, tags and publishes, and then merges the release commit back into `dev`. Never edit the version number or `CHANGELOG.md` by hand.
 
 ## Git hooks
 
