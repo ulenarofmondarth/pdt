@@ -94,7 +94,7 @@
     "chalk": "^6.0.1",
     "classic-level": "^3.0.0",
     "config": "^3.3.12",
-    "dockerode": "^4.0.4",
+    "dockerode": "^5.0.1",
     "fast-glob": "^3.3.3",
     "figlet": "^1.8.0",
     "find-up": "^8.0.0",
