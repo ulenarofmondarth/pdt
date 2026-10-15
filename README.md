@@ -1,6 +1,9 @@
 # pdt — Foundry VTT Package Developer Toolkit
 
+[![Dev CI](https://github.com/ulenarofmondarth/pdt/actions/workflows/dev.yml/badge.svg?branch=dev)](https://github.com/ulenarofmondarth/pdt/actions/workflows/dev.yml)
 [![Release](https://github.com/ulenarofmondarth/pdt/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/ulenarofmondarth/pdt/actions/workflows/release.yml)
+[![CodeQL](https://github.com/ulenarofmondarth/pdt/actions/workflows/codeql.yml/badge.svg?branch=dev)](https://github.com/ulenarofmondarth/pdt/actions/workflows/codeql.yml)
+[![Unit coverage](https://img.shields.io/codecov/c/github/ulenarofmondarth/pdt/dev?flag=unit&label=unit%20coverage&logo=codecov)](https://app.codecov.io/gh/ulenarofmondarth/pdt/tree/dev?flags%5B0%5D=unit)
 [![Latest release](https://img.shields.io/github/v/release/ulenarofmondarth/pdt)](https://github.com/ulenarofmondarth/pdt/releases/latest)
 [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://ulenarofmondarth.github.io/pdt/)
 [![License: MIT](https://img.shields.io/github/license/ulenarofmondarth/pdt)](LICENSE)
