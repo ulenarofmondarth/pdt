@@ -129,6 +129,17 @@ describe('DockerHost', () => {
       expect(created.start).toHaveBeenCalledOnce();
     });
 
+    test('creates the container detached from all standard streams', async () => {
+      container.inspect.mockRejectedValue(dockerError(404));
+      const host = new DockerHost(HOST_CONFIG);
+
+      await host.start(server);
+
+      const [options] = docker.createContainer.mock.calls[0]!;
+      expect(options).toMatchObject({ AttachStdin: false, AttachStdout: false, AttachStderr: false });
+      expect(options).not.toHaveProperty('AttackStdout');
+    });
+
     test('fails with the cause when the container cannot be created', async () => {
       const cause = dockerError(500);
       container.inspect.mockRejectedValue(dockerError(404));

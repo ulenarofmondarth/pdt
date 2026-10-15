@@ -9,6 +9,7 @@ import VTTHost from '@lib/VTT/VTTHost.js';
 import Docker, { Container } from 'dockerode';
 import VTTServer from '../VTTServer.js';
 
+import type { ContainerCreateOptions } from 'dockerode';
 import type { VTTHostConfig } from '../VTTHost.js';
 
 export type DockerHostConfig = VTTHostConfig & {
@@ -55,13 +56,13 @@ export default class DockerHost extends VTTHost {
       name: 'interesting-name',
       Image: 'felddy/foundryvtt:12',
       AttachStdin: false,
-      AttackStdout: false,
+      AttachStdout: false,
       AttachStderr: false,
       Tty: false,
       HostConfig: {
         AutoRemove: false,
       },
-    };
+    } satisfies ContainerCreateOptions;
     const container: Container = this.docker.getContainer(serverOptions.name);
 
     await container
