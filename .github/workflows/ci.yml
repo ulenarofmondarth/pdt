@@ -1,6 +1,7 @@
 name: CI
 
-# Pushes to main are covered by the release workflow, which calls this one.
+# Runs on pull requests into dev and from dev into main. Pushes to main are covered by the
+# release workflow, which calls this one.
 on:
   pull_request:
   workflow_call:
