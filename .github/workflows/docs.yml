@@ -1,5 +1,7 @@
 name: Docs
 
+# Builds the documentation (.github/actions/build-docs) and keeps it as an artifact. Called by
+# Dev CI; the release workflow builds it in its Pages job instead, from the release tag.
 on:
   workflow_call:
   workflow_dispatch:
@@ -12,30 +14,12 @@ jobs:
     name: Build documentation
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: docker/setup-buildx-action@v4
+      - uses: ./.github/actions/build-docs
 
-      # All Python tooling lives in the image built from docs/Dockerfile; nothing is
-      # installed on the runner.
-      - name: Build the Sphinx image
-        uses: docker/build-push-action@v7
-        with:
-          context: docs
-          tags: pdt-docs
-          load: true
-          cache-from: type=gha,scope=docs
-          cache-to: type=gha,scope=docs,mode=max
-
-      # Warnings fail the build (see docs/Makefile).
-      - name: Build documentation
-        run: |
-          DOCS_UID=$(id -u) DOCS_GID=$(id -g) \
-            docker compose -f docs/compose.yaml run --rm --no-deps -T docs make html
-
-      - name: Upload documentation
-        uses: actions/upload-artifact@v4
+      - name: Keep the documentation
+        uses: actions/upload-artifact@v7
         with:
           name: documentation
           path: docs/_build/html

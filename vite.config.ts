@@ -12,7 +12,8 @@ export default defineConfig({
       provider: 'v8',
       include: ['src/**/*.ts'],
       exclude: ['src/paraglide/**', '**/*.d.ts'],
-      reporter: ['text', 'html', 'lcov'],
+      // lcov feeds Codecov; json-summary feeds the CI job summary.
+      reporter: ['text', 'html', 'lcov', 'json-summary'],
       // Floor set just below the measured level; ratchet upward as tests are added.
       thresholds: { statements: 98, branches: 95, functions: 90, lines: 98 },
     },
