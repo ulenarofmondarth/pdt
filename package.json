@@ -8,6 +8,16 @@
     "url": "https://github.com/ulenarofmondarth/pdt/issues"
   },
   "homepage": "https://github.com/ulenarofmondarth/pdt#readme",
+  "funding": [
+    {
+      "type": "patreon",
+      "url": "https://patreon.com/Mondarth"
+    },
+    {
+      "type": "ko-fi",
+      "url": "https://ko-fi.com/ulenarofmondarth"
+    }
+  ],
   "main": "dist/index.js",
   "bin": {
     "pdt": "./dist/index.js"

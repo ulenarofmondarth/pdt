@@ -63,6 +63,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 [MIT](LICENSE)
 
+## Supporting the project
+
+If you find this useful, you can support its development on [Patreon](https://patreon.com/Mondarth) or [Ko-fi](https://ko-fi.com/ulenarofmondarth).
+
 ## AI Disclosure
 
 Parts of this project, including code, tests, configuration and documentation, were produced with AI assistance. All changes are human-reviewed before they are merged.
