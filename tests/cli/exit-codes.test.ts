@@ -39,6 +39,7 @@ describe('exit codes and output', () => {
     ['an unknown command', ['nosuchcmd']],
     ['an unknown option', ['info', '--bogus']],
     ['vtt without its command', ['vtt']],
+    ['an unknown vtt command', ['vtt', 'explode']],
   ])('%s fails with the usage code, explaining on standard error', async (_case, args) => {
     const { code, stdout, stderr } = await sandbox.run(args);
 

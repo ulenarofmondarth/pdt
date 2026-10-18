@@ -1,6 +1,5 @@
 import PDT from '@/constants.js';
 import path from 'node:path';
-import os from 'node:os';
 import { findUpSync } from 'find-up';
 
 export class RTCError extends Error {
@@ -101,11 +100,3 @@ export function resolvePaths(context: PathsContext): PdtPaths {
     pdtConfigDir: findConfig(context.cwd, context.home),
   };
 }
-
-/** The directories of this process. */
-export const pfs: Readonly<PdtPaths> = resolvePaths({
-  cwd: process.cwd(),
-  home: os.homedir(),
-  platform: process.platform,
-  env: process.env,
-});

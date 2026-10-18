@@ -6,8 +6,11 @@ import { main, type MainContext } from '@/main.js';
 import PDT from '@/constants.js';
 import logger, { configureLogger, setLogDirectory } from '@util/logger.js';
 import { m } from '@i18n/messages.js';
+import { createModule } from '@lib/ModuleGenerator.js';
+import { UNASKED_PROMPTER } from '@tests/unit/mocks/context.js';
 
 import type { CommandModule } from 'yargs';
+import type { CommandContext } from '@/cli/context.js';
 
 vi.mock('@util/logger.js', async () => (await import('@tests/unit/mocks/logger.js')).createLoggerModuleMock());
 
@@ -52,7 +55,7 @@ describe('main', () => {
     test('runs the command it is given and succeeds', async () => {
       const run = command('run');
 
-      await expect(main(['run'], context, [run])).resolves.toBe(PDT.EXITCODE.OK);
+      await expect(main(['run'], context, () => [run])).resolves.toBe(PDT.EXITCODE.OK);
       expect(run.handler).toHaveBeenCalledOnce();
       expect(err).toEqual([]);
     });
@@ -65,7 +68,7 @@ describe('main', () => {
         finished = true;
       });
 
-      await main(['slow'], context, [slow]);
+      await main(['slow'], context, () => [slow]);
 
       expect(finished).toBe(true);
     });
@@ -75,7 +78,7 @@ describe('main', () => {
         throw new Error('it broke');
       });
 
-      await expect(main(['broken'], context, [broken])).resolves.toBe(PDT.EXITCODE.ERROR);
+      await expect(main(['broken'], context, () => [broken])).resolves.toBe(PDT.EXITCODE.ERROR);
       expect(logger.error).toHaveBeenCalledExactlyOnceWith('it broke');
     });
 
@@ -84,7 +87,7 @@ describe('main', () => {
         throw 'just a string';
       });
 
-      await expect(main(['broken'], context, [broken])).resolves.toBe(PDT.EXITCODE.ERROR);
+      await expect(main(['broken'], context, () => [broken])).resolves.toBe(PDT.EXITCODE.ERROR);
       expect(logger.error).toHaveBeenCalledExactlyOnceWith('just a string');
     });
   });
@@ -98,12 +101,12 @@ describe('main', () => {
     ])('fails with the usage code for %s', async (_case, args) => {
       const run = command('run');
 
-      await expect(main(args, context, [run])).resolves.toBe(PDT.EXITCODE.USAGE);
+      await expect(main(args, context, () => [run])).resolves.toBe(PDT.EXITCODE.USAGE);
       expect(run.handler).not.toHaveBeenCalled();
     });
 
     test('explains the problem on standard error, with the usage', async () => {
-      await main(['nosuchcmd'], context, [command('run')]);
+      await main(['nosuchcmd'], context, () => [command('run')]);
 
       expect(out).toEqual([]);
       expect(err.join('\n')).toContain('nosuchcmd');
@@ -113,7 +116,7 @@ describe('main', () => {
 
   describe('output the user asked for', () => {
     test('prints the help and succeeds', async () => {
-      await expect(main(['--help'], context, [command('run')])).resolves.toBe(PDT.EXITCODE.OK);
+      await expect(main(['--help'], context, () => [command('run')])).resolves.toBe(PDT.EXITCODE.OK);
 
       expect(out.join('\n')).toContain('the run command');
       expect(err).toEqual([]);
@@ -122,13 +125,13 @@ describe('main', () => {
     test('prints the version and succeeds', async () => {
       const { version } = JSON.parse(fs.readFileSync('package.json', 'utf8')) as { version: string };
 
-      await expect(main(['--version'], context, [command('run')])).resolves.toBe(PDT.EXITCODE.OK);
+      await expect(main(['--version'], context, () => [command('run')])).resolves.toBe(PDT.EXITCODE.OK);
 
       expect(out).toEqual([version]);
     });
 
     test('prints nothing extra after a command', async () => {
-      await main(['run'], context, [command('run')]);
+      await main(['run'], context, () => [command('run')]);
 
       expect(out).toEqual([]);
     });
@@ -138,13 +141,13 @@ describe('main', () => {
     test('configures the logger from the configuration files', async () => {
       writeUserConfig('{ "Logging": { "level": "debug", "filename": "mine.log" } }');
 
-      await main(['run'], context, [command('run')]);
+      await main(['run'], context, () => [command('run')]);
 
       expect(configureLogger).toHaveBeenCalledExactlyOnceWith({ level: 'debug', filename: 'mine.log' });
     });
 
     test('takes the log level from the environment it is given', async () => {
-      await main(['run'], { ...context, env: { PDT_LOG_LEVEL: 'silly' } }, [command('run')]);
+      await main(['run'], { ...context, env: { PDT_LOG_LEVEL: 'silly' } }, () => [command('run')]);
 
       expect(configureLogger).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ level: 'silly' }));
     });
@@ -155,7 +158,7 @@ describe('main', () => {
       fs.mkdirSync(pdtConfigDir, { recursive: true });
       fs.writeFileSync(path.join(pdtConfigDir, 'config.json'), '{ "Logging": { "level": "error" } }');
 
-      await main(['run'], { ...context, paths: { ...context.paths, pdtConfigDir } }, [command('run')]);
+      await main(['run'], { ...context, paths: { ...context.paths, pdtConfigDir } }, () => [command('run')]);
 
       expect(configureLogger).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ level: 'error' }));
     });
@@ -164,7 +167,7 @@ describe('main', () => {
       writeUserConfig('{ "Logging": { "level": "chatty", "filename": 42 } }');
       const run = command('run');
 
-      await expect(main(['run'], context, [run])).resolves.toBe(PDT.EXITCODE.INVALID_CONFIG);
+      await expect(main(['run'], context, () => [run])).resolves.toBe(PDT.EXITCODE.INVALID_CONFIG);
 
       expect(run.handler).not.toHaveBeenCalled();
       expect(err.join('\n')).toContain(m['error.config.invalid']());
@@ -175,7 +178,7 @@ describe('main', () => {
     test('names a configuration file that is not JSON', async () => {
       writeUserConfig('{ not json');
 
-      await expect(main(['run'], context, [command('run')])).resolves.toBe(PDT.EXITCODE.INVALID_CONFIG);
+      await expect(main(['run'], context, () => [command('run')])).resolves.toBe(PDT.EXITCODE.INVALID_CONFIG);
 
       expect(err.join('\n')).toContain(path.join(context.paths.userConfigDir, 'config.json'));
     });
@@ -183,7 +186,7 @@ describe('main', () => {
 
   describe('log file', () => {
     test('is in the user data directory outside a project', async () => {
-      await main(['run'], context, [command('run')]);
+      await main(['run'], context, () => [command('run')]);
 
       expect(setLogDirectory).toHaveBeenCalledExactlyOnceWith(context.paths.userDataDir);
     });
@@ -191,15 +194,81 @@ describe('main', () => {
     test("is in the project's directory inside a project", async () => {
       const pdtConfigDir = path.join(sandbox, 'module', PDT.PROJECT_RTD_DIR_NAME);
 
-      await main(['run'], { ...context, paths: { ...context.paths, pdtConfigDir } }, [command('run')]);
+      await main(['run'], { ...context, paths: { ...context.paths, pdtConfigDir } }, () => [command('run')]);
 
       expect(setLogDirectory).toHaveBeenCalledExactlyOnceWith(pdtConfigDir);
     });
 
     test('records what was parsed at debug level', async () => {
-      await main(['run'], context, [command('run')]);
+      await main(['run'], context, () => [command('run')]);
 
       expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('"run"'));
+    });
+  });
+
+  describe('what commands work with', () => {
+    /** Run with a command that records the context it was given. */
+    async function contextGiven(run: MainContext = context): Promise<CommandContext> {
+      let given: CommandContext | undefined;
+      await main(['run'], run, ctx => {
+        given = ctx;
+        return [command('run')];
+      });
+      return given!;
+    }
+
+    test('is the paths and the loaded configuration', async () => {
+      writeUserConfig('{ "Logging": { "level": "debug" } }');
+
+      const given = await contextGiven();
+
+      expect(given.paths).toBe(context.paths);
+      expect(given.config.Logging.level).toBe('debug');
+      expect(given.config.VTT['prj']?.host.image).toBe('felddy/foundryvtt');
+    });
+
+    test('writes output where the user will see it', async () => {
+      const given = await contextGiven();
+
+      given.out('the result');
+
+      expect(out).toEqual(['the result']);
+    });
+
+    test('logs through the logger', async () => {
+      const given = await contextGiven();
+
+      given.log.error('an error');
+      given.log.warn('a warning');
+      given.log.info('some news');
+      given.log.debug('a detail');
+      given.log.setDirectory('/somewhere');
+
+      expect(logger.error).toHaveBeenCalledWith('an error');
+      expect(logger.warn).toHaveBeenCalledWith('a warning');
+      expect(logger.info).toHaveBeenCalledWith('some news');
+      expect(logger.debug).toHaveBeenCalledWith('a detail');
+      expect(setLogDirectory).toHaveBeenLastCalledWith('/somewhere');
+    });
+
+    test('asks questions through the prompter it was given', async () => {
+      const prompter = UNASKED_PROMPTER;
+
+      const given = await contextGiven({ ...context, prompter });
+
+      expect(given.prompter).toBe(prompter);
+    });
+
+    test('has no prompter when nobody can be asked', async () => {
+      const given = await contextGiven();
+
+      expect(given).not.toHaveProperty('prompter');
+    });
+
+    test('creates modules with the generator', async () => {
+      const given = await contextGiven();
+
+      expect(given.createModule).toBe(createModule);
     });
   });
 });
