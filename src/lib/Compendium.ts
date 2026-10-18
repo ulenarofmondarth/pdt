@@ -1,74 +1,48 @@
 import fg from 'fast-glob';
 import CompendiumDoc from '@lib/CompendiumDoc.js';
+import { m } from '@i18n/messages.js';
 
-export default class Compendium {
-  protected static registeredDBTypes: Set<typeof Compendium> = new Set();
-
+/**
+ * A compendium pack: its database, and the documents in it.
+ *
+ * Each kind of database has a subclass. To open the compendium at a path without knowing its kind,
+ * use {@link lib/compendiums.openCompendium | openCompendium}.
+ */
+export default abstract class Compendium {
   #docs: Array<CompendiumDoc> = [];
 
   /**
-   * return a Compendium found at the given path
-   *
-   * @param path - path to the compendium database
-   *
-   * @return a Compendium appropriate to the database at ``path``
+   * @param path - Where the compendium's database is
    */
-  static async byPath(path: string): Promise<Compendium> {
-    const dbType = await Compendium.probe(path);
-
-    if (dbType == undefined) {
-      return Promise.reject(new Error(`${path} is not a recognised Compendium database`));
-    }
-
-    return new dbType();
-  }
-
-  /**
-   * Returns the class for the compendium detected at path
-   *
-   * @param path - Path to be tested
-   *
-   * @returns The class for the Compendium type or undefined
-   */
-  static async probe(path: string): Promise<typeof Compendium | undefined> {
-    for (const dbType of this.registeredDBTypes) {
-      if (typeof (await dbType.probe(path)) !== 'undefined') {
-        return dbType;
-      }
-    }
-
-    return undefined;
-  }
+  constructor(readonly path: string) {}
 
   get docs() {
     return this.#docs;
   }
 
   /**
-   * Exports the content of the Compendium to the specified target path
+   * Exports the content of the Compendium to the specified target path. Not supported yet.
    *
-   * @param targets - the source path patterns
-   *
+   * @param targets - the target path patterns
+   * @throws Always, until exporting is built
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async export(targets: string | Iterable<string>) {}
+  async export(targets: string | Iterable<string>): Promise<void> {
+    const list = typeof targets === 'string' ? [targets] : [...targets];
+    throw new Error(m['error.compendium.exportUnsupported']({ path: this.path, targets: list.join(', ') }));
+  }
 
   /**
    * Imports the sources from the specified source paths
    *
-   * @param sources - the source path patterns
-   *
+   * @param sources - the source path patterns; absolute, or relative to `cwd`
+   * @param cwd - the directory relative patterns are matched in
    */
-  async import(sources: string | Iterable<string>) {
-    if (typeof sources == 'string') {
-      sources = [sources];
-    }
+  async import(sources: string | Iterable<string>, cwd: string): Promise<void> {
+    const patterns = typeof sources === 'string' ? [sources] : [...sources];
 
-    const entries = await fg.glob([...sources]);
+    const entries = await fg.glob(patterns, { cwd });
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    for (const source of entries) {
-      this.#docs.push(new CompendiumDoc());
-    }
+    // One document per matching file. Reading the file into the document is still to be done.
+    this.#docs.push(...entries.map(() => new CompendiumDoc()));
   }
-} // ...Compendium
+}

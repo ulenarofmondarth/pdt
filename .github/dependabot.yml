@@ -1,8 +1,39 @@
 version: 2
 updates:
+  - package-ecosystem: npm
+    directory: /
+    target-branch: dev
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: build(deps)
+      prefix-development: build(deps-dev)
+    ignore:
+      # Version 10 needs conventional-changelog-writer 9, but semantic-release's notes generator
+      # still uses writer 8 (tests/unit/config/release-notes.test.ts). Lift this once it upgrades.
+      - dependency-name: conventional-changelog-conventionalcommits
+        update-types: ['version-update:semver-major']
+      # The types must match the oldest Node.js we support (engines, .nvmrc), or newer APIs
+      # type-check and then fail at run time. Moved by hand with the baseline.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+    groups:
+      vite:
+        patterns: ['vite', 'vite-*', 'vitest', '@vitest/*', 'rollup-plugin-*']
+      typescript:
+        patterns: ['typescript', 'typescript7', 'tsconfig-paths', 'typedoc', 'typedoc-*']
+      lint:
+        patterns:
+          ['eslint', '@eslint/*', 'eslint-*', '@babel/eslint-parser', 'typescript-eslint', 'globals', 'prettier']
+      commit-tooling:
+        patterns: ['@commitlint/*', 'commitizen', 'cz-*', 'husky', 'lint-staged', 'jiti']
+      release:
+        patterns: ['semantic-release', '@semantic-release/*', 'conventional-changelog-*']
+
   # Python requirements of the documentation build.
   - package-ecosystem: pip
     directory: /docs
+    target-branch: dev
     schedule:
       interval: weekly
     commit-message:
@@ -11,13 +42,15 @@ updates:
   # Base image of the documentation build.
   - package-ecosystem: docker
     directory: /docs
+    target-branch: dev
     schedule:
       interval: weekly
     commit-message:
       prefix: build(docs)
 
   - package-ecosystem: github-actions
-    directory: /
+    directories: ['/', '/.github/actions/*']
+    target-branch: dev
     schedule:
       interval: weekly
     commit-message:

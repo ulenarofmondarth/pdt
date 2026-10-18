@@ -1,15 +1,17 @@
-import { describe, expect, test, vi } from 'vitest';
-import { parser } from '@/cli/parsers.js';
-
-// Parsing must not write log files.
-vi.mock('@util/logger.js', async () => (await import('@tests/unit/mocks/logger.js')).createLoggerModuleMock());
+import { describe, expect, test } from 'vitest';
+import { createParser } from '@/cli/parsers.js';
+import { pdtCommands } from '@/cli/commands.js';
+import { createCommandContext } from '@tests/unit/mocks/context.js';
 
 type ParseResult = { err: Error | null; output: string };
 
 /** Parse a command line, capturing what yargs would have printed. */
 function parse(commandLine: string): Promise<ParseResult> {
   return new Promise(resolve => {
-    parser.parse(commandLine, (err: Error | null, _argv: unknown, output: string) => resolve({ err, output }));
+    createParser(pdtCommands(createCommandContext())).parse(
+      commandLine,
+      (err: Error | null, _argv: unknown, output: string) => resolve({ err, output }),
+    );
   });
 }
 
@@ -37,5 +39,11 @@ describe('command line parser', () => {
 
     expect(err).toBeFalsy();
     expect(output).toMatch(new RegExp(`^\\s+\\S+ ${command}\\b`, 'm'));
+  });
+
+  // Regression guard: the parser was built once, from the process's arguments, when its module loaded.
+  test('is a new parser each time', () => {
+    // Compared directly: a matcher would read the parser's argv property, which parses process.argv.
+    expect(createParser([]) === createParser([])).toBe(false);
   });
 });

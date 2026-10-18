@@ -21,8 +21,8 @@ pnpm install
 1. Fork the repository and create a short-lived branch from `dev`, named for the change: `feat/...`, `fix/...`, `docs/...`.
 2. Write a failing test first, then the change. A bug fix starts with a test that reproduces the bug.
 3. Run the checks (below).
-4. Commit using Conventional Commits.
-5. Open a pull request against `dev`. CI must pass before it is merged.
+4. Commit using Conventional Commits (see below).
+5. Open a pull request against `dev`. The **CI passed** check must be green before it is merged.
 
 Keep pull requests small and focused, and update the documentation alongside the code.
 
@@ -30,17 +30,18 @@ Keep pull requests small and focused, and update the documentation alongside the
 
 ## Checks
 
-| Command               | What it checks                                                  |
-| --------------------- | --------------------------------------------------------------- |
-| `pnpm typecheck`      | Types, with TypeScript 7                                        |
-| `pnpm lint`           | ESLint                                                          |
-| `pnpm prettier:check` | Formatting (`pnpm prettier:format` fixes it)                    |
-| `pnpm test`           | Unit tests                                                      |
-| `pnpm test:coverage`  | Unit tests with coverage; fails below the configured thresholds |
-| `pnpm build`          | The bundle builds                                               |
-| `pnpm build:docs`     | The documentation builds with no warnings                       |
+| Command              | What it checks                                                         |
+| -------------------- | ---------------------------------------------------------------------- |
+| `pnpm typecheck`     | Types, with TypeScript 7 (`pnpm typecheck:fallback` uses TypeScript 6) |
+| `pnpm lint`          | ESLint; warnings fail                                                  |
+| `pnpm format:check`  | Formatting (`pnpm format` fixes it)                                    |
+| `pnpm test`          | Unit tests                                                             |
+| `pnpm test:coverage` | Unit tests with coverage; fails below the configured thresholds        |
+| `pnpm build`         | The bundle builds                                                      |
+| `pnpm test:cli`      | The built CLI, run as a user would (after `pnpm build`)                |
+| `pnpm build:docs`    | The documentation builds with no warnings                              |
 
-CI runs all of these on every pull request.
+CI runs all of these on every pull request, and also checks the commit messages.
 
 ## Code standards
 
@@ -51,16 +52,22 @@ CI runs all of these on every pull request.
 
 ## Commit messages
 
-Commits must follow [Conventional Commits](https://www.conventionalcommits.org). The type decides the next version number, so choose it with care:
+Commits must follow [Conventional Commits](https://www.conventionalcommits.org), with these extra rules:
 
-| Type                                               | Release |
-| -------------------------------------------------- | ------- |
-| `fix`                                              | patch   |
-| `feat`                                             | minor   |
-| `!` after the type, or a `BREAKING CHANGE:` footer | major   |
-| `docs`, `test`, `refactor`, `build`, `ci`, `chore` | none    |
+- a scope is required: `fix(cli): …`;
+- the header is at most 72 characters;
+- the subject is in the imperative mood: "add", not "added" or "adds".
 
-When you commit from a terminal, Commitizen prompts you for the parts of the message. `commitlint` then rejects any message that does not conform. Reference issues with `Closes #N` in the body so that the release notes link to them.
+The type decides the next version number, so choose it with care:
+
+| Type                                                                | Release |
+| ------------------------------------------------------------------- | ------- |
+| `fix`                                                               | patch   |
+| `feat`                                                              | minor   |
+| `!` after the scope, or a `BREAKING CHANGE:` footer                 | major   |
+| `docs`, `test`, `refactor`, `style`, `perf`, `build`, `ci`, `chore` | none    |
+
+When you commit from a terminal, Commitizen prompts you for the parts of the message (or run `pnpm commit`). commitlint then rejects any message that does not conform. Reference issues with `Closes #N` in the body so that the release notes link to them.
 
 Releases are fully automated: merging `dev` into `main` runs CI and then semantic-release, which versions, tags and publishes, and then merges the release commit back into `dev`. Never edit the version number or `CHANGELOG.md` by hand.
 
@@ -79,7 +86,7 @@ git commit --no-verify -m "fix(scope): describe the change"
 Before you push, fix whatever blocked the hooks, then revalidate:
 
 ```shell
-pnpm prettier:check && pnpm lint && pnpm typecheck && pnpm test
+pnpm format:check && pnpm lint && pnpm typecheck && pnpm test
 git commit --amend --no-edit
 ```
 

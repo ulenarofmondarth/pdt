@@ -1,7 +1,6 @@
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
-/// <reference types="vitest/config" />
 import path from 'node:path';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import { nodeExternals } from 'rollup-plugin-node-externals';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
@@ -12,9 +11,10 @@ export default defineConfig({
       provider: 'v8',
       include: ['src/**/*.ts'],
       exclude: ['src/paraglide/**', '**/*.d.ts'],
-      reporter: ['text', 'html', 'lcov'],
+      // lcov feeds Codecov; json-summary feeds the CI job summary.
+      reporter: ['text', 'html', 'lcov', 'json-summary'],
       // Floor set just below the measured level; ratchet upward as tests are added.
-      thresholds: { statements: 98, branches: 95, functions: 90, lines: 98 },
+      thresholds: { statements: 99, branches: 97, functions: 99, lines: 99 },
     },
   },
   resolve: {
@@ -39,7 +39,7 @@ export default defineConfig({
         return `${pathOffset}${path.basename(entryName)}.js`;
       },
     },
-    rollupOptions: {
+    rolldownOptions: {
       output: [
         {
           dir: 'dist',

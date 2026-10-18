@@ -1,13 +1,17 @@
-import config from '@util/config.js';
-import { pfs } from '@util/runtime-config.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Writable } from 'node:stream';
 import winston from 'winston';
+import defaults from '@/pdt-internal-config/default.json' with { type: 'json' };
+import { m } from '@i18n/messages.js';
 
-const logFilename = String(config.get('Logging.filename'));
+import type { Config } from '@schema/config.js';
 
-let logDirectory = pfs.pdtConfigDir ?? pfs.userDataDir;
+let logFilename = defaults.Logging.filename;
+/** No file output until a directory is set. */
+let logDirectory: string | undefined;
+/** Set once writing to the log file in the current directory has failed. */
+let fileFailed = false;
 let closing: Promise<void> | undefined;
 
 /**
@@ -17,40 +21,70 @@ let closing: Promise<void> | undefined;
  * finished before that output is on disk, so lines are lost if the process exits promptly.
  * A CLI logs little, so the cost of a synchronous append is not a concern.
  *
- * The file is only created when the first line is written.
+ * The file is only created when the first line is written. Until a directory is set, lines go to
+ * the console only.
+ *
+ * A log file that cannot be written must not stop pdt, so a failure is reported once, on standard
+ * error, and lines go to the console only until another directory is set. Passing the error on
+ * would make it an unhandled 'error' event, which ends the process.
  */
 const logFile = new Writable({
   write(chunk: Buffer, _encoding, callback) {
+    if (logDirectory === undefined || fileFailed) {
+      callback();
+      return;
+    }
+    const file = path.join(logDirectory, logFilename);
     try {
       fs.mkdirSync(logDirectory, { recursive: true });
-      fs.appendFileSync(path.join(logDirectory, logFilename), chunk);
-      callback();
+      fs.appendFileSync(file, chunk);
     } catch (error) {
-      callback(error instanceof Error ? error : new Error(String(error)));
+      fileFailed = true;
+      // Not through the logger: this is the logger failing.
+      console.error(
+        m['warn.logFileUnavailable']({ file, reason: error instanceof Error ? error.message : String(error) }),
+      );
     }
+    callback();
   },
 });
 
 const logger = winston.createLogger({
-  level: config.get('Logging.level'),
+  level: defaults.Logging.level,
   transports: [
     new winston.transports.Stream({ stream: logFile }),
     new winston.transports.Console({
       format: winston.format.cli(),
+      // Log messages are diagnostics, so they all go to standard error, leaving standard output for
+      // what the user asked for (help, the version, a command's results).
+      stderrLevels: Object.keys(winston.config.npm.levels),
     }),
   ],
 });
 
 /**
+ * Apply the logging configuration: the level, and the name of the log file.
+ *
+ * Until this is called the logger uses the shipped defaults.
+ *
+ * @param settings - The `Logging` section of the configuration
+ */
+export function configureLogger({ level, filename }: Config['Logging']): void {
+  logger.level = level;
+  logFilename = filename;
+}
+
+/**
  * Send all further file output to the log file in another directory.
  *
- * The directory is otherwise chosen once, when this module loads. Use this when the
- * right place only comes into existence later, e.g. when a project is initialised.
+ * pdt sets this as it starts. Set it again when the right place only comes into
+ * existence later, e.g. when a project is initialised.
  *
  * @param dir - Directory that will hold the log file
  */
 export function setLogDirectory(dir: string): void {
   logDirectory = path.resolve(dir);
+  fileFailed = false;
 }
 
 /**
@@ -65,19 +99,6 @@ export function closeLogger(): Promise<void> {
   });
 
   return closing;
-}
-
-/**
- * Terminate the process once all log output has been written.
- *
- * Always use this in place of `process.exit()`, which can discard log output that is
- * still on its way through the logger.
- *
- * @param code - Process exit code
- */
-export async function exit(code: number): Promise<never> {
-  await closeLogger();
-  process.exit(code);
 }
 
 export default logger;

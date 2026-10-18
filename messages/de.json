@@ -38,12 +38,32 @@
   "warn": {
     "pdtParentExists": "Versuch, ein PDT-Unterprojekt anzulegen (mit -f erzwingen).\n  Übergeordnetes Projekt unter {path}",
     "alreadyExists": "{description} existiert bereits.",
-    "moduleNotGenerated": "{path} ist nicht leer, daher wird dort kein Modul angelegt. Ignoriert: {options}"
+    "moduleNotGenerated": "{path} ist nicht leer, daher wird dort kein Modul angelegt. Ignoriert: {options}",
+    "logFileUnavailable": "Die Protokolldatei {file} kann nicht geschrieben werden, daher erscheinen Meldungen nur in der Konsole: {reason}"
   },
   "error": {
     "notInPdtProject": "Kein PDT-Projekt.",
     "optionRequired": "{option} ist erforderlich, wenn die Fragen nicht gestellt werden.",
-    "optionInvalid": "Ungültiger Wert für {option} \"{value}\": {reason}"
+    "optionInvalid": "Ungültiger Wert für {option} \"{value}\": {reason}",
+    "config": {
+      "invalid": "Die Konfiguration ist ungültig:",
+      "unreadable": "Die Konfigurationsdatei {file} konnte nicht gelesen werden: {reason}",
+      "notAnObject": "Die Konfigurationsdatei {file} muss ein JSON-Objekt enthalten."
+    },
+    "commandRequired": "Mindestens ein Befehl der obersten Ebene ist erforderlich.",
+    "vtt": {
+      "unknownServerType": "Unbekannter VTT-Servertyp: {type}",
+      "unknownHostType": "Unbekannter VTT-Hosttyp: {type}",
+      "noVersion": "Server {server} hat keine Version, die auf einem Docker-Host laufen kann.",
+      "pullFailed": "{image} konnte nicht geladen werden: {reason}",
+      "startFailed": "Server {server} konnte auf dem Docker-Host nicht gestartet werden.",
+      "stopUnsupported": "Das Stoppen von Server {server} wird auf einem Docker-Host noch nicht unterstützt.",
+      "restartUnsupported": "Der Neustart von Server {server} wird auf einem Docker-Host noch nicht unterstützt."
+    },
+    "compendium": {
+      "notRecognised": "{path} ist keine erkannte Kompendium-Datenbank.",
+      "exportUnsupported": "Das Exportieren des Kompendiums unter {path} nach {targets} wird noch nicht unterstützt."
+    }
   },
   "fatal": {
     "shouldNeverRun": "Sollte niemals ausgeführt werden: {argv}",

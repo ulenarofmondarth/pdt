@@ -17,13 +17,16 @@ describe('CompendiumLevelDB', () => {
     await fs.rm(workdir, { recursive: true, force: true });
   });
 
-  test('is a Compendium', () => {
-    expect(new CompendiumLevelDB()).toBeInstanceOf(Compendium);
+  test('is a Compendium, at the path it is given', () => {
+    const compendium = new CompendiumLevelDB(path.join(workdir, 'leveldb'));
+
+    expect(compendium).toBeInstanceOf(Compendium);
+    expect(compendium.path).toBe(path.join(workdir, 'leveldb'));
   });
 
   describe('probe', () => {
     test('recognises a LevelDB database', async () => {
-      await expect(CompendiumLevelDB.probe(path.join(workdir, 'leveldb'))).resolves.toBe(CompendiumLevelDB);
+      await expect(CompendiumLevelDB.probe(path.join(workdir, 'leveldb'))).resolves.toBe(true);
     });
 
     test('can probe the same database twice, so it releases the database after each probe', async () => {
@@ -31,11 +34,11 @@ describe('CompendiumLevelDB', () => {
 
       await CompendiumLevelDB.probe(database);
 
-      await expect(CompendiumLevelDB.probe(database)).resolves.toBe(CompendiumLevelDB);
+      await expect(CompendiumLevelDB.probe(database)).resolves.toBe(true);
     });
 
     test('does not recognise a directory holding only LevelDB lock and log files', async () => {
-      await expect(CompendiumLevelDB.probe(path.join(workdir, 'leveldb5'))).resolves.toBeUndefined();
+      await expect(CompendiumLevelDB.probe(path.join(workdir, 'leveldb5'))).resolves.toBe(false);
     });
 
     test('does not recognise a directory whose database files are corrupt', async () => {
@@ -43,15 +46,15 @@ describe('CompendiumLevelDB', () => {
       await fs.mkdir(corrupt);
       await fs.writeFile(path.join(corrupt, 'CURRENT'), 'not a manifest\n');
 
-      await expect(CompendiumLevelDB.probe(corrupt)).resolves.toBeUndefined();
+      await expect(CompendiumLevelDB.probe(corrupt)).resolves.toBe(false);
     });
 
     test('does not recognise a plain file', async () => {
-      await expect(CompendiumLevelDB.probe(path.join(workdir, 'compendium'))).resolves.toBeUndefined();
+      await expect(CompendiumLevelDB.probe(path.join(workdir, 'compendium'))).resolves.toBe(false);
     });
 
     test('does not recognise a path that does not exist', async () => {
-      await expect(CompendiumLevelDB.probe(path.join(workdir, 'missing'))).resolves.toBeUndefined();
+      await expect(CompendiumLevelDB.probe(path.join(workdir, 'missing'))).resolves.toBe(false);
     });
   });
 });

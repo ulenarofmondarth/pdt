@@ -38,12 +38,32 @@
   "warn": {
     "pdtParentExists": "Intento de crear un subproyecto PDT (use -f para forzarlo).\n  Proyecto principal en {path}",
     "alreadyExists": "{description} ya existe.",
-    "moduleNotGenerated": "{path} no está vacío, por lo que no se genera ningún módulo allí. Opciones ignoradas: {options}"
+    "moduleNotGenerated": "{path} no está vacío, por lo que no se genera ningún módulo allí. Opciones ignoradas: {options}",
+    "logFileUnavailable": "No se puede escribir el archivo de registro {file}, así que los mensajes solo van a la consola: {reason}"
   },
   "error": {
     "notInPdtProject": "No es un proyecto PDT.",
     "optionRequired": "{option} es obligatoria cuando no se hacen las preguntas.",
-    "optionInvalid": "Valor no válido para {option} \"{value}\": {reason}"
+    "optionInvalid": "Valor no válido para {option} \"{value}\": {reason}",
+    "config": {
+      "invalid": "La configuración no es válida:",
+      "unreadable": "No se pudo leer el archivo de configuración {file}: {reason}",
+      "notAnObject": "El archivo de configuración {file} debe contener un objeto JSON."
+    },
+    "commandRequired": "Se requiere al menos un comando de nivel superior.",
+    "vtt": {
+      "unknownServerType": "Tipo de servidor VTT desconocido: {type}",
+      "unknownHostType": "Tipo de host VTT desconocido: {type}",
+      "noVersion": "El servidor {server} no tiene una versión para ejecutar en un host Docker.",
+      "pullFailed": "No se pudo descargar {image}: {reason}",
+      "startFailed": "No se pudo iniciar el servidor {server} en el host Docker.",
+      "stopUnsupported": "Detener el servidor {server} aún no es compatible con un host Docker.",
+      "restartUnsupported": "Reiniciar el servidor {server} aún no es compatible con un host Docker."
+    },
+    "compendium": {
+      "notRecognised": "{path} no es una base de datos de compendio reconocida.",
+      "exportUnsupported": "Exportar el compendio en {path} a {targets} aún no es compatible."
+    }
   },
   "fatal": {
     "shouldNeverRun": "Nunca debería ejecutarse: {argv}",

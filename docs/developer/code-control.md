@@ -12,7 +12,13 @@ Husky manages git hook scripts. These are put into place when `pnpm run prepare`
 
 ### Commitizen
 
-Commitizen prompts for a [Conventional Commits](https://www.conventionalcommits.org) message when you commit, and `commitlint` rejects any message that does not conform.
+Commitizen prompts for a [Conventional Commits](https://www.conventionalcommits.org) message when you commit (or run {command}`pnpm commit`), and `commitlint` rejects any message that does not conform. On top of Conventional Commits:
+
+- a scope is required, in kebab-case: `fix(cli): …`;
+- the header is at most 72 characters;
+- the subject is in the imperative mood: "add", not "added" or "adds".
+
+The rules are in `commitlint.config.ts`. CI checks the messages of every commit in a pull request as well.
 
 Commitizen does not change version numbers. Versioning is done by semantic-release in the {ref}`release workflow <release-workflow>`.
 
@@ -43,7 +49,7 @@ After a release, the workflow merges `main` back into `dev`, so `dev` always con
 
 ## Project Pull Request
 
-CI runs on every pull request and must pass before it is merged.
+{ref}`Dev CI <ci-workflow>` runs on every pull request, and its **CI passed** check must be green before it can be merged.
 
 - **Into `dev`:** keep it small and focused on one change, with its tests and documentation.
 - **From `dev` into `main`:** this is a release. Its commits decide the version number, so read through them before merging.

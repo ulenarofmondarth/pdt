@@ -1,89 +1,75 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { describe, expect, test } from 'vitest';
 import FoundryVTTServer from '@lib/VTT/Server/FoundryVTTServer.js';
 import VTTServer from '@lib/VTT/VTTServer.js';
 import { createHostMock } from '@tests/unit/mocks/vttHost.js';
 
-import type { FoundryVTTServerConfig } from '@lib/VTT/Server/FoundryVTTServer.js';
+import type { FoundryServerSettings } from '@schema/config.js';
 
-const mocks = vi.hoisted(() => ({ get: vi.fn() }));
-
-vi.mock('@util/config.js', () => ({ default: { get: mocks.get } }));
-
-const FULL_CONFIG: FoundryVTTServerConfig = {
-  type: 'foundry',
-  name: 'unit-test-vtt',
-  version: '12',
-  hostname: 'vtt.example',
-  port: '8080',
-};
+const SETTINGS: FoundryServerSettings = { type: 'foundry', version: '12', hostname: 'vtt.example', port: '8080' };
 
 describe('FoundryVTTServer', () => {
-  beforeEach(() => {
-    mocks.get.mockReset();
-  });
-
   test('is a VTTServer', () => {
-    expect(new FoundryVTTServer(FULL_CONFIG)).toBeInstanceOf(VTTServer);
+    expect(new FoundryVTTServer('unit-test-vtt', SETTINGS, createHostMock())).toBeInstanceOf(VTTServer);
   });
 
-  describe('configuration', () => {
-    test('uses the values it is given without consulting the configuration', () => {
-      const server = new FoundryVTTServer(FULL_CONFIG);
+  test('has its name, host and settings', () => {
+    const host = createHostMock();
 
-      expect(server).toMatchObject({ _name: 'unit-test-vtt', _version: '12', _hostname: 'vtt.example', _port: '8080' });
-      expect(mocks.get).not.toHaveBeenCalled();
-    });
+    const server = new FoundryVTTServer('unit-test-vtt', SETTINGS, host);
 
-    test('falls back to the configuration for values that are not given', () => {
-      const configured: Record<string, string> = {
-        'VTT.unit-test-vtt.server.version': '13',
-        'VTT.unit-test-vtt.server.hostname': 'configured.example',
-        'VTT.unit-test-vtt.server.port': 'auto',
-      };
-      mocks.get.mockImplementation((key: string) => configured[key]);
-
-      const server = new FoundryVTTServer({ type: 'foundry', name: 'unit-test-vtt', version: '' });
-
-      expect(server).toMatchObject({ _version: '13', _hostname: 'configured.example', _port: 'auto' });
-    });
+    expect(server).toMatchObject({ name: 'unit-test-vtt', host, version: '12', hostname: 'vtt.example', port: '8080' });
   });
 
-  describe('start', () => {
-    test('asks its host to start it', async () => {
+  test('has no port when its settings set none', () => {
+    const withoutPort: FoundryServerSettings = { ...SETTINGS };
+    delete withoutPort.port;
+
+    expect(new FoundryVTTServer('unit-test-vtt', withoutPort, createHostMock()).port).toBeUndefined();
+  });
+
+  describe.each(['start', 'stop', 'restart'] as const)('%s', action => {
+    test('asks its host, for itself', async () => {
       const host = createHostMock();
-      const server = new FoundryVTTServer(FULL_CONFIG);
-      server.host = host;
+      const server = new FoundryVTTServer('unit-test-vtt', SETTINGS, host);
 
-      await server.start();
+      await server[action]();
 
-      expect(host.start).toHaveBeenCalledExactlyOnceWith(server);
+      expect(host[action]).toHaveBeenCalledExactlyOnceWith(server);
     });
 
-    test('fails when it has no host', async () => {
-      const server = new FoundryVTTServer(FULL_CONFIG);
+    test('waits for its host', async () => {
+      const host = createHostMock();
+      let finished = false;
+      host[action].mockImplementation(async () => {
+        await new Promise(resolve => setTimeout(resolve, 5));
+        finished = true;
+      });
+      const server = new FoundryVTTServer('unit-test-vtt', SETTINGS, host);
 
-      await expect(server.start()).rejects.toThrow('No host environment provided');
+      await server[action]();
+
+      expect(finished).toBe(true);
+    });
+
+    // Regression: the host's start was not awaited, so its failure was an unhandled rejection.
+    test('fails when its host fails', async () => {
+      const host = createHostMock();
+      const cause = new Error('the host said no');
+      host[action].mockRejectedValue(cause);
+      const server = new FoundryVTTServer('unit-test-vtt', SETTINGS, host);
+
+      await expect(server[action]()).rejects.toBe(cause);
     });
   });
 
   describe('isRunning', () => {
-    test('is false when it has no host', async () => {
-      const server = new FoundryVTTServer(FULL_CONFIG);
-
-      await expect(server.isRunning()).resolves.toBe(false);
-    });
-
     test.each([true, false])('reports %s when its host reports %s', async running => {
       const host = createHostMock();
       host.isRunning.mockResolvedValue(running);
-      const server = new FoundryVTTServer(FULL_CONFIG);
-      server.host = host;
+      const server = new FoundryVTTServer('unit-test-vtt', SETTINGS, host);
 
       await expect(server.isRunning()).resolves.toBe(running);
       expect(host.isRunning).toHaveBeenCalledExactlyOnceWith(server);
     });
   });
-
-  test.todo('stop asks its host to stop it');
-  test.todo('restart asks its host to restart it');
 });

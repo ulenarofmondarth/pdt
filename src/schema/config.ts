@@ -1,20 +1,34 @@
 import { z } from 'zod/v4';
 
-const foundryServerConfig = z.object({
+/** Image a Docker host runs when its settings name none. */
+export const DEFAULT_DOCKER_IMAGE = 'felddy/foundryvtt';
+
+const foundryServerSettings = z.object({
   type: z.literal(['foundry']),
   hostname: z.string(),
+  /** The Foundry VTT release to run. */
   version: z.string(),
+  port: z.string().optional(),
 });
 
-export const serverSchema = z.discriminatedUnion('type', [foundryServerConfig]);
+export const serverSchema = z.discriminatedUnion('type', [foundryServerSettings]);
 
-export type VTTServerConfig = z.infer<typeof serverSchema>;
+/** A Foundry VTT server's settings. */
+export type FoundryServerSettings = z.output<typeof foundryServerSettings>;
 
-const dockerHostConfig = z.object({
+/** A VTT server's settings, of any type. */
+export type ServerSettings = z.output<typeof serverSchema>;
+
+const dockerHostSettings = z.object({
   type: z.literal(['docker']),
+  /** Docker engine socket; dockerode's default when not given. */
+  socketPath: z.string().optional(),
+  /** Registry to pull the image from; Docker Hub when not given. */
   repository: z.string().optional(),
-  image: z.string(),
-  version: z.string(),
+  /** Image to run, without a tag. */
+  image: z.string().default(DEFAULT_DOCKER_IMAGE),
+  /** Tag of the image, for a host whose image is not tagged by a server's version. */
+  version: z.string().optional(),
   ports: z.array(
     z.object({
       internal: z.int32(),
@@ -23,9 +37,13 @@ const dockerHostConfig = z.object({
   ),
 });
 
-export const hostSchema = z.discriminatedUnion('type', [dockerHostConfig]);
+export const hostSchema = z.discriminatedUnion('type', [dockerHostSettings]);
 
-export type HostConfig = z.infer<typeof hostSchema>;
+/** A Docker host's settings. */
+export type DockerHostSettings = z.output<typeof dockerHostSettings>;
+
+/** A VTT host's settings, of any type. */
+export type HostSettings = z.output<typeof hostSchema>;
 
 export const vttSchema = z.object({
   server: serverSchema,

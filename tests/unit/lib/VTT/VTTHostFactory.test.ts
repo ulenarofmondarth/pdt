@@ -1,20 +1,24 @@
-import { describe, expect, test, vi } from 'vitest';
+import { describe, expect, test } from 'vitest';
 import createHost from '@lib/VTT/VTTHostFactory.js';
 import DockerHost from '@lib/VTT/Host/Docker.js';
-import VTTHost from '@lib/VTT/VTTHost.js';
+import { m } from '@i18n/messages.js';
 
-// Constructing a DockerHost must not look for a real Docker engine.
-vi.mock('dockerode', () => ({ default: vi.fn() }));
+import type { HostSettings } from '@schema/config.js';
+
+// Creating a Docker client does not connect to anything.
+const DOCKER: HostSettings = { type: 'docker', image: 'felddy/foundryvtt', ports: [] };
 
 describe('createHost', () => {
-  test('creates a Docker host for the docker type', () => {
-    const host = createHost({ type: 'docker' });
+  test('creates a Docker host, with its settings, for the docker type', () => {
+    const host = createHost(DOCKER);
 
     expect(host).toBeInstanceOf(DockerHost);
-    expect(host).toBeInstanceOf(VTTHost);
+    expect(host).toMatchObject({ settings: DOCKER });
   });
 
   test('rejects an unknown host type, naming it', () => {
-    expect(() => createHost({ type: 'nosuchtype' })).toThrow('Unknown VTT Host type (nosuchtype)');
+    const unknown = { ...DOCKER, type: 'podman' } as unknown as HostSettings;
+
+    expect(() => createHost(unknown)).toThrow(m['error.vtt.unknownHostType']({ type: 'podman' }));
   });
 });

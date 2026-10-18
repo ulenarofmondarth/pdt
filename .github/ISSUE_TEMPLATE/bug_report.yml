@@ -1,0 +1,39 @@
+name: Bug report
+description: Something does not work as it should.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: The pdt commands you ran, and the directory you ran them in.
+      placeholder: |
+        1. …
+        2. …
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `pdt --version`, or the commit if you run it from source.
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: Operating system and Node.js version
+      description: For example "Ubuntu 24.04, Node.js 24.15.0" (`node --version`).
+  - type: textarea
+    id: logs
+    attributes:
+      label: Output or logs
+      description: What pdt printed, and anything relevant from `.pdt/pdt.log` in the project or `~/.local/share/pdt/pdt.log`.
+      render: text

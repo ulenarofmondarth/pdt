@@ -1,19 +1,24 @@
-import { Argv, CommandModule, Arguments } from 'yargs';
-import logger from '@util/logger.js';
 import { m } from '@i18n/messages.js';
 
-const module: CommandModule = {
-  command: 'start [vtt] [options]',
+import type { CommandModule } from 'yargs';
+import type { CommandContext } from '../../context.js';
 
-  describe: m['ui.cmd.start.description'](),
+interface StartArgs {
+  vtt: string;
+}
 
-  builder(yargs: Argv) {
-    return yargs.positional('vtt', { describe: m['ui.cmd.arg.vtt.description'](), type: 'string', default: 'prj' });
-  },
+/** `pdt vtt start`: start one of the project's VTTs. */
+export function createVttStartCommand({ log }: CommandContext): CommandModule<object, StartArgs> {
+  return {
+    command: 'start [vtt] [options]',
 
-  handler(argv: Arguments) {
-    logger.debug(m['debug.running']({ argv: JSON.stringify(argv) }));
-  },
-};
+    describe: m['ui.cmd.start.description'](),
 
-export default module;
+    builder: yargs =>
+      yargs.positional('vtt', { describe: m['ui.cmd.arg.vtt.description'](), type: 'string', default: 'prj' }),
+
+    handler(argv) {
+      log.debug(m['debug.running']({ argv: JSON.stringify(argv) }));
+    },
+  };
+}

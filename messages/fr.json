@@ -38,12 +38,32 @@
   "warn": {
     "pdtParentExists": "Tentative de création d'un sous-projet PDT (utiliser -f pour forcer).\n  Projet parent dans {path}",
     "alreadyExists": "{description} existe déjà.",
-    "moduleNotGenerated": "{path} n'est pas vide ; aucun module n'y est donc généré. Options ignorées : {options}"
+    "moduleNotGenerated": "{path} n'est pas vide ; aucun module n'y est donc généré. Options ignorées : {options}",
+    "logFileUnavailable": "Impossible d'écrire le fichier journal {file}, les messages ne vont donc qu'à la console : {reason}"
   },
   "error": {
     "notInPdtProject": "Ce n'est pas un projet PDT.",
     "optionRequired": "{option} est obligatoire lorsque les questions ne sont pas posées.",
-    "optionInvalid": "Valeur invalide pour {option} « {value} » : {reason}"
+    "optionInvalid": "Valeur invalide pour {option} « {value} » : {reason}",
+    "config": {
+      "invalid": "La configuration n'est pas valide :",
+      "unreadable": "Impossible de lire le fichier de configuration {file} : {reason}",
+      "notAnObject": "Le fichier de configuration {file} doit contenir un objet JSON."
+    },
+    "commandRequired": "Au moins une commande de premier niveau est requise.",
+    "vtt": {
+      "unknownServerType": "Type de serveur VTT inconnu : {type}",
+      "unknownHostType": "Type d'hôte VTT inconnu : {type}",
+      "noVersion": "Le serveur {server} n'a pas de version à exécuter sur un hôte Docker.",
+      "pullFailed": "Impossible de télécharger {image} : {reason}",
+      "startFailed": "Impossible de démarrer le serveur {server} sur l'hôte Docker.",
+      "stopUnsupported": "L'arrêt du serveur {server} n'est pas encore pris en charge sur un hôte Docker.",
+      "restartUnsupported": "Le redémarrage du serveur {server} n'est pas encore pris en charge sur un hôte Docker."
+    },
+    "compendium": {
+      "notRecognised": "{path} n'est pas une base de données de compendium reconnue.",
+      "exportUnsupported": "L'exportation du compendium situé à {path} vers {targets} n'est pas encore prise en charge."
+    }
   },
   "fatal": {
     "shouldNeverRun": "Ne devrait jamais être exécuté : {argv}",

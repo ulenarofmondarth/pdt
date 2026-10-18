@@ -1,24 +1,21 @@
-import { Argv, CommandModule } from 'yargs';
-import { pfs } from '@util/runtime-config.js';
-import logger from '@util/logger.js';
 import { m } from '@i18n/messages.js';
 
-const module: CommandModule = {
-  command: 'info [dir] [options]',
+import type { CommandModule } from 'yargs';
+import type { CommandContext } from '../context.js';
 
-  describe: m['ui.cmd.info.description'](),
+/** `pdt info`: what pdt knows about the project it is run in. */
+export function createInfoCommand({ paths, log, out }: CommandContext): CommandModule {
+  return {
+    command: 'info [dir] [options]',
 
-  builder(yargs: Argv) {
-    return yargs;
-  },
+    describe: m['ui.cmd.info.description'](),
 
-  handler() {
-    if (pfs.pdtConfigDir == undefined) {
-      logger.error(m['error.notInPdtProject']());
-    } else {
-      console.log('Ble');
-    }
-  },
-};
-
-export default module;
+    handler() {
+      if (paths.pdtConfigDir === undefined) {
+        log.error(m['error.notInPdtProject']());
+      } else {
+        out('Ble');
+      }
+    },
+  };
+}

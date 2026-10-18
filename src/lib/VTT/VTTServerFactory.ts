@@ -1,23 +1,26 @@
 import VTTServer from '@lib/VTT/VTTServer.js';
-
+import VTTHost from '@lib/VTT/VTTHost.js';
 import FoundryVTTServer from '@lib/VTT/Server/FoundryVTTServer.js';
+import { m } from '@i18n/messages.js';
 
-import type { FoundryVTTServerConfig } from '@lib/VTT/Server/FoundryVTTServer.js';
-import type { VTTServerConfig } from '@lib/VTT/VTTServer.js';
+import type { ServerSettings } from '@schema/config.js';
 
 /**
- * Magic happens
+ * Create a VTT server.
  *
- * @param host The host
- *
- *
- *
+ * @param name - Name of the server, unique among the servers of a project
+ * @param settings - The server's settings; their type picks the kind of server
+ * @param host - Where the server runs
+ * @throws {Error} When the type is not one pdt knows
  */
-export default function createServer(vttOptions: VTTServerConfig): VTTServer {
-  switch (vttOptions.type) {
+export default function createServer(name: string, settings: ServerSettings, host: VTTHost): VTTServer {
+  switch (settings.type) {
     case 'foundry':
-      return new FoundryVTTServer(vttOptions as FoundryVTTServerConfig);
-    default:
-      throw new Error(`Unknown VTT type (${vttOptions.type})`);
+      return new FoundryVTTServer(name, settings, host);
+    default: {
+      // The configuration schema admits no other type; this guards settings made some other way.
+      const { type } = settings as { type: string };
+      throw new Error(m['error.vtt.unknownServerType']({ type }));
+    }
   }
 }

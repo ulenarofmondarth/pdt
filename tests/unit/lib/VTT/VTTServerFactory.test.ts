@@ -1,22 +1,28 @@
-import { describe, expect, test, vi } from 'vitest';
+import { describe, expect, test } from 'vitest';
 import createServer from '@lib/VTT/VTTServerFactory.js';
 import FoundryVTTServer from '@lib/VTT/Server/FoundryVTTServer.js';
-import VTTServer from '@lib/VTT/VTTServer.js';
+import { createHostMock } from '@tests/unit/mocks/vttHost.js';
+import { m } from '@i18n/messages.js';
 
-// A Foundry server reads the values it is not given from the configuration.
-vi.mock('@util/config.js', () => ({ default: { get: () => 'configured' } }));
+import type { ServerSettings } from '@schema/config.js';
+
+const FOUNDRY: ServerSettings = { type: 'foundry', version: '13', hostname: 'localhost' };
 
 describe('createServer', () => {
-  test('creates a Foundry VTT server for the foundry type', () => {
-    const server = createServer({ type: 'foundry', name: 'unit-test-vtt', version: '12' });
+  test('creates a Foundry VTT server, with its name, settings and host, for the foundry type', () => {
+    const host = createHostMock();
+
+    const server = createServer('unit-test-vtt', FOUNDRY, host);
 
     expect(server).toBeInstanceOf(FoundryVTTServer);
-    expect(server).toBeInstanceOf(VTTServer);
+    expect(server).toMatchObject({ name: 'unit-test-vtt', settings: FOUNDRY, host });
   });
 
   test('rejects an unknown VTT type, naming it', () => {
-    expect(() => createServer({ type: 'unknown', name: 'unit-test-vtt', version: '12' })).toThrow(
-      'Unknown VTT type (unknown)',
+    const unknown = { ...FOUNDRY, type: 'roll20' } as unknown as ServerSettings;
+
+    expect(() => createServer('unit-test-vtt', unknown, createHostMock())).toThrow(
+      m['error.vtt.unknownServerType']({ type: 'roll20' }),
     );
   });
 });

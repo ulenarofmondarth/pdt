@@ -5,15 +5,10 @@ import { createHostMock } from '@tests/unit/mocks/vttHost.js';
 
 describe('createVTTConfiguration', () => {
   test('returns a configuration object for a host and a server', () => {
-    const server = new FoundryVTTServer({
-      type: 'foundry',
-      name: 'unit-test-vtt',
-      version: '12',
-      hostname: 'h',
-      port: '1',
-    });
+    const host = createHostMock();
+    const server = new FoundryVTTServer('unit-test-vtt', { type: 'foundry', version: '12', hostname: 'h' }, host);
 
-    expect(createVTTConfiguration(createHostMock(), server)).toBeTypeOf('object');
+    expect(createVTTConfiguration(host, server)).toBeTypeOf('object');
   });
 
   // The configurator is still a stub. This is the behaviour it is meant to have:
