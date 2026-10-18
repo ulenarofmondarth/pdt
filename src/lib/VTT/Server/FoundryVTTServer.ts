@@ -1,6 +1,7 @@
-import config from '@util/config.js';
 import VTTServer, { VTTServerConfig } from '@lib/VTT/VTTServer.js';
 import VTTHost from '@lib/VTT/VTTHost.js';
+
+import type { VTTServerConfig as ServerSettings } from '@schema/config.js';
 
 export type FoundryVTTServerConfig = VTTServerConfig & {
   version: string;
@@ -16,11 +17,14 @@ export default class FoundryVTTServer extends VTTServer {
   _port: string;
   _host?: VTTHost;
 
-  constructor(vttConfig: FoundryVTTServerConfig) {
+  /**
+   * @param vttConfig - The server; a value it leaves empty is taken from `configured`
+   * @param configured - The server's settings in the configuration, if it has any
+   */
+  constructor(vttConfig: FoundryVTTServerConfig, configured?: ServerSettings) {
     super();
 
     this._name = vttConfig.name;
-    const configured = config.VTT[this._name]?.server;
     this._version = vttConfig.version || configured?.version || '';
     this._hostname = vttConfig.hostname || configured?.hostname || '';
     this._port = vttConfig.port || configured?.port || '';

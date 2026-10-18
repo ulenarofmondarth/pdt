@@ -19,8 +19,6 @@ const mocks = vi.hoisted(() => ({ Docker: vi.fn() }));
 
 // No test in this file may reach a real Docker engine.
 vi.mock('dockerode', () => ({ default: mocks.Docker }));
-// Servers built here must not pick up values from the real configuration.
-vi.mock('@util/config.js', () => ({ default: { VTT: {} } }));
 
 const HOST_CONFIG: DockerHostConfig = { type: 'docker', socketPath: '/var/run/docker.sock' };
 const IMAGE = 'felddy/foundryvtt:12';
