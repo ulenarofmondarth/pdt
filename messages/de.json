@@ -59,6 +59,10 @@
       "startFailed": "Server {server} konnte auf dem Docker-Host nicht gestartet werden.",
       "stopUnsupported": "Das Stoppen von Server {server} wird auf einem Docker-Host noch nicht unterstützt.",
       "restartUnsupported": "Der Neustart von Server {server} wird auf einem Docker-Host noch nicht unterstützt."
+    },
+    "compendium": {
+      "notRecognised": "{path} ist keine erkannte Kompendium-Datenbank.",
+      "exportUnsupported": "Das Exportieren des Kompendiums unter {path} nach {targets} wird noch nicht unterstützt."
     }
   },
   "fatal": {

@@ -59,6 +59,10 @@
       "startFailed": "No se pudo iniciar el servidor {server} en el host Docker.",
       "stopUnsupported": "Detener el servidor {server} aún no es compatible con un host Docker.",
       "restartUnsupported": "Reiniciar el servidor {server} aún no es compatible con un host Docker."
+    },
+    "compendium": {
+      "notRecognised": "{path} no es una base de datos de compendio reconocida.",
+      "exportUnsupported": "Exportar el compendio en {path} a {targets} aún no es compatible."
     }
   },
   "fatal": {
