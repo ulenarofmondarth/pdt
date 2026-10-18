@@ -16,7 +16,7 @@ Runs on every push to `dev`, on every pull request to `dev` or `main`, and as th
 | Typecheck       | TypeScript 7, then the TypeScript 6 fallback (see {ref}`typescript-compilers`)                                                         |
 | Lint            | ESLint (warnings fail) and Prettier                                                                                                    |
 | Unit tests      | the coverage gate; writes a coverage summary to the job page, uploads coverage to Codecov and keeps the HTML report as an artifact |
-| Build           | builds the bundle and smoke-tests the CLI; keeps `dist` as an artifact                                                                 |
+| Build           | builds the bundle and runs the CLI tests against it (`pnpm test:cli`); keeps `dist` as an artifact                                     |
 | Docs            | calls the Docs workflow                                                                                                                |
 | CI passed       | succeeds only if all of the above passed; use it as the required status check                                                          |
 
