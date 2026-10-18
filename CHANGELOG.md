@@ -1,3 +1,17 @@
+## [0.2.1](https://github.com/ulenarofmondarth/pdt/compare/v0.2.0...v0.2.1) (2026-10-18)
+
+### Bug Fixes
+
+* **cli:** exit with a usage error code for an invalid command line ([8547d71](https://github.com/ulenarofmondarth/pdt/commit/8547d71218b6f4c1f147ff84b5efa66456910ad3))
+* **cli:** reject an unknown vtt sub-command ([7765d2b](https://github.com/ulenarofmondarth/pdt/commit/7765d2b797853db71aa2e3b3a581a5e1277dc418))
+* **config:** read the user and project configuration files ([32adc42](https://github.com/ulenarofmondarth/pdt/commit/32adc424573cb6ea5649dc9229133e7eff8631b5))
+* **deps:** update dependencies with known vulnerabilities ([40dc469](https://github.com/ulenarofmondarth/pdt/commit/40dc4699fd7005b2ca6cdef68125f78de25a37ab))
+* **docker:** pull the server image only when it is missing ([5977eb1](https://github.com/ulenarofmondarth/pdt/commit/5977eb1a1c70e48658c17f872be45c645b7329ed))
+* **docker:** read image pull progress line by line ([33b63d4](https://github.com/ulenarofmondarth/pdt/commit/33b63d4c22142c6458a48ee31c89902e48bd8375))
+* **logger:** keep running when the log file cannot be written ([7b491d2](https://github.com/ulenarofmondarth/pdt/commit/7b491d2dc95d850315a69b4f21d44b13b238c0f0))
+* **logger:** write log messages to standard error ([6bd505d](https://github.com/ulenarofmondarth/pdt/commit/6bd505da21932cc41f60d2c09dbb952dbbcd0e40))
+* **vtt:** wait for a server to start, and report when it cannot ([5587570](https://github.com/ulenarofmondarth/pdt/commit/55875701c2a96e4e3b5dea09d7aa28f74a26f1f7))
+
 ## [0.2.0](https://github.com/ulenarofmondarth/pdt/compare/v0.1.0...v0.2.0) (2026-10-15)
 
 ### Features

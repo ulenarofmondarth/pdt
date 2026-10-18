@@ -10,7 +10,7 @@ project = 'Foundry VTT Package Developer Toolkit'
 copyright = '2024, Ulenar of Mondarth'
 author = 'Ulenar of Mondarth'
 # Rewritten by semantic-release (see release.config.js); keep this line's format.
-release = '0.2.0'
+release = '0.2.1'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
