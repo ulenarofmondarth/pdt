@@ -1,34 +1,28 @@
 import { describe, expect, test } from 'vitest';
 import createServer from '@lib/VTT/VTTServerFactory.js';
 import FoundryVTTServer from '@lib/VTT/Server/FoundryVTTServer.js';
-import VTTServer from '@lib/VTT/VTTServer.js';
+import { createHostMock } from '@tests/unit/mocks/vttHost.js';
+import { m } from '@i18n/messages.js';
 
-import type { Config } from '@schema/config.js';
+import type { ServerSettings } from '@schema/config.js';
+
+const FOUNDRY: ServerSettings = { type: 'foundry', version: '13', hostname: 'localhost' };
 
 describe('createServer', () => {
-  test('creates a Foundry VTT server for the foundry type', () => {
-    const server = createServer({ type: 'foundry', name: 'unit-test-vtt', version: '12' });
+  test('creates a Foundry VTT server, with its name, settings and host, for the foundry type', () => {
+    const host = createHostMock();
+
+    const server = createServer('unit-test-vtt', FOUNDRY, host);
 
     expect(server).toBeInstanceOf(FoundryVTTServer);
-    expect(server).toBeInstanceOf(VTTServer);
-  });
-
-  test("gives the server its settings from the configured VTTs, by the server's name", () => {
-    const vtts: Config['VTT'] = {
-      'unit-test-vtt': {
-        server: { type: 'foundry', version: '13', hostname: 'configured.example' },
-        host: { type: 'docker', image: 'felddy/foundryvtt', version: '13', ports: [] },
-      },
-    };
-
-    const server = createServer({ type: 'foundry', name: 'unit-test-vtt', version: '' }, vtts);
-
-    expect(server.version).toBe('13');
+    expect(server).toMatchObject({ name: 'unit-test-vtt', settings: FOUNDRY, host });
   });
 
   test('rejects an unknown VTT type, naming it', () => {
-    expect(() => createServer({ type: 'unknown', name: 'unit-test-vtt', version: '12' })).toThrow(
-      'Unknown VTT type (unknown)',
+    const unknown = { ...FOUNDRY, type: 'roll20' } as unknown as ServerSettings;
+
+    expect(() => createServer('unit-test-vtt', unknown, createHostMock())).toThrow(
+      m['error.vtt.unknownServerType']({ type: 'roll20' }),
     );
   });
 });

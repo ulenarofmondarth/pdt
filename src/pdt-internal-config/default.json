@@ -14,7 +14,6 @@
       "host": {
         "type": "docker",
         "image": "felddy/foundryvtt",
-        "version": "VTT.prj.server.version",
         "ports": [
           {
             "internal": 30000,

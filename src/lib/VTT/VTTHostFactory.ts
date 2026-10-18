@@ -1,12 +1,23 @@
 import DockerHost from './Host/Docker.js';
+import VTTHost from './VTTHost.js';
+import { m } from '@i18n/messages.js';
 
-import type { VTTHostConfig } from './VTTHost.js';
+import type { HostSettings } from '@schema/config.js';
 
-export default function createHost(config: VTTHostConfig) {
-  switch (config.type) {
+/**
+ * Create a VTT host.
+ *
+ * @param settings - The host's settings; their type picks the kind of host
+ * @throws {Error} When the type is not one pdt knows
+ */
+export default function createHost(settings: HostSettings): VTTHost {
+  switch (settings.type) {
     case 'docker':
-      return new DockerHost(config);
-    default:
-      throw new Error(`Unknown VTT Host type (${config.type})`);
+      return new DockerHost(settings);
+    default: {
+      // The configuration schema admits no other type; this guards settings made some other way.
+      const { type } = settings as { type: string };
+      throw new Error(m['error.vtt.unknownHostType']({ type }));
+    }
   }
 }

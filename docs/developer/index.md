@@ -14,6 +14,7 @@ testing
 i18n
 logging
 configuration
+vtt
 build-process
 code-control
 ci-cd

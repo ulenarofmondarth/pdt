@@ -1,9 +1,5 @@
 import VTTServer from './VTTServer.js';
 
-export type VTTHostConfig = {
-  type: string;
-};
-
 /**
  * Base class for all VTT Hosts these are created using {@link lib/VTT/VTTHostFactory.createHost | createHost}
  *
@@ -16,19 +12,19 @@ export default abstract class VTTHost {
   abstract isAccessible(): Promise<boolean>;
 
   /**
-   * Start the host environment
+   * Start `server` on this host, and wait until it has started.
    */
-  abstract start(server: VTTServer): void;
+  abstract start(server: VTTServer): Promise<void>;
 
   /**
-   * Stop the host environment
+   * Stop `server` on this host, and wait until it has stopped.
    */
-  abstract stop(): void;
+  abstract stop(server: VTTServer): Promise<void>;
 
   /**
-   * Restart the host environment
+   * Restart `server` on this host, and wait until it has started again.
    */
-  abstract restart(): void;
+  abstract restart(server: VTTServer): Promise<void>;
 
   /**
    * Check if server is running on host

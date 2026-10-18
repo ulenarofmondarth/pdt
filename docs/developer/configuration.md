@@ -19,7 +19,7 @@ flowchart LR
 - **`@util/load-config.ts`**: `loadConfig({ files, env })` merges the defaults, each file that exists and the environment variables, and validates the result with the zod schema in `@schema/config.ts`. It returns the typed `Config`, or throws a `ConfigError` whose `problems` name each invalid setting. `configFiles(paths)` lists the user's and the project's files. Neither function looks at the running process, so tests pass in temporary files and variables.
 - **`src/main.ts`**: `main()` loads the configuration for the run before anything else. A `ConfigError` is written to standard error and `main()` returns exit code 127 (`EXITCODE.INVALID_CONFIG`); the logger cannot report it, as it is configured from this. `main()` then hands each part the settings it needs, such as `configureLogger(config.Logging)`.
 
-Nothing loads the configuration as it is imported, so code that needs settings receives them as arguments, typed by the schema (for example `createServer(options, config.VTT)`).
+Nothing loads the configuration as it is imported, so code that needs settings receives them as arguments, typed by the schema (for example `createHost(config.VTT['prj'].host)`; see {doc}`vtt`).
 
 ## Adding a setting
 
