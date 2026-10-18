@@ -48,7 +48,8 @@
       "invalid": "The configuration is invalid:",
       "unreadable": "Could not read the configuration file {file}: {reason}",
       "notAnObject": "The configuration file {file} must contain a JSON object."
-    }
+    },
+    "commandRequired": "At least one top level command is required."
   },
   "fatal": {
     "shouldNeverRun": "Should never run {argv}",

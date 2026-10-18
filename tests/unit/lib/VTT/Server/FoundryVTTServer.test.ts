@@ -1,15 +1,9 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { describe, expect, test } from 'vitest';
 import FoundryVTTServer from '@lib/VTT/Server/FoundryVTTServer.js';
 import VTTServer from '@lib/VTT/VTTServer.js';
 import { createHostMock } from '@tests/unit/mocks/vttHost.js';
 
 import type { FoundryVTTServerConfig } from '@lib/VTT/Server/FoundryVTTServer.js';
-
-import type { Config } from '@schema/config.js';
-
-const mocks = vi.hoisted(() => ({ config: { VTT: {} } as Pick<Config, 'VTT'> }));
-
-vi.mock('@util/config.js', () => ({ default: mocks.config }));
 
 const FULL_CONFIG: FoundryVTTServerConfig = {
   type: 'foundry',
@@ -19,11 +13,10 @@ const FULL_CONFIG: FoundryVTTServerConfig = {
   port: '8080',
 };
 
-describe('FoundryVTTServer', () => {
-  beforeEach(() => {
-    mocks.config.VTT = {};
-  });
+/** The server's settings in the configuration. */
+const CONFIGURED = { type: 'foundry', version: '13', hostname: 'configured.example', port: 'auto' } as const;
 
+describe('FoundryVTTServer', () => {
   test('is a VTTServer', () => {
     expect(new FoundryVTTServer(FULL_CONFIG)).toBeInstanceOf(VTTServer);
   });
@@ -36,17 +29,13 @@ describe('FoundryVTTServer', () => {
     });
 
     test('prefers the values it is given to the configuration', () => {
-      configure({ version: '13', hostname: 'configured.example', port: 'auto' });
-
-      const server = new FoundryVTTServer(FULL_CONFIG);
+      const server = new FoundryVTTServer(FULL_CONFIG, CONFIGURED);
 
       expect(server).toMatchObject({ _version: '12', _hostname: 'vtt.example', _port: '8080' });
     });
 
     test('falls back to the configuration for values that are not given', () => {
-      configure({ version: '13', hostname: 'configured.example', port: 'auto' });
-
-      const server = new FoundryVTTServer({ type: 'foundry', name: 'unit-test-vtt', version: '' });
+      const server = new FoundryVTTServer({ type: 'foundry', name: 'unit-test-vtt', version: '' }, CONFIGURED);
 
       expect(server).toMatchObject({ _version: '13', _hostname: 'configured.example', _port: 'auto' });
     });
@@ -98,13 +87,3 @@ describe('FoundryVTTServer', () => {
   test.todo('stop asks its host to stop it');
   test.todo('restart asks its host to restart it');
 });
-
-/** Configure the server the tests build, as a configuration file would. */
-function configure(server: { version: string; hostname: string; port?: string }) {
-  mocks.config.VTT = {
-    'unit-test-vtt': {
-      server: { type: 'foundry', ...server },
-      host: { type: 'docker', image: 'felddy/foundryvtt', version: '', ports: [] },
-    },
-  };
-}

@@ -14,12 +14,14 @@ Every message goes to the console and to the log file. Only messages at or above
 
 ## Where the log file is
 
-The log file is named by the `Logging.filename` configuration entry (`pdt.log` by default). Its directory is chosen when the logger module loads:
+The log file is named by the `Logging.filename` configuration entry (`pdt.log` by default). `main()` chooses its directory as {{pdt}} starts:
 
 - inside a {{pdt}} project it is the project's `.pdt` directory;
 - anywhere else it is the user data directory (`~/.local/share/pdt` on Linux).
 
 The file is created when the first message is written, so a run that logs nothing leaves no file behind.
+
+Loading the logger reads no configuration. It starts with the shipped defaults and writes to the console only; `main()` then applies the configuration with `configureLogger()` and sets the directory with `setLogDirectory()`.
 
 If the right directory only comes into existence during a run, call `setLogDirectory()` once it exists. `pdt init` does this so that its messages land in the project it has just created:
 
@@ -30,17 +32,10 @@ setLogDirectory(pdtPath);
 logger.info('This goes to the new project log.');
 ```
 
-## Exiting the process
+## Ending the process
 
-Never call `process.exit()` directly once the logger is in use. Use `exit()` from the logger module, which waits until everything logged so far has been written:
+Nothing in {{pdt}} calls `process.exit()`. A command that fails throws (or rejects); `main()` logs the error's message and returns the exit code, and `src/index.ts` sets `process.exitCode` and calls `closeLogger()`, which waits until everything logged has been written. The process then ends by itself. `process.exit()` would cut off output still on its way to a pipe, such as `pdt --help | less`.
 
-```typescript
-import logger, { exit } from '@util/logger.js';
-
-logger.error('Something went badly wrong.');
-await exit(1);
-```
-
-`closeLogger()` does the same wait without exiting. Both are terminal: nothing can be logged afterwards.
+`closeLogger()` is terminal: nothing can be logged afterwards.
 
 Log lines are appended to the file synchronously. winston's own file transport was not used because it reports itself finished before its output is on disk, which loses messages when the process exits promptly.

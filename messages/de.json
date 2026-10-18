@@ -48,7 +48,8 @@
       "invalid": "Die Konfiguration ist ungültig:",
       "unreadable": "Die Konfigurationsdatei {file} konnte nicht gelesen werden: {reason}",
       "notAnObject": "Die Konfigurationsdatei {file} muss ein JSON-Objekt enthalten."
-    }
+    },
+    "commandRequired": "Mindestens ein Befehl der obersten Ebene ist erforderlich."
   },
   "fatal": {
     "shouldNeverRun": "Sollte niemals ausgeführt werden: {argv}",

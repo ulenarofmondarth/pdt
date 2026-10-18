@@ -17,15 +17,9 @@ flowchart LR
 
 - **`@util/runtime-config.ts`**: `resolvePaths({ cwd, home, platform, env })` works out the user configuration directory, the user data directory and the project's `.pdt` directory. It creates nothing; directories are created when something is first written to them. `pfs` holds the result for the running process.
 - **`@util/load-config.ts`**: `loadConfig({ files, env })` merges the defaults, each file that exists and the environment variables, and validates the result with the zod schema in `@schema/config.ts`. It returns the typed `Config`, or throws a `ConfigError` whose `problems` name each invalid setting. `configFiles(paths)` lists the user's and the project's files. Neither function looks at the running process, so tests pass in temporary files and variables.
-- **`@util/config.ts`**: the configuration of the running process, loaded when the module is first imported. A `ConfigError` is printed on standard error and ends the process with exit code 127 (`EXITCODE.INVALID_CONFIG`); the logger cannot report it, as it is configured from this.
+- **`src/main.ts`**: `main()` loads the configuration for the run before anything else. A `ConfigError` is written to standard error and `main()` returns exit code 127 (`EXITCODE.INVALID_CONFIG`); the logger cannot report it, as it is configured from this. `main()` then hands each part the settings it needs, such as `configureLogger(config.Logging)`.
 
-Read settings as properties, which are typed by the schema:
-
-```typescript
-import config from '@util/config.js';
-
-const level = config.Logging.level;
-```
+Nothing loads the configuration as it is imported, so code that needs settings receives them as arguments, typed by the schema (for example `createServer(options, config.VTT)`).
 
 ## Adding a setting
 

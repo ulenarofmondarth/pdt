@@ -21,8 +21,8 @@ export function createLoggerModuleMock() {
       info: vi.fn(),
       debug: vi.fn(),
     } satisfies Partial<Record<keyof LoggerModule['default'], unknown>>,
+    configureLogger: vi.fn<LoggerModule['configureLogger']>(),
     setLogDirectory: vi.fn<LoggerModule['setLogDirectory']>(),
     closeLogger: vi.fn<LoggerModule['closeLogger']>().mockResolvedValue(undefined),
-    exit: vi.fn<(code: number) => Promise<void>>().mockResolvedValue(undefined),
   } satisfies Record<keyof LoggerModule, unknown>;
 }
