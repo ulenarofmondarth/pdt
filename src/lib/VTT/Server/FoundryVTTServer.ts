@@ -38,11 +38,11 @@ export default class FoundryVTTServer extends VTTServer {
     return this._version ?? '';
   }
 
-  async start() {
+  async start(): Promise<void> {
     if (!this._host) {
       throw new Error('No host environment provided');
     }
-    this._host?.start(this);
+    await this._host.start(this);
   }
 
   stop() {}

@@ -22,7 +22,8 @@ export default abstract class VTTServer {
    */
   abstract get version(): string;
 
-  abstract start(): void;
+  /** Start on the server's host, and wait until it has started. */
+  abstract start(): Promise<void>;
 
   abstract stop(): void;
 

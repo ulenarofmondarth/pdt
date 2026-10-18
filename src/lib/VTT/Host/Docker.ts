@@ -69,11 +69,13 @@ export default class DockerHost extends VTTHost {
       .catch(() => false);
   }
 
-  async start(server: VTTServer) {
-    // Ask server for dataFactory
-    // Ask dataFactory for Docker config
-    // Check if running
-    // If not then start container
+  /**
+   * Run `server` in its container, creating the container if there is none, and wait until it has
+   * started. A container that is already running is left alone.
+   *
+   * @throws When the image cannot be pulled, or the container cannot be inspected, created or started
+   */
+  async start(server: VTTServer): Promise<void> {
     const image = this.imageFor(server);
     await this._pullImageIfMissing(image);
 
@@ -88,33 +90,29 @@ export default class DockerHost extends VTTHost {
         AutoRemove: false,
       },
     } satisfies ContainerCreateOptions;
-    const container: Container = this.docker.getContainer(serverOptions.name);
+    const failed = (cause: unknown) =>
+      new Error(`Could not start server ${serverOptions.name} on Docker Host`, { cause });
 
-    await container
-      .inspect()
-      .then(info => {
-        // info details https://docs.docker.com/reference/api/engine/version/v1.37/#tag/Container/operation/ContainerCreate
-        if (!info.State.Running) {
-          container.start();
-        }
-      })
-      .catch(async err => {
-        if (err.statusCode === 404) {
-          // Container does not exist
-          await this.docker
-            .createContainer(serverOptions)
-            .then(async container => {
-              container.start().catch(err => {
-                throw new Error(`Could not start server ${serverOptions.name} on Docker Host`, { cause: err });
-              });
-            })
-            .catch(err => {
-              throw new Error(`Could not start server ${serverOptions.name} on Docker Host`, { cause: err });
-            });
-        } else {
-          throw new Error(`Could not start server ${serverOptions.name} on Docker Host`, { cause: err });
-        }
-      });
+    let container: Container = this.docker.getContainer(serverOptions.name);
+    try {
+      // https://docs.docker.com/reference/api/engine/version/v1.37/#tag/Container/operation/ContainerInspect
+      const info = await container.inspect();
+      if (info.State.Running) return;
+    } catch (error) {
+      if ((error as { statusCode?: unknown }).statusCode !== 404) throw failed(error);
+      // There is no such container yet.
+      try {
+        container = await this.docker.createContainer(serverOptions);
+      } catch (error) {
+        throw failed(error);
+      }
+    }
+
+    try {
+      await container.start();
+    } catch (error) {
+      throw failed(error);
+    }
   }
 
   async stop() {}

@@ -59,6 +59,32 @@ describe('FoundryVTTServer', () => {
       expect(host.start).toHaveBeenCalledExactlyOnceWith(server);
     });
 
+    test('waits for its host to start it', async () => {
+      const host = createHostMock();
+      let finished = false;
+      host.start.mockImplementation(async () => {
+        await new Promise(resolve => setTimeout(resolve, 5));
+        finished = true;
+      });
+      const server = new FoundryVTTServer(FULL_CONFIG);
+      server.host = host;
+
+      await server.start();
+
+      expect(finished).toBe(true);
+    });
+
+    // Regression: the host's start was not awaited, so its failure was an unhandled rejection.
+    test('fails when its host cannot start it', async () => {
+      const host = createHostMock();
+      const cause = new Error('no room on the host');
+      host.start.mockRejectedValue(cause);
+      const server = new FoundryVTTServer(FULL_CONFIG);
+      server.host = host;
+
+      await expect(server.start()).rejects.toBe(cause);
+    });
+
     test('fails when it has no host', async () => {
       const server = new FoundryVTTServer(FULL_CONFIG);
 

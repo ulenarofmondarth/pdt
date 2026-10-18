@@ -28,9 +28,11 @@ describe('DockerHost', () => {
   let container: ContainerMock;
   let docker: DockerMock;
   let server: FoundryVTTServer;
+  let created: ContainerMock;
 
   beforeEach(() => {
     container = createContainerMock();
+    created = createContainerMock();
     docker = createDockerMock(container);
     mocks.Docker.mockReset();
     mocks.Docker.mockImplementation(function () {
@@ -251,7 +253,56 @@ describe('DockerHost', () => {
       expect(docker.createContainer).not.toHaveBeenCalled();
     });
 
-    test.todo('fails when a newly created container cannot be started');
+    // Regression: the start was not awaited, so its failure was an unhandled rejection.
+    test('fails with the cause when a newly created container cannot be started', async () => {
+      const cause = dockerError(500);
+      const created = createContainerMock();
+      created.start.mockRejectedValue(cause);
+      container.inspect.mockRejectedValue(dockerError(404));
+      docker.createContainer.mockResolvedValue(created);
+      const host = new DockerHost(HOST_CONFIG);
+
+      await expect(host.start(server)).rejects.toMatchObject({
+        message: `Could not start server ${CONTAINER_NAME} on Docker Host`,
+        cause,
+      });
+    });
+
+    test('fails with the cause when a stopped container cannot be started', async () => {
+      const cause = dockerError(500);
+      container.inspect.mockResolvedValue(inspectInfo(false));
+      container.start.mockRejectedValue(cause);
+      const host = new DockerHost(HOST_CONFIG);
+
+      await expect(host.start(server)).rejects.toMatchObject({
+        message: `Could not start server ${CONTAINER_NAME} on Docker Host`,
+        cause,
+      });
+    });
+
+    test.each([
+      ['a stopped container', () => container.inspect.mockResolvedValue(inspectInfo(false)), () => container],
+      [
+        'a new container',
+        () => {
+          container.inspect.mockRejectedValue(dockerError(404));
+          docker.createContainer.mockResolvedValue(created);
+        },
+        () => created,
+      ],
+    ])('waits until %s has started', async (_case, arrange, started) => {
+      arrange();
+      let finished = false;
+      started().start.mockImplementation(async () => {
+        await new Promise(resolve => setTimeout(resolve, 5));
+        finished = true;
+      });
+      const host = new DockerHost(HOST_CONFIG);
+
+      await host.start(server);
+
+      expect(finished).toBe(true);
+    });
   });
 
   test.todo('stop stops the server container');

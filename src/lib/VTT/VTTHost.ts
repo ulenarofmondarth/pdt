@@ -16,9 +16,9 @@ export default abstract class VTTHost {
   abstract isAccessible(): Promise<boolean>;
 
   /**
-   * Start the host environment
+   * Start `server` on this host, and wait until it has started.
    */
-  abstract start(server: VTTServer): void;
+  abstract start(server: VTTServer): Promise<void>;
 
   /**
    * Stop the host environment
