@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { config as configSchema, hostSchema, serverSchema } from '@schema/config.js';
+import { config as configSchema, DEFAULT_DOCKER_IMAGE, hostSchema, serverSchema } from '@schema/config.js';
 import defaults from '@/pdt-internal-config/default.json' with { type: 'json' };
 
 const DOCKER_HOST = { type: 'docker', image: 'felddy/foundryvtt-docker', version: '12', ports: [] };
@@ -69,11 +69,33 @@ describe('host schema', () => {
     expect(hostSchema.safeParse({ ...DOCKER_HOST, type: 'podman' }).success).toBe(false);
   });
 
-  test.each(['image', 'version', 'ports'])('requires %s', field => {
+  test('requires ports', () => {
     const host: Record<string, unknown> = { ...DOCKER_HOST };
-    delete host[field];
+    delete host['ports'];
 
     expect(hostSchema.safeParse(host).success).toBe(false);
+  });
+
+  test('runs the Foundry VTT image when it names no image', () => {
+    const host: Record<string, unknown> = { ...DOCKER_HOST };
+    delete host['image'];
+
+    expect(hostSchema.parse(host).image).toBe(DEFAULT_DOCKER_IMAGE);
+  });
+
+  // A server's version tags the image a VTT host runs.
+  test('does not require a version', () => {
+    const host: Record<string, unknown> = { ...DOCKER_HOST };
+    delete host['version'];
+
+    expect(hostSchema.safeParse(host).success).toBe(true);
+  });
+
+  // Regression: validation dropped the socket, which the Docker host reads.
+  test('keeps the socket to reach the engine through', () => {
+    expect(hostSchema.parse({ ...DOCKER_HOST, socketPath: '/run/docker.sock' })).toMatchObject({
+      socketPath: '/run/docker.sock',
+    });
   });
 });
 

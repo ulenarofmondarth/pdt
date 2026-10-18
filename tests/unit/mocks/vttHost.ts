@@ -10,8 +10,8 @@ import VTTHost from '@lib/VTT/VTTHost.js';
 export class VTTHostMock extends VTTHost {
   isAccessible = vi.fn<VTTHost['isAccessible']>().mockResolvedValue(true);
   start = vi.fn<VTTHost['start']>().mockResolvedValue(undefined);
-  stop = vi.fn<VTTHost['stop']>();
-  restart = vi.fn<VTTHost['restart']>();
+  stop = vi.fn<VTTHost['stop']>().mockResolvedValue(undefined);
+  restart = vi.fn<VTTHost['restart']>().mockResolvedValue(undefined);
   isRunning = vi.fn<VTTHost['isRunning']>().mockResolvedValue(false);
 }
 

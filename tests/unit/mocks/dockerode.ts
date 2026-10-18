@@ -61,6 +61,15 @@ export function createDockerMock(
 export type DockerMock = ReturnType<typeof createDockerMock>;
 
 /**
+ * The mock, as the client a DockerHost takes.
+ *
+ * The mock has only the members pdt uses, which `createDockerMock` checks against the real client.
+ */
+export function asDocker(mock: DockerMock): Docker {
+  return mock as unknown as Docker;
+}
+
+/**
  * The part of a container inspection that pdt reads.
  *
  * @param running - Whether the container reports itself as running

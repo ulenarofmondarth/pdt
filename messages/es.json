@@ -50,7 +50,16 @@
       "unreadable": "No se pudo leer el archivo de configuración {file}: {reason}",
       "notAnObject": "El archivo de configuración {file} debe contener un objeto JSON."
     },
-    "commandRequired": "Se requiere al menos un comando de nivel superior."
+    "commandRequired": "Se requiere al menos un comando de nivel superior.",
+    "vtt": {
+      "unknownServerType": "Tipo de servidor VTT desconocido: {type}",
+      "unknownHostType": "Tipo de host VTT desconocido: {type}",
+      "noVersion": "El servidor {server} no tiene una versión para ejecutar en un host Docker.",
+      "pullFailed": "No se pudo descargar {image}: {reason}",
+      "startFailed": "No se pudo iniciar el servidor {server} en el host Docker.",
+      "stopUnsupported": "Detener el servidor {server} aún no es compatible con un host Docker.",
+      "restartUnsupported": "Reiniciar el servidor {server} aún no es compatible con un host Docker."
+    }
   },
   "fatal": {
     "shouldNeverRun": "Nunca debería ejecutarse: {argv}",

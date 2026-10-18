@@ -50,7 +50,16 @@
       "unreadable": "Die Konfigurationsdatei {file} konnte nicht gelesen werden: {reason}",
       "notAnObject": "Die Konfigurationsdatei {file} muss ein JSON-Objekt enthalten."
     },
-    "commandRequired": "Mindestens ein Befehl der obersten Ebene ist erforderlich."
+    "commandRequired": "Mindestens ein Befehl der obersten Ebene ist erforderlich.",
+    "vtt": {
+      "unknownServerType": "Unbekannter VTT-Servertyp: {type}",
+      "unknownHostType": "Unbekannter VTT-Hosttyp: {type}",
+      "noVersion": "Server {server} hat keine Version, die auf einem Docker-Host laufen kann.",
+      "pullFailed": "{image} konnte nicht geladen werden: {reason}",
+      "startFailed": "Server {server} konnte auf dem Docker-Host nicht gestartet werden.",
+      "stopUnsupported": "Das Stoppen von Server {server} wird auf einem Docker-Host noch nicht unterstützt.",
+      "restartUnsupported": "Der Neustart von Server {server} wird auf einem Docker-Host noch nicht unterstützt."
+    }
   },
   "fatal": {
     "shouldNeverRun": "Sollte niemals ausgeführt werden: {argv}",

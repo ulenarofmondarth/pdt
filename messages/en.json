@@ -50,7 +50,16 @@
       "unreadable": "Could not read the configuration file {file}: {reason}",
       "notAnObject": "The configuration file {file} must contain a JSON object."
     },
-    "commandRequired": "At least one top level command is required."
+    "commandRequired": "At least one top level command is required.",
+    "vtt": {
+      "unknownServerType": "Unknown VTT server type: {type}",
+      "unknownHostType": "Unknown VTT host type: {type}",
+      "noVersion": "Server {server} has no version to run on a Docker host.",
+      "pullFailed": "Could not pull {image}: {reason}",
+      "startFailed": "Could not start server {server} on the Docker host.",
+      "stopUnsupported": "Stopping server {server} is not supported on a Docker host yet.",
+      "restartUnsupported": "Restarting server {server} is not supported on a Docker host yet."
+    }
   },
   "fatal": {
     "shouldNeverRun": "Should never run {argv}",
