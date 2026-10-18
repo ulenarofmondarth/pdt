@@ -4,7 +4,7 @@ import FoundryVTTServer from '@lib/VTT/Server/FoundryVTTServer.js';
 import VTTServer from '@lib/VTT/VTTServer.js';
 
 // A Foundry server reads the values it is not given from the configuration.
-vi.mock('@util/config.js', () => ({ default: { get: () => 'configured' } }));
+vi.mock('@util/config.js', () => ({ default: { VTT: {} } }));
 
 describe('createServer', () => {
   test('creates a Foundry VTT server for the foundry type', () => {

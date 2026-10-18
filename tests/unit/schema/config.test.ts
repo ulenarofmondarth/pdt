@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { config as configSchema, hostSchema, serverSchema } from '@schema/config.js';
 import defaults from '@/pdt-internal-config/default.json' with { type: 'json' };
-import testOverrides from '@/pdt-internal-config/test.json' with { type: 'json' };
 
 const DOCKER_HOST = { type: 'docker', image: 'felddy/foundryvtt-docker', version: '12', ports: [] };
 
@@ -15,10 +14,9 @@ describe('config schema', () => {
     expect(configSchema.safeParse(defaults).success).toBe(true);
   });
 
-  test('accepts the shipped configuration with the test overrides applied', () => {
-    const merged = { ...defaults, VTT: { ...defaults.VTT, ...testOverrides.VTT } };
-
-    expect(configSchema.safeParse(merged).success).toBe(true);
+  // Regression: validating dropped the port the shipped defaults set, since the schema lacked it.
+  test('keeps the port of each shipped server', () => {
+    expect(configSchema.parse(defaults).VTT['prj']?.server.port).toBe(defaults.VTT.prj.server.port);
   });
 
   test.each(['Logging', 'VTT', 'DOCS'])('requires the %s section', section => {
@@ -88,6 +86,10 @@ describe('server schema', () => {
 
   test('rejects a server type it does not know', () => {
     expect(serverSchema.safeParse({ ...FOUNDRY_SERVER, type: 'roll20' }).success).toBe(false);
+  });
+
+  test('accepts a port', () => {
+    expect(serverSchema.safeParse({ ...FOUNDRY_SERVER, port: 'auto' }).success).toBe(true);
   });
 
   test.each(['hostname', 'version'])('requires %s', field => {

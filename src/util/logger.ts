@@ -5,7 +5,7 @@ import path from 'node:path';
 import { Writable } from 'node:stream';
 import winston from 'winston';
 
-const logFilename = String(config.get('Logging.filename'));
+const logFilename = config.Logging.filename;
 
 let logDirectory = pfs.pdtConfigDir ?? pfs.userDataDir;
 let closing: Promise<void> | undefined;
@@ -32,7 +32,7 @@ const logFile = new Writable({
 });
 
 const logger = winston.createLogger({
-  level: config.get('Logging.level'),
+  level: config.Logging.level,
   transports: [
     new winston.transports.Stream({ stream: logFile }),
     new winston.transports.Console({

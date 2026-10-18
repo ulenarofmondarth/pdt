@@ -43,7 +43,12 @@
   "error": {
     "notInPdtProject": "Not a PDT project.",
     "optionRequired": "{option} is required when the questions are not asked.",
-    "optionInvalid": "Invalid {option} \"{value}\": {reason}"
+    "optionInvalid": "Invalid {option} \"{value}\": {reason}",
+    "config": {
+      "invalid": "The configuration is invalid:",
+      "unreadable": "Could not read the configuration file {file}: {reason}",
+      "notAnObject": "The configuration file {file} must contain a JSON object."
+    }
   },
   "fatal": {
     "shouldNeverRun": "Should never run {argv}",

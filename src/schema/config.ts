@@ -4,6 +4,7 @@ const foundryServerConfig = z.object({
   type: z.literal(['foundry']),
   hostname: z.string(),
   version: z.string(),
+  port: z.string().optional(),
 });
 
 export const serverSchema = z.discriminatedUnion('type', [foundryServerConfig]);
