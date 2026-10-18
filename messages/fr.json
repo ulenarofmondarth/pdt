@@ -59,6 +59,10 @@
       "startFailed": "Impossible de démarrer le serveur {server} sur l'hôte Docker.",
       "stopUnsupported": "L'arrêt du serveur {server} n'est pas encore pris en charge sur un hôte Docker.",
       "restartUnsupported": "Le redémarrage du serveur {server} n'est pas encore pris en charge sur un hôte Docker."
+    },
+    "compendium": {
+      "notRecognised": "{path} n'est pas une base de données de compendium reconnue.",
+      "exportUnsupported": "L'exportation du compendium situé à {path} vers {targets} n'est pas encore prise en charge."
     }
   },
   "fatal": {
