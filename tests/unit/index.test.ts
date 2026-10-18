@@ -1,3 +1,4 @@
+import os from 'node:os';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import PDT from '@/constants.js';
 
@@ -38,13 +39,52 @@ describe('cli entry point', () => {
     );
   });
 
-  test('runs in the directory it was started in', async () => {
+  test('runs in the directory it was started in, for the user running it', async () => {
     mocks.main.mockResolvedValue(PDT.EXITCODE.OK);
 
     await runCli();
 
-    const { pfs } = await import('@util/runtime-config.js');
-    expect(mocks.main).toHaveBeenCalledExactlyOnceWith(expect.anything(), expect.objectContaining({ paths: pfs }));
+    const { resolvePaths } = await import('@util/runtime-config.js');
+    const paths = resolvePaths({
+      cwd: process.cwd(),
+      home: os.homedir(),
+      platform: process.platform,
+      env: process.env,
+    });
+    expect(mocks.main).toHaveBeenCalledExactlyOnceWith(expect.anything(), expect.objectContaining({ paths }));
+  });
+
+  describe('questions', () => {
+    const original = { stdin: process.stdin.isTTY, stdout: process.stdout.isTTY };
+
+    function terminal(isTTY: boolean | undefined) {
+      Object.defineProperty(process.stdin, 'isTTY', { value: isTTY, configurable: true });
+      Object.defineProperty(process.stdout, 'isTTY', { value: isTTY, configurable: true });
+    }
+
+    afterEach(() => {
+      Object.defineProperty(process.stdin, 'isTTY', { value: original.stdin, configurable: true });
+      Object.defineProperty(process.stdout, 'isTTY', { value: original.stdout, configurable: true });
+    });
+
+    test('are asked in the terminal when there is one', async () => {
+      terminal(true);
+      mocks.main.mockResolvedValue(PDT.EXITCODE.OK);
+
+      await runCli();
+
+      const { terminalPrompter } = await import('@util/prompt.js');
+      expect(mocks.main.mock.calls[0]![1]).toMatchObject({ prompter: terminalPrompter });
+    });
+
+    test('are not asked without a terminal', async () => {
+      terminal(undefined);
+      mocks.main.mockResolvedValue(PDT.EXITCODE.OK);
+
+      await runCli();
+
+      expect(mocks.main.mock.calls[0]![1]).not.toHaveProperty('prompter');
+    });
   });
 
   test('exits with the code pdt returns', async () => {

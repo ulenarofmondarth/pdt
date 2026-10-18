@@ -1,21 +1,21 @@
-import { Argv, CommandModule, Arguments } from 'yargs';
-import * as vttCmds from './vtt_cmds.js';
-import logger from '@util/logger.js';
+import { createVttStartCommand } from './vtt_cmds/start.js';
+import { anyCommand } from '../command.js';
 import { m } from '@i18n/messages.js';
 
-const module: CommandModule = {
-  command: 'vtt <command> [options]',
+import type { CommandModule } from 'yargs';
+import type { CommandContext } from '../context.js';
 
-  describe: m['ui.cmd.vtt.description'](),
+/** `pdt vtt`: control the project's VTTs, through its sub-commands. */
+export function createVttCommand(context: CommandContext): CommandModule {
+  return {
+    command: 'vtt <command> [options]',
 
-  builder(yargs: Argv) {
-    (Object.values(vttCmds) as CommandModule[]).forEach(command => yargs.command(command));
-    return yargs;
-  },
+    describe: m['ui.cmd.vtt.description'](),
 
-  handler(argv: Arguments) {
-    logger.error(m['fatal.shouldNeverRun']({ argv: JSON.stringify(argv) }));
-  },
-};
+    builder: yargs => yargs.command(anyCommand(createVttStartCommand(context))),
 
-export default module;
+    handler(argv) {
+      context.log.error(m['fatal.shouldNeverRun']({ argv: JSON.stringify(argv) }));
+    },
+  };
+}

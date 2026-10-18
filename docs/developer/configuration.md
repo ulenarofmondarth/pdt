@@ -15,7 +15,7 @@ flowchart LR
 
 ## Modules
 
-- **`@util/runtime-config.ts`**: `resolvePaths({ cwd, home, platform, env })` works out the user configuration directory, the user data directory and the project's `.pdt` directory. It creates nothing; directories are created when something is first written to them. `pfs` holds the result for the running process.
+- **`@util/runtime-config.ts`**: `resolvePaths({ cwd, home, platform, env })` works out the user configuration directory, the user data directory and the project's `.pdt` directory. It creates nothing; directories are created when something is first written to them. `src/index.ts` works them out for the running process, and commands get them from their context (see {doc}`commands`).
 - **`@util/load-config.ts`**: `loadConfig({ files, env })` merges the defaults, each file that exists and the environment variables, and validates the result with the zod schema in `@schema/config.ts`. It returns the typed `Config`, or throws a `ConfigError` whose `problems` name each invalid setting. `configFiles(paths)` lists the user's and the project's files. Neither function looks at the running process, so tests pass in temporary files and variables.
 - **`src/main.ts`**: `main()` loads the configuration for the run before anything else. A `ConfigError` is written to standard error and `main()` returns exit code 127 (`EXITCODE.INVALID_CONFIG`); the logger cannot report it, as it is configured from this. `main()` then hands each part the settings it needs, such as `configureLogger(config.Logging)`.
 

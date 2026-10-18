@@ -14,6 +14,7 @@ testing
 i18n
 logging
 configuration
+commands
 vtt
 build-process
 code-control

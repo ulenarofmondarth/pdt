@@ -1,0 +1,48 @@
+import { vi } from 'vitest';
+import defaults from '@/pdt-internal-config/default.json' with { type: 'json' };
+import { config as configSchema } from '@schema/config.js';
+
+import type { CommandContext, CommandLog } from '@/cli/context.js';
+import type { createModule, Prompter } from '@lib/ModuleGenerator.js';
+
+/** A CommandLog that records every call. */
+export function createLogMock() {
+  return {
+    error: vi.fn<CommandLog['error']>(),
+    warn: vi.fn<CommandLog['warn']>(),
+    info: vi.fn<CommandLog['info']>(),
+    debug: vi.fn<CommandLog['debug']>(),
+    setDirectory: vi.fn<CommandLog['setDirectory']>(),
+  } satisfies CommandLog;
+}
+
+/**
+ * What a command gets to work with, for a test: the shipped default configuration, paths that are
+ * outside any project and lead nowhere, and spies for everything a command does. There is no
+ * prompter; give it one to test asking questions.
+ *
+ * Change any part of it before creating the command.
+ */
+export function createCommandContext() {
+  const context: CommandContext & {
+    log: ReturnType<typeof createLogMock>;
+    out: ReturnType<typeof vi.fn<CommandContext['out']>>;
+    createModule: ReturnType<typeof vi.fn<typeof createModule>>;
+  } = {
+    paths: { userConfigDir: '/nonexistent/config', userDataDir: '/nonexistent/data', pdtConfigDir: undefined },
+    config: configSchema.parse(defaults),
+    log: createLogMock(),
+    out: vi.fn<CommandContext['out']>(),
+    createModule: vi.fn<typeof createModule>(),
+  };
+  return context;
+}
+
+export type CommandContextMock = ReturnType<typeof createCommandContext>;
+
+/** A prompter that must not be asked anything; for checking which prompter a command passes on. */
+export const UNASKED_PROMPTER: Prompter = {
+  input: () => Promise.reject(new Error('not expected to ask')),
+  confirm: () => Promise.reject(new Error('not expected to ask')),
+  select: () => Promise.reject(new Error('not expected to ask')),
+};
