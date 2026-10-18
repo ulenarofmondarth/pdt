@@ -10,7 +10,7 @@ import logger from '@util/logger.js';
 
 Then use `logger.info()` etc.
 
-Every message goes to the console and to the log file. Only messages at or above the configured level are output; the default level is `warn`. Set the `PDT_LOG_LEVEL` environment variable (for example to `debug`) to see more.
+Every message goes to the console, on standard error, and to the log file. Standard output is left for what the user asked for, such as the help or a command's results. Only messages at or above the configured level are output; the default level is `warn`. Set the `PDT_LOG_LEVEL` environment variable (for example to `debug`) to see more.
 
 ## Where the log file is
 

@@ -55,6 +55,9 @@ const logger = winston.createLogger({
     new winston.transports.Stream({ stream: logFile }),
     new winston.transports.Console({
       format: winston.format.cli(),
+      // Log messages are diagnostics, so they all go to standard error, leaving standard output for
+      // what the user asked for (help, the version, a command's results).
+      stderrLevels: Object.keys(winston.config.npm.levels),
     }),
   ],
 });

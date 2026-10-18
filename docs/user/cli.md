@@ -11,6 +11,10 @@ The main interface of the PDT is the command line.
 
 The {ref}`pdt_tlc` access the main functions of the PDT. These may be further refined by secondary commands or options. Details can be found in the command reference.
 
+## Output
+
+Standard output carries what you asked for: the help, the version, or a command's results. Messages about what {{pdt}} is doing, warnings and errors go to standard error, and to the log file (see {doc}`configuration`).
+
 ## Exit codes
 
 | Code | Meaning |
