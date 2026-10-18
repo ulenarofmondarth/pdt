@@ -48,7 +48,8 @@
       "invalid": "La configuración no es válida:",
       "unreadable": "No se pudo leer el archivo de configuración {file}: {reason}",
       "notAnObject": "El archivo de configuración {file} debe contener un objeto JSON."
-    }
+    },
+    "commandRequired": "Se requiere al menos un comando de nivel superior."
   },
   "fatal": {
     "shouldNeverRun": "Nunca debería ejecutarse: {argv}",

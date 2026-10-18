@@ -1,13 +1,14 @@
-import config from '@util/config.js';
-import { pfs } from '@util/runtime-config.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Writable } from 'node:stream';
 import winston from 'winston';
+import defaults from '@/pdt-internal-config/default.json' with { type: 'json' };
 
-const logFilename = config.Logging.filename;
+import type { Config } from '@schema/config.js';
 
-let logDirectory = pfs.pdtConfigDir ?? pfs.userDataDir;
+let logFilename = defaults.Logging.filename;
+/** No file output until a directory is set. */
+let logDirectory: string | undefined;
 let closing: Promise<void> | undefined;
 
 /**
@@ -17,10 +18,15 @@ let closing: Promise<void> | undefined;
  * finished before that output is on disk, so lines are lost if the process exits promptly.
  * A CLI logs little, so the cost of a synchronous append is not a concern.
  *
- * The file is only created when the first line is written.
+ * The file is only created when the first line is written. Until a directory is set, lines go to
+ * the console only.
  */
 const logFile = new Writable({
   write(chunk: Buffer, _encoding, callback) {
+    if (logDirectory === undefined) {
+      callback();
+      return;
+    }
     try {
       fs.mkdirSync(logDirectory, { recursive: true });
       fs.appendFileSync(path.join(logDirectory, logFilename), chunk);
@@ -32,7 +38,7 @@ const logFile = new Writable({
 });
 
 const logger = winston.createLogger({
-  level: config.Logging.level,
+  level: defaults.Logging.level,
   transports: [
     new winston.transports.Stream({ stream: logFile }),
     new winston.transports.Console({
@@ -42,10 +48,22 @@ const logger = winston.createLogger({
 });
 
 /**
+ * Apply the logging configuration: the level, and the name of the log file.
+ *
+ * Until this is called the logger uses the shipped defaults.
+ *
+ * @param settings - The `Logging` section of the configuration
+ */
+export function configureLogger({ level, filename }: Config['Logging']): void {
+  logger.level = level;
+  logFilename = filename;
+}
+
+/**
  * Send all further file output to the log file in another directory.
  *
- * The directory is otherwise chosen once, when this module loads. Use this when the
- * right place only comes into existence later, e.g. when a project is initialised.
+ * pdt sets this as it starts. Set it again when the right place only comes into
+ * existence later, e.g. when a project is initialised.
  *
  * @param dir - Directory that will hold the log file
  */
@@ -65,19 +83,6 @@ export function closeLogger(): Promise<void> {
   });
 
   return closing;
-}
-
-/**
- * Terminate the process once all log output has been written.
- *
- * Always use this in place of `process.exit()`, which can discard log output that is
- * still on its way through the logger.
- *
- * @param code - Process exit code
- */
-export async function exit(code: number): Promise<never> {
-  await closeLogger();
-  process.exit(code);
 }
 
 export default logger;
