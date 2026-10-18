@@ -38,7 +38,8 @@
   "warn": {
     "pdtParentExists": "Versuch, ein PDT-Unterprojekt anzulegen (mit -f erzwingen).\n  Übergeordnetes Projekt unter {path}",
     "alreadyExists": "{description} existiert bereits.",
-    "moduleNotGenerated": "{path} ist nicht leer, daher wird dort kein Modul angelegt. Ignoriert: {options}"
+    "moduleNotGenerated": "{path} ist nicht leer, daher wird dort kein Modul angelegt. Ignoriert: {options}",
+    "logFileUnavailable": "Die Protokolldatei {file} kann nicht geschrieben werden, daher erscheinen Meldungen nur in der Konsole: {reason}"
   },
   "error": {
     "notInPdtProject": "Kein PDT-Projekt.",

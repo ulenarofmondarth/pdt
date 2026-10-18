@@ -38,7 +38,8 @@
   "warn": {
     "pdtParentExists": "Attempt to create sub-PDT project (use -f to force).\n  Parent project at {path}",
     "alreadyExists": "The {description} already exists.",
-    "moduleNotGenerated": "{path} is not empty, so no module is generated there. Ignored: {options}"
+    "moduleNotGenerated": "{path} is not empty, so no module is generated there. Ignored: {options}",
+    "logFileUnavailable": "Cannot write the log file {file}, so messages go to the console only: {reason}"
   },
   "error": {
     "notInPdtProject": "Not a PDT project.",

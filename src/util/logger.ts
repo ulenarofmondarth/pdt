@@ -3,12 +3,15 @@ import path from 'node:path';
 import { Writable } from 'node:stream';
 import winston from 'winston';
 import defaults from '@/pdt-internal-config/default.json' with { type: 'json' };
+import { m } from '@i18n/messages.js';
 
 import type { Config } from '@schema/config.js';
 
 let logFilename = defaults.Logging.filename;
 /** No file output until a directory is set. */
 let logDirectory: string | undefined;
+/** Set once writing to the log file in the current directory has failed. */
+let fileFailed = false;
 let closing: Promise<void> | undefined;
 
 /**
@@ -20,20 +23,29 @@ let closing: Promise<void> | undefined;
  *
  * The file is only created when the first line is written. Until a directory is set, lines go to
  * the console only.
+ *
+ * A log file that cannot be written must not stop pdt, so a failure is reported once, on standard
+ * error, and lines go to the console only until another directory is set. Passing the error on
+ * would make it an unhandled 'error' event, which ends the process.
  */
 const logFile = new Writable({
   write(chunk: Buffer, _encoding, callback) {
-    if (logDirectory === undefined) {
+    if (logDirectory === undefined || fileFailed) {
       callback();
       return;
     }
+    const file = path.join(logDirectory, logFilename);
     try {
       fs.mkdirSync(logDirectory, { recursive: true });
-      fs.appendFileSync(path.join(logDirectory, logFilename), chunk);
-      callback();
+      fs.appendFileSync(file, chunk);
     } catch (error) {
-      callback(error instanceof Error ? error : new Error(String(error)));
+      fileFailed = true;
+      // Not through the logger: this is the logger failing.
+      console.error(
+        m['warn.logFileUnavailable']({ file, reason: error instanceof Error ? error.message : String(error) }),
+      );
     }
+    callback();
   },
 });
 
@@ -69,6 +81,7 @@ export function configureLogger({ level, filename }: Config['Logging']): void {
  */
 export function setLogDirectory(dir: string): void {
   logDirectory = path.resolve(dir);
+  fileFailed = false;
 }
 
 /**

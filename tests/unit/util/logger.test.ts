@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import winston from 'winston';
 import defaults from '@/pdt-internal-config/default.json' with { type: 'json' };
 
 const LOG_FILE = defaults.Logging.filename;
@@ -117,6 +118,64 @@ describe('logger', () => {
       } finally {
         vi.doUnmock('@util/load-config.js');
       }
+    });
+  });
+
+  describe('when the log file cannot be written', () => {
+    /** A directory that cannot be created, because a file has its name. */
+    function blockedDirectory(): string {
+      const blocked = path.join(sandbox, 'blocked');
+      fs.writeFileSync(blocked, 'a file, not a directory');
+      return blocked;
+    }
+
+    // Regression: the failed write was an unhandled 'error' event, which crashed pdt.
+    test('keeps logging to the console and finishes normally', async () => {
+      const { default: logger, setLogDirectory, closeLogger } = await loadLogger();
+      vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+      const onConsole: string[] = [];
+      logger.transports
+        .find(transport => transport instanceof winston.transports.Console)
+        ?.on('logged', (info: { message: string }) => onConsole.push(info.message.trim()));
+      setLogDirectory(blockedDirectory());
+
+      logger.error('first');
+      logger.error('second');
+      await expect(closeLogger()).resolves.toBeUndefined();
+      // The console transport reports each line on the next turn of the event loop.
+      await new Promise(resolve => setImmediate(resolve));
+
+      expect(onConsole).toEqual(['first', 'second']);
+    });
+
+    test('says so once, on standard error, naming the file', async () => {
+      const { default: logger, setLogDirectory, closeLogger } = await loadLogger();
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+      const blocked = blockedDirectory();
+      setLogDirectory(blocked);
+
+      logger.error('first');
+      logger.error('second');
+      await closeLogger();
+
+      expect(consoleError).toHaveBeenCalledOnce();
+      expect(String(consoleError.mock.calls[0]?.[0])).toContain(path.join(blocked, LOG_FILE));
+    });
+
+    test('writes to the file again once given a directory that works', async () => {
+      const { default: logger, setLogDirectory, closeLogger } = await loadLogger();
+      vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+      setLogDirectory(blockedDirectory());
+
+      logger.error('lost');
+      setLogDirectory(sandbox);
+      logger.error('kept');
+      await closeLogger();
+
+      expect(logged(sandbox)).toEqual(['kept']);
     });
   });
 

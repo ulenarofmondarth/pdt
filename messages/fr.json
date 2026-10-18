@@ -38,7 +38,8 @@
   "warn": {
     "pdtParentExists": "Tentative de création d'un sous-projet PDT (utiliser -f pour forcer).\n  Projet parent dans {path}",
     "alreadyExists": "{description} existe déjà.",
-    "moduleNotGenerated": "{path} n'est pas vide ; aucun module n'y est donc généré. Options ignorées : {options}"
+    "moduleNotGenerated": "{path} n'est pas vide ; aucun module n'y est donc généré. Options ignorées : {options}",
+    "logFileUnavailable": "Impossible d'écrire le fichier journal {file}, les messages ne vont donc qu'à la console : {reason}"
   },
   "error": {
     "notInPdtProject": "Ce n'est pas un projet PDT.",
