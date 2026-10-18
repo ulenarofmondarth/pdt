@@ -10,7 +10,7 @@ import logger from '@util/logger.js';
 
 Then use `logger.info()` etc.
 
-Every message goes to the console and to the log file. Only messages at or above the configured level are output; the default level is `warn`. Set the `PDT_LOG_LEVEL` environment variable (for example to `debug`) to see more.
+Every message goes to the console, on standard error, and to the log file. Standard output is left for what the user asked for, such as the help or a command's results. Only messages at or above the configured level are output; the default level is `warn`. Set the `PDT_LOG_LEVEL` environment variable (for example to `debug`) to see more.
 
 ## Where the log file is
 
@@ -39,3 +39,5 @@ Nothing in {{pdt}} calls `process.exit()`. A command that fails throws (or rejec
 `closeLogger()` is terminal: nothing can be logged afterwards.
 
 Log lines are appended to the file synchronously. winston's own file transport was not used because it reports itself finished before its output is on disk, which loses messages when the process exits promptly.
+
+If the log file cannot be written (for example, its directory cannot be created), {{pdt}} says so once on standard error and carries on, logging to the console only, until another directory is set. A failed write is never passed on as an error: it would be an unhandled `'error'` event, which ends the process.

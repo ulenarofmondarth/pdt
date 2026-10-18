@@ -97,10 +97,9 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
       - run: pnpm build
-      - name: Smoke test the CLI
-        run: |
-          node dist/index.js --version
-          node dist/index.js --help
+      # Runs the built CLI as a user would: exit codes, output, configuration, logging, init.
+      - name: Test the built CLI
+        run: pnpm test:cli
       - name: Keep the build
         uses: actions/upload-artifact@v7
         with:

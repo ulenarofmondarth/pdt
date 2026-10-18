@@ -38,7 +38,8 @@
   "warn": {
     "pdtParentExists": "Intento de crear un subproyecto PDT (use -f para forzarlo).\n  Proyecto principal en {path}",
     "alreadyExists": "{description} ya existe.",
-    "moduleNotGenerated": "{path} no está vacío, por lo que no se genera ningún módulo allí. Opciones ignoradas: {options}"
+    "moduleNotGenerated": "{path} no está vacío, por lo que no se genera ningún módulo allí. Opciones ignoradas: {options}",
+    "logFileUnavailable": "No se puede escribir el archivo de registro {file}, así que los mensajes solo van a la consola: {reason}"
   },
   "error": {
     "notInPdtProject": "No es un proyecto PDT.",

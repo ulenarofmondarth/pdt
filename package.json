@@ -38,6 +38,7 @@
     "build:clean": "pnpm run clean && pnpm run build",
     "test": "vitest --run",
     "test:coverage": "vitest run --coverage",
+    "test:cli": "vitest run --config vitest.cli.config.ts",
     "clean": "rimraf dist/",
     "test:ci": "vitest run --related",
     "prepare": "husky",

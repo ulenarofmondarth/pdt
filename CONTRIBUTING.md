@@ -38,6 +38,7 @@ Keep pull requests small and focused, and update the documentation alongside the
 | `pnpm test`          | Unit tests                                                             |
 | `pnpm test:coverage` | Unit tests with coverage; fails below the configured thresholds        |
 | `pnpm build`         | The bundle builds                                                      |
+| `pnpm test:cli`      | The built CLI, run as a user would (after `pnpm build`)                |
 | `pnpm build:docs`    | The documentation builds with no warnings                              |
 
 CI runs all of these on every pull request, and also checks the commit messages.
