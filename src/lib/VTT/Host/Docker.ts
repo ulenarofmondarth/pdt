@@ -120,15 +120,26 @@ export default class DockerHost extends VTTHost {
   async restart() {}
 
   /**
-   * Pulls `image` and waits until Docker has finished.
+   * Pulls `image`, unless the engine already has it, and waits until Docker has finished.
+   *
+   * An image is pulled once: the server's version names a fixed release, so a later pull would
+   * fetch the same image, and a start does not need the network once the image is there.
    *
    * Docker reports progress as newline-delimited JSON, and a chunk of the stream can hold several
    * messages or part of one, so the stream is read with dockerode's `followProgress`.
    *
    * @param image - Full image reference, including the tag
-   * @throws When the stream fails, or when Docker reports an error in the progress
+   * @throws When the engine cannot be asked about the image, the stream fails, or Docker reports an
+   *   error in the progress
    */
   async _pullImageIfMissing(image: string): Promise<void> {
+    try {
+      await this.docker.getImage(image).inspect();
+      return;
+    } catch (error) {
+      if ((error as { statusCode?: unknown }).statusCode !== 404) throw error;
+    }
+
     const pullStream = await this.docker.pull(image, {});
     const progress = await new Promise<unknown[]>((resolve, reject) => {
       this.docker.modem.followProgress(pullStream, (err: Error | null, output: unknown[]) =>

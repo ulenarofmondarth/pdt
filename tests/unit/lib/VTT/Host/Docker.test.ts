@@ -4,16 +4,19 @@ import { createHostMock } from '@tests/unit/mocks/vttHost.js';
 import {
   createContainerMock,
   createDockerMock,
+  createImageMock,
   dockerError,
   failingPullStream,
   inspectInfo,
   pullStream,
   type ContainerMock,
   type DockerMock,
+  type ImageMock,
 } from '@tests/unit/mocks/dockerode.js';
 import FoundryVTTServer from '@lib/VTT/Server/FoundryVTTServer.js';
 
 import type { DockerHostConfig } from '@lib/VTT/Host/Docker.js';
+import type { ImageInspectInfo } from 'dockerode';
 
 const mocks = vi.hoisted(() => ({ Docker: vi.fn() }));
 
@@ -29,11 +32,13 @@ describe('DockerHost', () => {
   let docker: DockerMock;
   let server: FoundryVTTServer;
   let created: ContainerMock;
+  let image: ImageMock;
 
   beforeEach(() => {
     container = createContainerMock();
     created = createContainerMock();
-    docker = createDockerMock(container);
+    image = createImageMock();
+    docker = createDockerMock(container, image);
     mocks.Docker.mockReset();
     mocks.Docker.mockImplementation(function () {
       return docker;
@@ -124,6 +129,27 @@ describe('DockerHost', () => {
       await expect(host.start(server)).rejects.toThrow(
         `Could not pull ${IMAGE}: unauthorized: authentication required`,
       );
+      expect(container.inspect).not.toHaveBeenCalled();
+    });
+
+    test('does not pull an image the engine already has', async () => {
+      container.inspect.mockResolvedValue(inspectInfo(true));
+      image.inspect.mockResolvedValue({} as ImageInspectInfo);
+      const host = new DockerHost(HOST_CONFIG);
+
+      await host.start(server);
+
+      expect(docker.getImage).toHaveBeenCalledExactlyOnceWith(IMAGE);
+      expect(docker.pull).not.toHaveBeenCalled();
+    });
+
+    test('fails with the cause when it cannot tell whether the engine has the image', async () => {
+      const cause = dockerError(500);
+      image.inspect.mockRejectedValue(cause);
+      const host = new DockerHost(HOST_CONFIG);
+
+      await expect(host.start(server)).rejects.toBe(cause);
+      expect(docker.pull).not.toHaveBeenCalled();
       expect(container.inspect).not.toHaveBeenCalled();
     });
 

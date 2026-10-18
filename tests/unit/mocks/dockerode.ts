@@ -1,7 +1,7 @@
 import { Readable } from 'node:stream';
 import { vi } from 'vitest';
 import type Docker from 'dockerode';
-import type { Container, ContainerInspectInfo } from 'dockerode';
+import type { Container, ContainerInspectInfo, Image, ImageInspectInfo } from 'dockerode';
 
 // The real progress parser, so tests see how dockerode splits Docker's progress stream into
 // messages. Creating a client does not connect to anything.
@@ -23,15 +23,31 @@ export function createContainerMock() {
 export type ContainerMock = ReturnType<typeof createContainerMock>;
 
 /**
+ * Stand-in for a dockerode `Image`. By default the engine does not have the image.
+ */
+export function createImageMock() {
+  return {
+    inspect: vi.fn<() => Promise<ImageInspectInfo>>().mockRejectedValue(dockerError(404)),
+  } satisfies Partial<Record<keyof Image, unknown>>;
+}
+
+export type ImageMock = ReturnType<typeof createImageMock>;
+
+/**
  * Stand-in for a dockerode `Docker` client, limited to the methods pdt uses.
  *
- * By default the engine is reachable, the only known container is `container`, and pulling
- * an image completes after one progress message.
+ * By default the engine is reachable, the only known container is `container`, the engine does not
+ * have the image, and pulling it completes after one progress message.
  *
  * @param container - Container returned by `getContainer` and `createContainer`
+ * @param image - Image returned by `getImage`
  */
-export function createDockerMock(container: ContainerMock = createContainerMock()) {
+export function createDockerMock(
+  container: ContainerMock = createContainerMock(),
+  image: ImageMock = createImageMock(),
+) {
   return {
+    getImage: vi.fn<(name: string) => ImageMock>().mockReturnValue(image),
     ping: vi.fn<() => Promise<unknown>>().mockResolvedValue('OK'),
     getContainer: vi.fn<(id: string) => ContainerMock>().mockReturnValue(container),
     createContainer: vi.fn<(options: object) => Promise<ContainerMock>>().mockResolvedValue(container),
