@@ -2,8 +2,14 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import defaults from '@/pdt-internal-config/default.json' with { type: 'json' };
 
-const LOG_FILE = 'pdt.log';
+const LOG_FILE = defaults.Logging.filename;
+
+// The shipped defaults, not the configuration of whoever runs the tests.
+vi.mock('@util/config.js', async () => ({
+  default: (await import('@/pdt-internal-config/default.json', { with: { type: 'json' } })).default,
+}));
 
 /** Each test gets its own logger instance, because closing the logger is terminal. */
 async function loadLogger() {

@@ -10,7 +10,7 @@ Running the build is as simple as `pnpm build`. This invokes {program}`vite` and
 
 The compiler never emits files (`noEmit`); {program}`vite` produces the build output.
 
-`allowJs` is still enabled for `src/util/fudge_node_config.js` and will be turned off once that file is replaced.
+`allowJs` is enabled because the configuration tests import `release.config.js`, which semantic-release needs as JavaScript. There is no JavaScript in `src/`.
 
 (typescript-compilers)=
 

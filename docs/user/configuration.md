@@ -1,54 +1,49 @@
 # Configuring PDT
 
-## Custom configuration file
+## Configuration files
 
-The simplest way to manage the PDT configuration is using the {ref}`pdt_tlc_config` command.
+{{pdt}} reads its configuration from JSON files. Each file only needs the settings it changes; everything else keeps its value from the files before it.
 
-`pdt` assumes configuration files are found in the user's home directory and the project root (typically the directory containing `package.json` or the `.git` directory) unless `PDT_CONFIG_DIR` is set, in which case `pdt` will look in that directory for all configuration files.
+The configuration is built up in this order, later sources overriding earlier ones:
 
-Configuration files can be provided in a number of formats.
+1. The defaults built into {{pdt}}.
+2. Your user configuration file.
+3. The project's configuration file, `.pdt/config.json` in the project root, when {{pdt}} runs inside a project.
+4. Environment variables (below).
 
-- `.pdt.[yml|yaml]` YAML
-- `.pdt.json` JSON
+Your user configuration file is `config.json` in your user configuration directory:
 
-If the environment variable `PDT_ENVIRONMENT` is assigned the corresponding configuration file is loaded and merged into any existing configuration.
+| System | User configuration file |
+| --- | --- |
+| Linux, macOS | `~/.config/pdt/config.json`, or `$XDG_CONFIG_HOME/pdt/config.json` when `XDG_CONFIG_HOME` is set |
+| Windows | `%APPDATA%\pdt\config.json` |
+
+Settings are merged section by section: a file that sets only `Logging.level` keeps the default `Logging.filename`. A list, such as a host's `ports`, is replaced as a whole.
 
 :::{admonition} Example
-If `PDT_ENVIRONMENT=DEV` then `.pdt.dev.json` will be loaded if present.
+`~/.config/pdt/config.json` makes {{pdt}} more talkative everywhere:
 
-If `.pdt.yml` also exists then the configuration will be loaded in the following order (values in later files overriding earlier):
+```json
+{ "Logging": { "level": "info" } }
+```
 
-1. Defaults defined in PDT.
-2. `~/.pdt.json` user's default
-3. `.pdt.yml` project default
-4. `~/.pdt.dev.json` user's dev config
-5. `.pdt.dev.json` project's dev config
+and a project's `.pdt/config.json` makes it quiet again in that project:
+
+```json
+{ "Logging": { "level": "error" } }
+```
 :::
 
-It is an error to provide several configuration files with the same base name, but different format extensions. For example, providing a `.pdt.yml` and a `.pdt.json` is invalid. PDT will error and refuse to run.
+{{pdt}} checks the combined configuration before doing anything else. If a file is not valid JSON, or a setting has a value it does not accept, {{pdt}} names the file or the setting and stops with exit code 127.
 
-## Environment Variables
+## Environment variables
 
-Any configuration value can be assigned using an environment variable. To form the name of the corresponding environment variable:
+| Variable | Setting |
+| --- | --- |
+| `PDT_LOG_LEVEL` | `Logging.level`: one of `error`, `warn`, `info`, `http`, `verbose`, `debug`, `silly` |
 
-1. Replace `.` with `_`
-2. All characters to UPPERCASE
-3. Prefix with `PDT_`
+An environment variable overrides every configuration file. An empty variable is ignored.
 
-The configuration value `logger.filename` becomes environment variable `PDT_LOGGER_FILENAME`.
+## PDT runtime data
 
-### Using `.env` files
-
-A `.env` file can be provided. This will be loaded *AFTER* the configuration files and *BEFORE* any environment variable from the shell.
-
-If `PDT_ENVIRONMENT` is set in the shell, the corresponding `.env` is loaded *in preference to* `.env`.
-
-`PDT_ENVIRONMENT=DEV` then `.env.dev` is loaded and `.env` is ignored.
-
-:::{note}
-The `PDT_ENVIRONMENT` is normalised to lowercase and suffixed to `.env.`
-:::
-
-## PDT runtime configuration
-
-PDT uses the `~/.pdt` directory to store runtime data. For example, tracking all project controlled docker instances.
+{{pdt}} keeps data it manages itself apart from the configuration: a project's data, including its log file, is in the project's `.pdt` directory, and anything outside a project is in your user data directory (`~/.local/share/pdt` on Linux, `~/Library/Preferences/pdt` on macOS, `%APPDATA%\pdt` on Windows).

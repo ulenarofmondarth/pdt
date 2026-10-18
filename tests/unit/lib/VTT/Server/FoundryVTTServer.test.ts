@@ -5,9 +5,11 @@ import { createHostMock } from '@tests/unit/mocks/vttHost.js';
 
 import type { FoundryVTTServerConfig } from '@lib/VTT/Server/FoundryVTTServer.js';
 
-const mocks = vi.hoisted(() => ({ get: vi.fn() }));
+import type { Config } from '@schema/config.js';
 
-vi.mock('@util/config.js', () => ({ default: { get: mocks.get } }));
+const mocks = vi.hoisted(() => ({ config: { VTT: {} } as Pick<Config, 'VTT'> }));
+
+vi.mock('@util/config.js', () => ({ default: mocks.config }));
 
 const FULL_CONFIG: FoundryVTTServerConfig = {
   type: 'foundry',
@@ -19,7 +21,7 @@ const FULL_CONFIG: FoundryVTTServerConfig = {
 
 describe('FoundryVTTServer', () => {
   beforeEach(() => {
-    mocks.get.mockReset();
+    mocks.config.VTT = {};
   });
 
   test('is a VTTServer', () => {
@@ -31,20 +33,29 @@ describe('FoundryVTTServer', () => {
       const server = new FoundryVTTServer(FULL_CONFIG);
 
       expect(server).toMatchObject({ _name: 'unit-test-vtt', _version: '12', _hostname: 'vtt.example', _port: '8080' });
-      expect(mocks.get).not.toHaveBeenCalled();
+    });
+
+    test('prefers the values it is given to the configuration', () => {
+      configure({ version: '13', hostname: 'configured.example', port: 'auto' });
+
+      const server = new FoundryVTTServer(FULL_CONFIG);
+
+      expect(server).toMatchObject({ _version: '12', _hostname: 'vtt.example', _port: '8080' });
     });
 
     test('falls back to the configuration for values that are not given', () => {
-      const configured: Record<string, string> = {
-        'VTT.unit-test-vtt.server.version': '13',
-        'VTT.unit-test-vtt.server.hostname': 'configured.example',
-        'VTT.unit-test-vtt.server.port': 'auto',
-      };
-      mocks.get.mockImplementation((key: string) => configured[key]);
+      configure({ version: '13', hostname: 'configured.example', port: 'auto' });
 
       const server = new FoundryVTTServer({ type: 'foundry', name: 'unit-test-vtt', version: '' });
 
       expect(server).toMatchObject({ _version: '13', _hostname: 'configured.example', _port: 'auto' });
+    });
+
+    test('leaves empty what neither it is given nor the configuration has', () => {
+      const server = new FoundryVTTServer({ type: 'foundry', name: 'unit-test-vtt', version: '' });
+
+      expect(server).toMatchObject({ _version: '', _hostname: '', _port: '' });
+      expect(server.version).toBe('');
     });
   });
 
@@ -87,3 +98,13 @@ describe('FoundryVTTServer', () => {
   test.todo('stop asks its host to stop it');
   test.todo('restart asks its host to restart it');
 });
+
+/** Configure the server the tests build, as a configuration file would. */
+function configure(server: { version: string; hostname: string; port?: string }) {
+  mocks.config.VTT = {
+    'unit-test-vtt': {
+      server: { type: 'foundry', ...server },
+      host: { type: 'docker', image: 'felddy/foundryvtt', version: '', ports: [] },
+    },
+  };
+}

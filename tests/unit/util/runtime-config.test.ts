@@ -1,9 +1,9 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import PDT from '@/constants.js';
-import { findConfig, searchBoundary } from '@util/runtime-config.js';
+import { findConfig, resolvePaths, searchBoundary } from '@util/runtime-config.js';
 import { RTCError } from '@util/runtime-config.js';
 
 describe('searchBoundary', () => {
@@ -61,58 +61,119 @@ describe('findConfig', () => {
   });
 });
 
-describe('user data directory', () => {
-  let sandbox: string;
+describe('resolvePaths', () => {
+  const HOME = path.join(path.sep, 'home', 'me');
+  const elsewhere = { cwd: path.join(path.sep, 'srv'), home: HOME };
 
-  beforeEach(() => {
-    sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'pdt-rtc-'));
+  describe('user configuration directory', () => {
+    test('is ~/.config/pdt by default', () => {
+      const paths = resolvePaths({ ...elsewhere, platform: 'linux', env: {} });
+
+      expect(paths.userConfigDir).toBe(path.join(HOME, '.config', PDT.PROGRAM_NAME));
+    });
+
+    test('is ~/.config/pdt on macOS too', () => {
+      const paths = resolvePaths({ ...elsewhere, platform: 'darwin', env: {} });
+
+      expect(paths.userConfigDir).toBe(path.join(HOME, '.config', PDT.PROGRAM_NAME));
+    });
+
+    test('follows XDG_CONFIG_HOME', () => {
+      const xdg = path.join(path.sep, 'cfg');
+
+      const paths = resolvePaths({ ...elsewhere, platform: 'linux', env: { XDG_CONFIG_HOME: xdg } });
+
+      expect(paths.userConfigDir).toBe(path.join(xdg, PDT.PROGRAM_NAME));
+    });
+
+    // The XDG specification says a relative path is invalid and must be ignored.
+    test('ignores a relative XDG_CONFIG_HOME', () => {
+      const paths = resolvePaths({ ...elsewhere, platform: 'linux', env: { XDG_CONFIG_HOME: 'cfg' } });
+
+      expect(paths.userConfigDir).toBe(path.join(HOME, '.config', PDT.PROGRAM_NAME));
+    });
+
+    test('is under APPDATA on Windows', () => {
+      const appData = path.join(HOME, 'AppData', 'Roaming');
+
+      const paths = resolvePaths({ ...elsewhere, platform: 'win32', env: { APPDATA: appData } });
+
+      expect(paths.userConfigDir).toBe(path.join(appData, PDT.PROGRAM_NAME));
+    });
+
+    test('is under the home directory on Windows when APPDATA is not set', () => {
+      const paths = resolvePaths({ ...elsewhere, platform: 'win32', env: {} });
+
+      expect(paths.userConfigDir).toBe(path.join(HOME, 'AppData', 'Roaming', PDT.PROGRAM_NAME));
+    });
+
+    // Regression: the directory searched for user configuration ended in pdt/pdt.
+    test('names pdt only once', () => {
+      const paths = resolvePaths({ ...elsewhere, platform: 'linux', env: {} });
+
+      expect(paths.userConfigDir.split(path.sep).filter(part => part === PDT.PROGRAM_NAME)).toHaveLength(1);
+    });
   });
 
-  afterEach(() => {
-    vi.unstubAllEnvs();
-    fs.rmSync(sandbox, { recursive: true, force: true });
+  describe('user data directory', () => {
+    test('uses APPDATA when it is set', () => {
+      const appData = path.join(HOME, 'AppData');
+
+      const paths = resolvePaths({ ...elsewhere, platform: 'linux', env: { APPDATA: appData } });
+
+      expect(paths.userDataDir).toBe(path.join(appData, PDT.PROGRAM_NAME));
+    });
+
+    test('is under ~/.local/share on Linux', () => {
+      const paths = resolvePaths({ ...elsewhere, platform: 'linux', env: { APPDATA: '' } });
+
+      expect(paths.userDataDir).toBe(path.join(HOME, '.local', 'share', PDT.PROGRAM_NAME));
+    });
+
+    test('is under ~/Library/Preferences on macOS', () => {
+      const paths = resolvePaths({ ...elsewhere, platform: 'darwin', env: {} });
+
+      expect(paths.userDataDir).toBe(path.join(HOME, 'Library', 'Preferences', PDT.PROGRAM_NAME));
+    });
   });
 
-  /** The directory is worked out as the module loads, so each test loads it afresh. */
-  async function loadPfs() {
-    vi.resetModules();
-    return (await import('@util/runtime-config.js')).pfs;
-  }
+  describe('with real directories', () => {
+    let sandbox: string;
 
-  test('uses APPDATA when it is set', async () => {
-    vi.stubEnv('APPDATA', path.join(sandbox, 'AppData'));
+    beforeEach(() => {
+      sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'pdt-rtc-'));
+    });
 
-    const pfs = await loadPfs();
+    afterEach(() => {
+      fs.rmSync(sandbox, { recursive: true, force: true });
+    });
 
-    expect(pfs.userDataDir).toBe(path.join(sandbox, 'AppData', PDT.PROGRAM_NAME));
-  });
+    test('finds the project the working directory is in', () => {
+      const project = path.join(sandbox, 'module');
+      const cwd = path.join(project, 'src');
+      fs.mkdirSync(cwd, { recursive: true });
+      fs.mkdirSync(path.join(project, PDT.PROJECT_RTD_DIR_NAME));
 
-  test.runIf(process.platform === 'linux')('is under ~/.local/share on Linux', async () => {
-    vi.stubEnv('APPDATA', '');
-    vi.stubEnv('HOME', sandbox);
+      const paths = resolvePaths({ cwd, home: sandbox, platform: 'linux', env: {} });
 
-    const pfs = await loadPfs();
+      expect(paths.pdtConfigDir).toBe(path.join(project, PDT.PROJECT_RTD_DIR_NAME));
+    });
 
-    expect(pfs.userDataDir).toBe(path.join(sandbox, '.local', 'share', PDT.PROGRAM_NAME));
-  });
+    test('has no project outside one', () => {
+      const paths = resolvePaths({ cwd: sandbox, home: sandbox, platform: 'linux', env: {} });
 
-  test('is created if it does not exist', async () => {
-    vi.stubEnv('APPDATA', path.join(sandbox, 'fresh'));
+      expect(paths.pdtConfigDir).toBeUndefined();
+    });
 
-    const pfs = await loadPfs();
+    // Working out where things go must not change anything; they are created when first written.
+    test('creates nothing', () => {
+      const home = path.join(sandbox, 'home');
+      fs.mkdirSync(home);
 
-    expect(fs.statSync(pfs.userDataDir).isDirectory()).toBe(true);
-  });
+      resolvePaths({ cwd: home, home, platform: 'linux', env: {} });
 
-  test('is left alone if it already exists', async () => {
-    const existing = path.join(sandbox, 'AppData', PDT.PROGRAM_NAME);
-    fs.mkdirSync(existing, { recursive: true });
-    fs.writeFileSync(path.join(existing, 'keep.txt'), 'existing data');
-    vi.stubEnv('APPDATA', path.join(sandbox, 'AppData'));
-
-    await loadPfs();
-
-    expect(fs.readdirSync(existing)).toEqual(['keep.txt']);
+      expect(fs.readdirSync(home)).toEqual([]);
+    });
   });
 });
 

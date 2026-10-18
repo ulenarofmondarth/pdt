@@ -20,9 +20,10 @@ export default class FoundryVTTServer extends VTTServer {
     super();
 
     this._name = vttConfig.name;
-    this._version = vttConfig.version || config.get(`VTT.${this._name}.server.version`);
-    this._hostname = vttConfig.hostname || config.get(`VTT.${this._name}.server.hostname`);
-    this._port = vttConfig.port || config.get(`VTT.${this._name}.server.port`);
+    const configured = config.VTT[this._name]?.server;
+    this._version = vttConfig.version || configured?.version || '';
+    this._hostname = vttConfig.hostname || configured?.hostname || '';
+    this._port = vttConfig.port || configured?.port || '';
   }
 
   get name(): string {
