@@ -116,6 +116,7 @@
       "project": "Proyecto {project} ({root})",
       "running": "{vtt}: en ejecución en {url} (contenedor {container})",
       "stopped": "{vtt}: detenido",
+      "exited": "{vtt}: se detuvo después de que pdt lo iniciara. Mira por qué con docker logs {container}; pdt vtt start lo vuelve a iniciar.",
       "unknown": "{vtt}: desconocido, {reason}",
       "noVtts": "No hay ningún VTT configurado.",
       "missing": "Proyecto {project} ({root}): ya no existe. Ejecuta pdt prune para olvidarlo.",

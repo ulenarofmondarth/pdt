@@ -76,10 +76,12 @@ describe('status command', () => {
       expect(host.isRunning).toHaveBeenCalledExactlyOnceWith(running('my-module'));
     });
 
-    test('shows a VTT that has stopped since it was started as stopped', async () => {
+    test('shows a VTT that has stopped since it was started as exited, naming its container', async () => {
       await status();
 
-      expect(lines()[1]).toBe(`  ${m['info.status.stopped']({ vtt: 'my-module' })}`);
+      expect(lines()[1]).toBe(`  ${m['info.status.exited']({ vtt: 'my-module', container: 'pdt-my-module' })}`);
+      // One pdt has no record of starting is stopped.
+      expect(lines()[2]).toBe(`  ${m['info.status.stopped']({ vtt: 'staging' })}`);
     });
 
     test("shows a recorded VTT's state as unknown when its host cannot be reached", async () => {

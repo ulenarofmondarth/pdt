@@ -116,6 +116,7 @@
       "project": "Project {project} ({root})",
       "running": "{vtt}: running at {url} (container {container})",
       "stopped": "{vtt}: stopped",
+      "exited": "{vtt}: exited since pdt started it. See why with docker logs {container}; pdt vtt start starts it afresh.",
       "unknown": "{vtt}: unknown, {reason}",
       "noVtts": "No VTT is configured.",
       "missing": "Project {project} ({root}): gone. Run pdt prune to forget it.",

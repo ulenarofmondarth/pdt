@@ -289,13 +289,14 @@ export async function stopAllVtts(context: CommandContext) {
 export type VttStatus =
   | { vtt: string; state: 'running'; url: string; container: string }
   | { vtt: string; state: 'stopped' }
+  | { vtt: string; state: 'exited'; container: string }
   | { vtt: string; state: 'unknown'; reason: string };
 
 /**
  * The state of each VTT of the project: those configured, in order, then any the run state records
  * that are no longer configured. A VTT pdt has no record of starting is stopped, without asking its
- * host; one it has is running or stopped as its host says, or unknown when the host cannot be
- * reached.
+ * host. One it has is running, or exited when it has stopped since pdt started it, as its host says,
+ * or unknown when the host cannot be reached.
  *
  * @throws {Error} When not in a project, or the project's run state cannot be read
  */
@@ -315,7 +316,7 @@ export async function vttStatuses(context: CommandContext): Promise<VttStatus[]>
     } else if (await vtt.server.host.isRunning(record)) {
       statuses.push({ vtt: name, state: 'running', url: record.url, container: record.name });
     } else {
-      statuses.push({ vtt: name, state: 'stopped' });
+      statuses.push({ vtt: name, state: 'exited', container: record.name });
     }
   }
   for (const [name, record] of Object.entries(recorded)) {

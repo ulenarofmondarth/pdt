@@ -21,6 +21,8 @@ function statusLine(status: VttStatus): string {
       return m['info.status.running']({ vtt: status.vtt, url: status.url, container: status.container });
     case 'stopped':
       return m['info.status.stopped']({ vtt: status.vtt });
+    case 'exited':
+      return m['info.status.exited']({ vtt: status.vtt, container: status.container });
     case 'unknown':
       return m['info.status.unknown']({ vtt: status.vtt, reason: status.reason });
   }

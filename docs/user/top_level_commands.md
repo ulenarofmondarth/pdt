@@ -244,7 +244,8 @@ Project arcane-ledger (/home/me/work/arcane-ledger)
 ```
 
 - **running**: {program}`pdt` started it, and its host says it is running.
-- **stopped**: {program}`pdt` has no record of starting it, or it has stopped since, for example because Foundry VTT exited or its container was removed.
+- **stopped**: {program}`pdt` has no record of starting it: it has never been started, or was stopped with {ref}`pdt_tlc_vtt_stop`.
+- **exited**: {program}`pdt` started it, but it has stopped since, for example because Foundry VTT exited or its container was removed. The line names its container, whose `docker logs` say why; `pdt vtt start` clears it up and starts it afresh.
 - **unknown**: {program}`pdt` cannot tell, and says why: its host cannot be reached, or it is recorded as started but no longer configured (the line names its container, to stop yourself).
 
 A VTT with no record is reported as stopped without asking its host, so `status` works without the Docker engine for a project with nothing running.
