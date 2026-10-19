@@ -10,6 +10,9 @@ The configuration is built up in this order, later sources overriding earlier on
 2. Your user configuration file.
 3. The project's configuration file, `.pdt/config.json` in the project root, when {{pdt}} runs inside a project.
 4. Environment variables (below).
+5. Settings given on the command line with `--config` (below).
+
+`pdt config get --list-all --show-source` shows every setting and which of these it comes from; see {ref}`pdt_tlc_config`.
 
 Your user configuration file is `config.json` in your user configuration directory:
 
@@ -34,6 +37,8 @@ and a project's `.pdt/config.json` makes it quiet again in that project:
 ```
 :::
 
+Rather than editing the files by hand, you can use `pdt config set`, which checks the value before writing it (see {ref}`pdt_tlc_config`).
+
 {{pdt}} checks the combined configuration before doing anything else. If a file is not valid JSON, or a setting has a value it does not accept, {{pdt}} names the file or the setting and stops with exit code 127.
 
 ## Environment variables
@@ -43,6 +48,16 @@ and a project's `.pdt/config.json` makes it quiet again in that project:
 | `PDT_LOG_LEVEL` | `Logging.level`: one of `error`, `warn`, `info`, `http`, `verbose`, `debug`, `silly` |
 
 An environment variable overrides every configuration file. An empty variable is ignored.
+
+## Settings on the command line
+
+`--config <key>=<value>`, given anywhere on the command line, overrides a setting for that run only, over every file and environment variable. Give it once for each setting:
+
+```shell
+pdt --config Logging.level=debug --config VTT.prj.server.version=13 vtt start
+```
+
+The key is the setting's path, its parts separated by dots. The value is read as `pdt config set` reads it (see {ref}`pdt_tlc_config_set`). A key that is not a setting, or a value the setting does not accept, stops {{pdt}} with exit code 127, like an invalid file.
 
 ## PDT runtime data
 
