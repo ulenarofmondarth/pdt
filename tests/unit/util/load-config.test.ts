@@ -14,6 +14,7 @@ import {
   type ConfigSources,
 } from '@util/load-config.js';
 import defaults from '@/pdt-internal-config/default.json' with { type: 'json' };
+import { vttSettings } from '@lib/projectVtt.js';
 import { m } from '@i18n/messages.js';
 
 describe('loadConfig', () => {
@@ -75,12 +76,17 @@ describe('loadConfig', () => {
   });
 
   test('merges nested settings, keeping those a file does not mention', () => {
-    write(userFile, { VTT: { prj: { server: { version: '13' } } } });
+    write(userFile, { VTT: { mod: vttSettings('13') } });
+    write(projectFile, { VTT: { mod: { server: { version: '14' } } } });
 
-    const config = loadConfig({ files: [user], env: {} });
+    const config = loadConfig({ files: [user, project], env: {} });
 
-    expect(config.VTT['prj']?.server).toEqual({ ...defaults.VTT.prj.server, version: '13' });
-    expect(config.VTT['prj']?.host).toEqual(defaults.VTT.prj.host);
+    expect(config.VTT['mod']?.server).toEqual({ ...vttSettings('13').server, version: '14' });
+    expect(config.VTT['mod']?.host).toEqual(vttSettings('13').host);
+  });
+
+  test('has no VTT unless a file configures one', () => {
+    expect(loadConfig({ files: [user, project], env: {} }).VTT).toEqual({});
   });
 
   test('replaces lists rather than merging them', () => {
@@ -92,12 +98,12 @@ describe('loadConfig', () => {
   });
 
   test('adds servers a file defines', () => {
-    const staging = { ...defaults.VTT.prj, server: { ...defaults.VTT.prj.server, version: '14' } };
-    write(userFile, { VTT: { staging } });
+    write(userFile, { VTT: { mod: vttSettings('13') } });
+    write(projectFile, { VTT: { staging: vttSettings('14') } });
 
-    const config = loadConfig({ files: [user], env: {} });
+    const config = loadConfig({ files: [user, project], env: {} });
 
-    expect(Object.keys(config.VTT).sort()).toEqual(['prj', 'staging']);
+    expect(Object.keys(config.VTT).sort()).toEqual(['mod', 'staging']);
   });
 
   test('cannot change the prototype of the configuration', () => {
@@ -168,10 +174,13 @@ describe('settings given on the command line', () => {
     const config = loadConfig({
       files: [],
       env: {},
-      overrides: [{ key: 'VTT.prj.host.ports', value: '[{"internal":30000,"external":8080}]' }],
+      overrides: [
+        { key: 'VTT.mod', value: JSON.stringify(vttSettings('13')) },
+        { key: 'VTT.mod.host.ports', value: '[{"internal":30000,"external":8080}]' },
+      ],
     });
 
-    expect(config.VTT['prj']?.host.ports).toEqual([{ internal: 30000, external: 8080 }]);
+    expect(config.VTT['mod']?.host.ports).toEqual([{ internal: 30000, external: 8080 }]);
   });
 
   test.each([
@@ -256,9 +265,13 @@ describe('where values come from', () => {
   });
 
   test('is the source of a list as a whole', () => {
-    write('user', { VTT: { prj: { host: { ports: [{ internal: 1, external: 2 }] } } } });
+    write('user', { VTT: { mod: vttSettings('13') } });
+    write('project', { VTT: { mod: { host: { ports: [{ internal: 1, external: 2 }] } } } });
 
-    expect(resolveConfig(sources).sourceOf(['VTT', 'prj', 'host', 'ports'])).toBe('user');
+    const resolved = resolveConfig(sources);
+
+    expect(resolved.sourceOf(['VTT', 'mod', 'host', 'ports'])).toBe('project');
+    expect(resolved.sourceOf(['VTT', 'mod', 'host', 'image'])).toBe('user');
   });
 });
 
@@ -302,9 +315,17 @@ describe('writeSetting', () => {
   });
 
   test('stores a value by the type of the setting', () => {
-    writeSetting(sources, 'user', 'VTT.prj.host.ports', '[{"internal":30000,"external":8080}]');
+    writeSetting(sources, 'user', 'VTT.mod', JSON.stringify(vttSettings('13')));
+    writeSetting(sources, 'user', 'VTT.mod.host.ports', '[{"internal":30000,"external":8080}]');
 
-    expect(read(userFile)).toEqual({ VTT: { prj: { host: { ports: [{ internal: 30000, external: 8080 }] } } } });
+    expect(read(userFile)).toEqual({
+      VTT: {
+        mod: {
+          ...vttSettings('13'),
+          host: { ...vttSettings('13').host, ports: [{ internal: 30000, external: 8080 }] },
+        },
+      },
+    });
   });
 
   test('writes nothing when the change would make the configuration invalid', () => {

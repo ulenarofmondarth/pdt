@@ -7,8 +7,17 @@ import { createInitCommand } from '@/cli/cmds/init.js';
 import PDT from '@/constants.js';
 import { m } from '@i18n/messages.js';
 import { createCommandContext, UNASKED_PROMPTER, type CommandContextMock } from '@tests/unit/mocks/context.js';
+import { vttSettings } from '@lib/projectVtt.js';
+import { vttSchema } from '@schema/config.js';
 
 let ctx: CommandContextMock;
+
+/** Write what a module project says about itself: its manifest, and its Foundry VTT environment file. */
+function writeModuleProject(dir: string, id = 'my-module', version = '13.351') {
+  fs.mkdirSync(path.join(dir, '.foundryvtt'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'module.json'), JSON.stringify({ id, title: 'A module' }));
+  fs.writeFileSync(path.join(dir, '.foundryvtt', '.env'), `VERSION=${version}\n`);
+}
 
 function runInit(dir: string, force?: boolean, more: Record<string, unknown> = {}) {
   return createInitCommand(ctx).handler({ _: ['init'], $0: 'pdt', dir, force, yes: undefined, ...more });
@@ -26,6 +35,7 @@ describe('init command', () => {
     fs.mkdirSync(project);
     // An existing project has content; an empty directory is a different case, covered below.
     fs.writeFileSync(path.join(project, 'package.json'), '{}');
+    writeModuleProject(project);
     ctx = createCommandContext();
     ctx.prompter = UNASKED_PROMPTER;
     ctx.createModule.mockResolvedValue({ destination: project, files: [] });
@@ -40,7 +50,12 @@ describe('init command', () => {
       await runInit(project);
 
       expect(ctx.createModule).not.toHaveBeenCalled();
-      expect(fs.readdirSync(project).sort()).toEqual([PDT.PROJECT_RTD_DIR_NAME, 'package.json']);
+      expect(fs.readdirSync(project).sort()).toEqual([
+        '.foundryvtt',
+        PDT.PROJECT_RTD_DIR_NAME,
+        'module.json',
+        'package.json',
+      ]);
     });
 
     describe('when new module options are given', () => {
@@ -102,6 +117,64 @@ describe('init command', () => {
       expect(ctx.log.setDirectory).toHaveBeenCalledExactlyOnceWith(projectData);
       expect(ctx.log.setDirectory.mock.invocationCallOrder[0]).toBeLessThan(ctx.log.info.mock.invocationCallOrder[0]!);
     });
+
+    describe("the module's VTT", () => {
+      const configFile = () => path.join(projectData, 'config.json');
+      const read = (): unknown => JSON.parse(fs.readFileSync(configFile(), 'utf8'));
+
+      test("is configured in the project's file, named by the module id, running the project's Foundry VTT version", async () => {
+        await runInit(project);
+
+        expect(read()).toEqual({ VTT: { 'my-module': vttSettings('13.351') } });
+        expect(vttSchema.parse((read() as { VTT: Record<string, unknown> }).VTT['my-module'])).toEqual(
+          vttSettings('13.351'),
+        );
+        expect(ctx.out).toHaveBeenCalledExactlyOnceWith(
+          m['info.vttConfigured']({ vtt: 'my-module', version: '13.351', file: configFile() }),
+        );
+        expect(ctx.log.warn).not.toHaveBeenCalled();
+      });
+
+      test('is not configured without a manifest, with a warning naming it and the command to add the VTT', async () => {
+        fs.rmSync(path.join(project, 'module.json'));
+
+        await runInit(project);
+
+        expect(fs.existsSync(configFile())).toBe(false);
+        expect(ctx.log.warn).toHaveBeenCalledTimes(2);
+        expect(ctx.log.warn.mock.calls[0]![0]).toContain(path.join(project, 'module.json'));
+        expect(ctx.log.warn.mock.calls[1]![0]).toBe(
+          m['warn.projectVtt.notConfigured']({
+            command: `pdt config set VTT.<module-id> '${JSON.stringify(vttSettings('13.351'))}'`,
+          }),
+        );
+        // The project is still made.
+        expect(ctx.log.info).toHaveBeenCalledExactlyOnceWith(m['info.pdtInitialised']({ path: project }));
+      });
+
+      test('is not configured without the Foundry VTT version, with a warning naming the file', async () => {
+        fs.rmSync(path.join(project, '.foundryvtt'), { recursive: true });
+
+        await runInit(project);
+
+        expect(fs.existsSync(configFile())).toBe(false);
+        expect(ctx.log.warn.mock.calls[0]![0]).toContain(path.join(project, '.foundryvtt', '.env'));
+        expect(ctx.log.warn.mock.calls[1]![0]).toBe(
+          m['warn.projectVtt.notConfigured']({
+            command: `pdt config set VTT.my-module '${JSON.stringify(vttSettings('<version>'))}'`,
+          }),
+        );
+      });
+
+      test('warns about each thing it cannot find', async () => {
+        fs.rmSync(path.join(project, 'module.json'));
+        fs.rmSync(path.join(project, '.foundryvtt'), { recursive: true });
+
+        await runInit(project);
+
+        expect(ctx.log.warn).toHaveBeenCalledTimes(3);
+      });
+    });
   });
 
   describe.each([
@@ -118,9 +191,9 @@ describe('init command', () => {
       // Stand in for the generator: it creates the destination and writes the module into it.
       ctx.createModule.mockImplementation(async (destination, options) => {
         fs.mkdirSync(destination, { recursive: true });
-        fs.writeFileSync(path.join(destination, 'module.json'), '{}');
-        options?.onStep?.('wrote 1 files');
-        return { destination, files: ['module.json'] };
+        writeModuleProject(destination, 'new-module', '14.360');
+        options?.onStep?.('wrote 2 files');
+        return { destination, files: ['module.json', '.foundryvtt/.env'] };
       });
     });
 
@@ -185,7 +258,19 @@ describe('init command', () => {
     test("tells the user what it is doing and shows the generator's progress", async () => {
       await runInit(fresh);
 
-      expect(ctx.out.mock.calls.flat()).toEqual([m['info.creatingModule']({ path: fresh }), '✔ wrote 1 files']);
+      expect(ctx.out.mock.calls.flat()).toEqual([
+        m['info.creatingModule']({ path: fresh }),
+        '✔ wrote 2 files',
+        m['info.vttConfigured']({ vtt: 'new-module', version: '14.360', file: path.join(freshData, 'config.json') }),
+      ]);
+    });
+
+    test('configures the VTT of the module it generated', async () => {
+      await runInit(fresh);
+
+      expect(JSON.parse(fs.readFileSync(path.join(freshData, 'config.json'), 'utf8'))).toEqual({
+        VTT: { 'new-module': vttSettings('14.360') },
+      });
     });
 
     test("fails with the generator's error and does not make a project", async () => {

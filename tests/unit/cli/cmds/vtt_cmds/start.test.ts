@@ -1,6 +1,8 @@
 import yargs from 'yargs';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { createVttStartCommand } from '@/cli/cmds/vtt_cmds/start.js';
+import { UsageError } from '@/cli/usage-error.js';
+import { vttSettings } from '@lib/projectVtt.js';
 import FoundryVTTServer from '@lib/VTT/Server/FoundryVTTServer.js';
 import { m } from '@i18n/messages.js';
 import { createCommandContext, type CommandContextMock } from '@tests/unit/mocks/context.js';
@@ -23,8 +25,8 @@ describe('vtt start command', () => {
     });
   }
 
-  test('targets the project VTT by default', async () => {
-    await expect(parse('start')).resolves.toMatchObject({ vtt: 'prj' });
+  test('leaves the VTT to the handler when none is given', async () => {
+    await expect(parse('start')).resolves.not.toHaveProperty('vtt');
   });
 
   test('targets the VTT it is given', async () => {
@@ -35,17 +37,18 @@ describe('vtt start command', () => {
     let host: VTTHostMock;
 
     beforeEach(() => {
+      ctx.config.VTT['my-module'] = vttSettings('13');
       host = createHostMock();
       ctx.createVtt.mockImplementation((name, settings) => new FoundryVTTServer(name, settings.server, host));
     });
 
-    /** Run the command for `vtt`. */
-    function start(vtt = 'prj') {
+    /** Run the command for `vtt`, or for no VTT in particular. */
+    function start(vtt?: string) {
       return createVttStartCommand(ctx).handler({ _: ['vtt', 'start'], $0: 'pdt', vtt });
     }
 
     test('logs the parsed command at debug level', async () => {
-      const argv = { _: ['vtt', 'start'], $0: 'pdt', vtt: 'prj' };
+      const argv = { _: ['vtt', 'start'], $0: 'pdt', vtt: 'my-module' };
 
       await createVttStartCommand(ctx).handler(argv);
 
@@ -53,9 +56,9 @@ describe('vtt start command', () => {
     });
 
     test('starts the VTT on its host, from its configured settings', async () => {
-      await start();
+      await start('my-module');
 
-      expect(ctx.createVtt).toHaveBeenCalledExactlyOnceWith('prj', ctx.config.VTT['prj']);
+      expect(ctx.createVtt).toHaveBeenCalledExactlyOnceWith('my-module', ctx.config.VTT['my-module']);
       expect(host.start).toHaveBeenCalledExactlyOnceWith(ctx.createVtt.mock.results[0]!.value);
     });
 
@@ -63,13 +66,20 @@ describe('vtt start command', () => {
       await start();
 
       expect(ctx.out.mock.calls).toEqual([
-        [m['info.vtt.starting']({ vtt: 'prj', version: '12' })],
-        [m['info.vtt.started']({ vtt: 'prj' })],
+        [m['info.vtt.starting']({ vtt: 'my-module', version: '13' })],
+        [m['info.vtt.started']({ vtt: 'my-module' })],
       ]);
     });
 
+    test('starts the only VTT when none is given', async () => {
+      await start();
+
+      expect(ctx.createVtt).toHaveBeenCalledExactlyOnceWith('my-module', ctx.config.VTT['my-module']);
+      expect(host.start).toHaveBeenCalledOnce();
+    });
+
     test('starts any configured VTT', async () => {
-      const staging = ctx.config.VTT['prj']!;
+      const staging = vttSettings('14');
       ctx.config.VTT['staging'] = staging;
 
       await start('staging');
@@ -84,11 +94,29 @@ describe('vtt start command', () => {
       await start();
 
       expect(host.start).not.toHaveBeenCalled();
-      expect(ctx.out).toHaveBeenCalledExactlyOnceWith(m['info.vtt.alreadyRunning']({ vtt: 'prj' }));
+      expect(ctx.out).toHaveBeenCalledExactlyOnceWith(m['info.vtt.alreadyRunning']({ vtt: 'my-module' }));
     });
 
     test('fails, naming the VTTs there are, when the VTT is not configured', async () => {
-      await expect(start('nosuch')).rejects.toThrow(m['error.vtt.unknownVtt']({ vtt: 'nosuch', known: 'prj' }));
+      await expect(start('nosuch')).rejects.toThrow(m['error.vtt.unknownVtt']({ vtt: 'nosuch', known: 'my-module' }));
+
+      expect(ctx.createVtt).not.toHaveBeenCalled();
+    });
+
+    test('refuses to choose between several VTTs when none is given, naming them', async () => {
+      ctx.config.VTT['staging'] = vttSettings('14');
+
+      await expect(start()).rejects.toEqual(
+        new UsageError(m['error.vtt.nameRequired']({ known: 'my-module, staging' })),
+      );
+
+      expect(ctx.createVtt).not.toHaveBeenCalled();
+    });
+
+    test.each([undefined, 'my-module'])('fails, starting nothing, when no VTT is configured (given %s)', async vtt => {
+      ctx.config.VTT = {};
+
+      await expect(start(vtt)).rejects.toThrow(m['error.vtt.noneConfigured']());
 
       expect(ctx.createVtt).not.toHaveBeenCalled();
     });
@@ -96,7 +124,7 @@ describe('vtt start command', () => {
     test('fails, starting nothing, when the host cannot be reached', async () => {
       host.isAccessible.mockResolvedValue(false);
 
-      await expect(start()).rejects.toThrow(m['error.vtt.hostUnreachable']({ vtt: 'prj', type: 'docker' }));
+      await expect(start()).rejects.toThrow(m['error.vtt.hostUnreachable']({ vtt: 'my-module', type: 'docker' }));
 
       expect(host.start).not.toHaveBeenCalled();
       expect(ctx.out).not.toHaveBeenCalled();
@@ -107,7 +135,7 @@ describe('vtt start command', () => {
 
       await expect(start()).rejects.toThrow('no room at the inn');
 
-      expect(ctx.out).not.toHaveBeenCalledWith(m['info.vtt.started']({ vtt: 'prj' }));
+      expect(ctx.out).not.toHaveBeenCalledWith(m['info.vtt.started']({ vtt: 'my-module' }));
     });
   });
 });

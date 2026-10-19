@@ -18,10 +18,35 @@ Initialise a project for {program}`pdt`.
 
 What happens depends on what is in the directory:
 
-- **It has content.** The directory is treated as an existing project and is marked as a {program}`pdt` project. Nothing in it is changed.
+- **It has content.** The directory is treated as an existing project and is marked as a {program}`pdt` project. Nothing in it is changed apart from the new `.pdt` directory.
 - **It is empty, or does not exist yet.** {program}`pdt` first creates a new Foundry VTT module there, then marks it as a {program}`pdt` project. See {ref}`pdt_tlc_init_new`.
 
 A directory inside an existing {program}`pdt` project is refused unless `--force` is given.
+
+(pdt_tlc_init_vtt)=
+
+### The project's VTT
+
+`init` then configures a VTT for the module in the project's `.pdt/config.json`, the same way for a module it has just created and for one that existed already:
+
+- the VTT is named after the module's `id`, from `module.json` in the project root;
+- it runs the Foundry VTT version from `VERSION` in `.foundryvtt/.env`, which is the version the module was created for;
+- it runs in Docker, from the `felddy/foundryvtt` image, publishing Foundry VTT's port 30000.
+
+For a module `arcane-ledger` created for Foundry VTT 14.368.0, `.pdt/config.json` holds:
+
+```json
+{
+  "VTT": {
+    "arcane-ledger": {
+      "server": { "type": "foundry", "hostname": "localhost", "version": "14.368.0", "port": "auto" },
+      "host": { "type": "docker", "image": "felddy/foundryvtt", "ports": [{ "internal": 30000, "external": "auto" }] }
+    }
+  }
+}
+```
+
+If either file is missing or does not say what is needed, `init` configures no VTT. It warns about each problem and prints the `pdt config set` command that would add the VTT, with placeholders for what it could not find. The project is still initialised.
 
 ### Options
 
@@ -106,7 +131,7 @@ Display the current project's runtime configuration.
 
 {command}`config <get|set|clear>`
 
-Shows and changes the configuration (see {doc}`configuration`). A setting is named by its key: the path to it, its parts separated by dots, such as `Logging.level` or `VTT.prj.server.version`. A key can also name a group of settings, such as `Logging` or `VTT.prj`.
+Shows and changes the configuration (see {doc}`configuration`). A setting is named by its key: the path to it, its parts separated by dots, such as `Logging.level` or `VTT.arcane-ledger.server.version`. A key can also name a group of settings, such as `Logging` or `VTT.arcane-ledger`.
 
 (pdt_tlc_config_get)=
 
@@ -129,7 +154,7 @@ warn
 
 A group is shown in the format chosen with `--format`.
 
-{{pdt}} stops with an error, writing nothing to standard output, if the key is not a setting {{pdt}} has, or if the setting has no value (an optional setting that is not set). Without a key, `--list-all` is required.
+{{pdt}} stops with an error, writing nothing to standard output, if the key is not a setting {{pdt}} has, or if nothing sets it: an optional setting that is not set, a VTT that is not configured, or `VTT` itself before any VTT is configured. Without a key, `--list-all` is required.
 
 #### Options
 
@@ -190,10 +215,10 @@ Sets a value in a configuration file, creating the file if there is none. Inside
 
 **value**
 
-: The value. Text the setting accepts as it is stays text, so `pdt config set VTT.prj.server.version 13` sets the string `"13"`. Anything else is read as JSON, so a number, a list or a group can be given:
+: The value. Text the setting accepts as it is stays text, so `pdt config set VTT.arcane-ledger.server.version 13` sets the string `"13"`. Anything else is read as JSON, so a number, a list or a group can be given:
 
   ```shell
-  pdt config set VTT.prj.host.ports '[{"internal": 30000, "external": 8080}]'
+  pdt config set VTT.arcane-ledger.host.ports '[{"internal": 30000, "external": 8080}]'
   ```
 
   Quote a value with spaces or characters your shell treats specially.
@@ -219,7 +244,7 @@ Removes a setting from the project's `.pdt/config.json`, so that it takes its va
 : The setting, or group of settings, to remove.
 
 ```shell
-pdt config clear VTT.prj.server.version          # from the project's file
+pdt config clear VTT.arcane-ledger.server.port   # from the project's file
 pdt config clear Logging.level --user            # from your user file
 pdt config clear Logging.level --all             # from every file that sets it
 ```
@@ -326,7 +351,7 @@ This {program}`pdt` server becomes available to the VTT. Could use the p2p appro
 
 {command}`vtt <command>`
 
-Controls the VTTs configured for a project. Each VTT is an entry under `VTT` in the configuration, naming a Foundry VTT server and the host it runs on. Out of the box there is one, `prj`: Foundry VTT 12 in a Docker container from the `felddy/foundryvtt` image.
+Controls the VTTs configured for a project. Each VTT is an entry under `VTT` in the configuration, naming a Foundry VTT server and the host it runs on. {program}`pdt` has no VTT of its own: {ref}`pdt_tlc_init` configures one for the project's module (see {ref}`pdt_tlc_init_vtt`), and more can be added with {ref}`pdt_tlc_config_set`.
 
 ### vtt start
 
@@ -336,16 +361,19 @@ Starts a VTT and waits until its host has started it.
 
 **vtt**
 
-: The name of the VTT to start. Defaults to `prj`.
+: The name of the VTT to start. When only one VTT is configured, as after `init`, it can be left out.
 
 ```shell
 pdt vtt start
 ```
 
-On a Docker host, {program}`pdt` pulls the image the first time (tagged with the server's version, for example `felddy/foundryvtt:12`), creates a container named after the VTT if there is none, and starts it. A VTT that is already running is left alone.
+On a Docker host, {program}`pdt` pulls the image the first time (tagged with the server's version, for example `felddy/foundryvtt:14.368.0`), creates a container named after the VTT if there is none, and starts it. A VTT that is already running is left alone.
+
+If no VTT is named and several are configured, {program}`pdt` lists them and stops with exit code 2.
 
 {program}`pdt` stops with an error, starting nothing, if:
 
+- no VTT is configured at all;
 - there is no VTT of that name in the configuration (the error lists the ones there are);
 - the host cannot be reached, for example because the Docker engine is not running or you are not allowed to use it;
 - the image cannot be pulled, or the container cannot be created or started (the error gives Docker's reason).

@@ -4,7 +4,7 @@
     "cmd": {
       "arg": {
         "vtt": {
-          "description": "The VTT identity"
+          "description": "Name of the VTT, as configured under VTT. Defaults to the only VTT, when just one is configured."
         }
       },
       "vtt": {
@@ -67,7 +67,8 @@
       "alreadyRunning": "VTT {vtt} is already running."
     },
     "configSet": "Set {key} in {file}",
-    "configCleared": "Cleared {key} from {file}"
+    "configCleared": "Cleared {key} from {file}",
+    "vttConfigured": "Configured VTT {vtt} (Foundry VTT {version}) in {file}"
   },
   "warn": {
     "pdtParentExists": "Attempt to create sub-PDT project (use -f to force).\n  Parent project at {path}",
@@ -76,7 +77,17 @@
     "logFileUnavailable": "Cannot write the log file {file}, so messages go to the console only: {reason}",
     "configNotSet": "{key} is not set in {file}, so nothing was cleared.",
     "configSetElsewhere": "{key} is not set in {file}, so nothing was cleared. It is set in {others}: use --all to clear it there.",
-    "configNotSetAnywhere": "{key} is not set in any configuration file, so nothing was cleared."
+    "configNotSetAnywhere": "{key} is not set in any configuration file, so nothing was cleared.",
+    "projectVtt": {
+      "noModuleId": "Could not read the module id from {file}: {reason}",
+      "noFoundryVersion": "Could not read the Foundry VTT version from {file}: {reason}",
+      "notConfigured": "No VTT is configured for this project. To add one, fill in what is missing and run: {command}",
+      "reason": {
+        "noId": "it has no \"id\"",
+        "idWithDot": "its id, {id}, contains a dot, which a configuration key cannot",
+        "noVersion": "it does not set {variable}"
+      }
+    }
   },
   "error": {
     "notInPdtProject": "Not a PDT project.",
@@ -105,7 +116,9 @@
       "stopUnsupported": "Stopping server {server} is not supported on a Docker host yet.",
       "restartUnsupported": "Restarting server {server} is not supported on a Docker host yet.",
       "unknownVtt": "There is no VTT named {vtt} in the configuration. Configured VTTs: {known}",
-      "hostUnreachable": "Cannot reach the {type} host for VTT {vtt}. Is it running, and can you use it?"
+      "hostUnreachable": "Cannot reach the {type} host for VTT {vtt}. Is it running, and can you use it?",
+      "noneConfigured": "No VTT is configured. Run pdt init in the project, or add one with pdt config set.",
+      "nameRequired": "Several VTTs are configured, so give the one to start: {known}"
     },
     "compendium": {
       "notRecognised": "{path} is not a recognised compendium database.",

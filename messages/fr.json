@@ -4,7 +4,7 @@
     "cmd": {
       "arg": {
         "vtt": {
-          "description": "L'identifiant du VTT"
+          "description": "Nom du VTT, tel que configuré sous VTT. Par défaut, le seul VTT, s'il n'y en a qu'un."
         }
       },
       "vtt": {
@@ -67,7 +67,8 @@
       "alreadyRunning": "Le VTT {vtt} est déjà démarré."
     },
     "configSet": "{key} défini dans {file}",
-    "configCleared": "{key} retiré de {file}"
+    "configCleared": "{key} retiré de {file}",
+    "vttConfigured": "VTT {vtt} (Foundry VTT {version}) configuré dans {file}"
   },
   "warn": {
     "pdtParentExists": "Tentative de création d'un sous-projet PDT (utiliser -f pour forcer).\n  Projet parent dans {path}",
@@ -76,7 +77,17 @@
     "logFileUnavailable": "Impossible d'écrire le fichier journal {file}, les messages ne vont donc qu'à la console : {reason}",
     "configNotSet": "{key} n'est pas défini dans {file} : rien n'a été retiré.",
     "configSetElsewhere": "{key} n'est pas défini dans {file} : rien n'a été retiré. Il est défini dans {others} : utilisez --all pour l'y retirer.",
-    "configNotSetAnywhere": "{key} n'est défini dans aucun fichier de configuration : rien n'a été retiré."
+    "configNotSetAnywhere": "{key} n'est défini dans aucun fichier de configuration : rien n'a été retiré.",
+    "projectVtt": {
+      "noModuleId": "Impossible de lire l'identifiant du module dans {file} : {reason}",
+      "noFoundryVersion": "Impossible de lire la version de Foundry VTT dans {file} : {reason}",
+      "notConfigured": "Aucun VTT n'est configuré pour ce projet. Pour en ajouter un, complétez ce qui manque et exécutez : {command}",
+      "reason": {
+        "noId": "il n'a pas d'« id »",
+        "idWithDot": "son identifiant, {id}, contient un point, ce qu'une clé de configuration ne peut pas contenir",
+        "noVersion": "il ne définit pas {variable}"
+      }
+    }
   },
   "error": {
     "notInPdtProject": "Ce n'est pas un projet PDT.",
@@ -105,7 +116,9 @@
       "stopUnsupported": "L'arrêt du serveur {server} n'est pas encore pris en charge sur un hôte Docker.",
       "restartUnsupported": "Le redémarrage du serveur {server} n'est pas encore pris en charge sur un hôte Docker.",
       "unknownVtt": "Aucun VTT nommé {vtt} dans la configuration. VTT configurés : {known}",
-      "hostUnreachable": "Impossible de joindre l'hôte {type} du VTT {vtt}. Est-il démarré, et pouvez-vous l'utiliser ?"
+      "hostUnreachable": "Impossible de joindre l'hôte {type} du VTT {vtt}. Est-il démarré, et pouvez-vous l'utiliser ?",
+      "noneConfigured": "Aucun VTT n'est configuré. Exécutez pdt init dans le projet, ou ajoutez-en un avec pdt config set.",
+      "nameRequired": "Plusieurs VTT sont configurés : indiquez celui à démarrer : {known}"
     },
     "compendium": {
       "notRecognised": "{path} n'est pas une base de données de compendium reconnue.",

@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import PDT from '@/constants.js';
 import { generatorOptions, pickGivenAnswers } from '@lib/ModuleGenerator.js';
+import { projectVtt } from '@lib/projectVtt.js';
+import { CONFIG_FILENAME } from '@util/load-config.js';
 import { m } from '@i18n/messages.js';
 
 import type { ArgumentsCamelCase, CommandModule } from 'yargs';
@@ -34,7 +36,24 @@ function newModuleOptionsGiven(argv: ArgumentsCamelCase<InitArgs>): string[] {
 }
 
 /**
- * `pdt init`: make a directory a pdt project, creating a new module in it first if it is empty.
+ * Configure the project's VTT in its new configuration file, from the module project in `dir`;
+ * warn, configuring nothing, when that cannot be worked out.
+ */
+function configureVtt(dir: string, pdtPath: string, { log, out }: Pick<CommandContext, 'log' | 'out'>) {
+  const vtt = projectVtt(dir);
+  if ('problems' in vtt) {
+    for (const problem of vtt.problems) log.warn(problem);
+    log.warn(m['warn.projectVtt.notConfigured']({ command: vtt.command }));
+    return;
+  }
+  const file = path.join(pdtPath, CONFIG_FILENAME);
+  fs.writeFileSync(file, `${JSON.stringify({ VTT: { [vtt.name]: vtt.settings } }, null, 2)}\n`);
+  out(m['info.vttConfigured']({ vtt: vtt.name, version: vtt.settings.server.version, file }));
+}
+
+/**
+ * `pdt init`: make a directory a pdt project, creating a new module in it first if it is empty, and
+ * configure the module's VTT.
  */
 export function createInitCommand({
   paths,
@@ -100,6 +119,8 @@ export function createInitCommand({
         fs.mkdirSync(pdtPath);
         // The log went to the user data directory until this project existed; log to the project from here on.
         log.setDirectory(pdtPath);
+        // Read from the module project in the same way whether it was just generated or existed already.
+        configureVtt(argv.dir, pdtPath, { log, out });
         log.info(m['info.pdtInitialised']({ path: argv.dir }));
       }
     },

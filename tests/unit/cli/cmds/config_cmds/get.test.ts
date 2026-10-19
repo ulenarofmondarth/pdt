@@ -76,6 +76,12 @@ describe('config get command', () => {
       expect(ctx.out).not.toHaveBeenCalled();
     });
 
+    test.each(['VTT', 'VTT.my-module'])('fails, writing nothing, for %s while no VTT is configured', async key => {
+      await expect(run(`get ${key}`)).rejects.toThrow(m['error.config.notSet']({ key }));
+
+      expect(ctx.out).not.toHaveBeenCalled();
+    });
+
     test('fails, writing nothing, for a key that is not one', async () => {
       await expect(run('get Logging..level')).rejects.toThrow(m['error.config.badKey']({ key: 'Logging..level' }));
 
@@ -101,7 +107,7 @@ describe('config get command', () => {
       await run('get --list-all --show-source');
 
       expect(ctx.out.mock.calls[0]![0]).toContain('Logging.level "warn" [user]');
-      expect(ctx.out.mock.calls[0]![0]).toContain('VTT.prj.host.image "felddy/foundryvtt" [default]');
+      expect(ctx.out.mock.calls[0]![0]).toContain('DOCS.host.image "ulenarofmondarth/sphinx-docs" [default]');
     });
   });
 

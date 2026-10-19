@@ -33,6 +33,33 @@ describe('init', () => {
     });
   });
 
+  test("configures the new module's VTT, running the Foundry VTT version it was created for", async () => {
+    const target = path.join(sandbox.work, 'my-module');
+
+    const { stdout } = await sandbox.run(['init', target, ...NEW_MODULE, '--foundry-version', '14.368.0', ...OFFLINE]);
+
+    const config = JSON.parse(fs.readFileSync(path.join(target, PDT.PROJECT_RTD_DIR_NAME, 'config.json'), 'utf8'));
+    expect(config).toMatchObject({ VTT: { 'my-module': { server: { type: 'foundry', version: '14.368.0' } } } });
+    expect(stdout).toContain('Configured VTT my-module');
+    await expect(
+      sandbox.run(['config', 'get', 'VTT.my-module.server.version'], { cwd: target }),
+    ).resolves.toMatchObject({
+      code: PDT.EXITCODE.OK,
+      stdout: '14.368.0\n',
+    });
+  });
+
+  test('warns, configuring no VTT, in a project without a module manifest', async () => {
+    fs.writeFileSync(path.join(sandbox.work, 'package.json'), '{}');
+
+    const { code, stderr } = await sandbox.run(['init']);
+
+    expect(code).toBe(PDT.EXITCODE.OK);
+    expect(stderr).toContain('module.json');
+    expect(stderr).toContain('pdt config set VTT.<module-id>');
+    expect(fs.existsSync(path.join(sandbox.work, PDT.PROJECT_RTD_DIR_NAME, 'config.json'))).toBe(false);
+  });
+
   test('makes an existing project a pdt project without generating anything', async () => {
     fs.writeFileSync(path.join(sandbox.work, 'package.json'), '{}');
 
