@@ -31,7 +31,7 @@ A project that is already initialised, one with a `.pdt/config.json`, is refused
 
 Once any new module has been created, `init` reads the module's `id` from `module.json` in the project root. That is the project's id:
 
-- It must not already be registered (see below). If another project is registered with the same id, `init` stops with an error (exit code 1) before creating the `.pdt` directory, naming the other project's root. A module `init` has just generated is left in place.
+- It must not already be registered (see below). If another project is registered with the same id, `init` stops with an error (exit code 1) before creating the `.pdt` directory, naming the other project's root. A module `init` has just generated is left in place. If that other project no longer exists, {ref}`pdt_tlc_prune` removes its registration.
 - `init` records it as `id` in the project's `.pdt/config.json`.
 - `init` registers the project in your user run state, under `PROJECTS`, with the project's root directory.
 - It names the project's VTT (below).
@@ -162,6 +162,46 @@ Use it after changing the module's `id`, after fixing a `module.json` that `init
 
 :::{note}
 {program}`pdt` checks the configuration before running any command, so `force-reset` cannot run while the project's `.pdt/config.json` is invalid. Fix or delete the file first.
+:::
+
+(pdt_tlc_prune)=
+
+## prune
+
+{command}`prune`
+
+Forgets the projects that are gone. It removes from your user run state (see {ref}`pdt_tlc_init_id`) every project whose registered root no longer holds a `.pdt` directory, whether the directory was deleted, moved without {ref}`pdt_tlc_move`, or is no longer a {program}`pdt` project. It names each project it removes, and works anywhere.
+
+Run it when `init` refuses an id that belongs to a project you have deleted.
+
+(pdt_tlc_move)=
+
+## move
+
+{command}`move [destination]`
+
+Keeps your user run state in step with where the current project is. It only works inside a {program}`pdt` project whose `.pdt/config.json` records its `id`.
+
+**destination**
+
+: Where to move the project to. A relative path is taken from the current directory. The path must not exist yet, its parent directory must, and it must not be inside the project. Otherwise `move` fails with exit code 2 and moves nothing.
+
+Without a destination, `move` is for a project you have already moved yourself, for example with `mv`. Run it in the project at its new place: it registers the project's id there. If the project is already registered where it is, nothing changes.
+
+With a destination, `move` moves the whole project directory there, then registers it there. On the same filesystem this is a rename. Across filesystems, the project is copied and then the original is removed; if the copy fails, the original is left as it was.
+
+{program}`pdt` cannot change the directory of the shell you ran it from. If you ran `move` from inside the project, it prints the matching directory in the new location, to `cd` to:
+
+```shell
+~/work/arcane-ledger/src$ pdt move ~/projects/arcane-ledger
+Moved project arcane-ledger from /home/me/work/arcane-ledger to /home/me/projects/arcane-ledger
+Your shell is still in the old location. To carry on where you were: cd /home/me/projects/arcane-ledger/src
+```
+
+Either way, `move` refuses (exit code 1) when the id is registered to another directory that is still a {program}`pdt` project, such as when this project is a copy of that one. Give the copy its own id in `module.json` and run {ref}`pdt_tlc_force_reset`.
+
+:::{note}
+On Windows a directory cannot be renamed while a program, such as your shell or an editor, is using it. Run `pdt move` with a destination from outside the project there.
 :::
 
 (pdt_tlc_info)=

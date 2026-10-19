@@ -34,6 +34,7 @@ describe('main', () => {
     err = [];
     context = {
       paths: {
+        cwd: sandbox,
         userConfigDir: path.join(sandbox, 'config'),
         userDataDir: path.join(sandbox, 'data'),
         pdtConfigDir: undefined,

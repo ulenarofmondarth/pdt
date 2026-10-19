@@ -5,13 +5,15 @@ import { createCommandContext } from '@tests/unit/mocks/context.js';
 describe('pdtCommands', () => {
   const commands = pdtCommands(createCommandContext());
 
-  test('are vtt, init, info, config and force-reset', () => {
+  test('are vtt, init, info, config, force-reset, prune and move', () => {
     expect(commands.map(command => String(command.command).split(' ')[0])).toEqual([
       'vtt',
       'init',
       'info',
       'config',
       'force-reset',
+      'prune',
+      'move',
     ]);
   });
 

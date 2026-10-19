@@ -38,7 +38,12 @@ export function createCommandContext() {
     filesSetting: ReturnType<typeof vi.fn<CommandContext['filesSetting']>>;
     clearConfig: ReturnType<typeof vi.fn<CommandContext['clearConfig']>>;
   } = {
-    paths: { userConfigDir: '/nonexistent/config', userDataDir: '/nonexistent/data', pdtConfigDir: undefined },
+    paths: {
+      cwd: '/nonexistent/cwd',
+      userConfigDir: '/nonexistent/config',
+      userDataDir: '/nonexistent/data',
+      pdtConfigDir: undefined,
+    },
     config: configSchema.parse(defaults),
     sourceOf: vi.fn<CommandContext['sourceOf']>((): ConfigSource => 'default'),
     writeConfig: vi.fn<CommandContext['writeConfig']>(),

@@ -53,6 +53,13 @@
       },
       "forceReset": {
         "description": "Volver a configurar desde cero el proyecto actual: eliminar su estado de ejecución, su registro y su configuración, y después inicializarlo."
+      },
+      "prune": {
+        "description": "Olvidar los proyectos que ya no existen: eliminar de tu estado de ejecución cada proyecto cuyo directorio ya no contiene un directorio .pdt."
+      },
+      "move": {
+        "description": "Actualizar el registro del proyecto actual después de moverlo, o moverlo a un directorio nuevo.",
+        "destination": "Adónde mover el proyecto. No debe existir todavía; su directorio padre sí."
       }
     },
     "opt": {
@@ -76,6 +83,16 @@
     "forceReset": {
       "removed": "Se eliminó {file}",
       "unregistered": "Se eliminó el registro del proyecto {id} de {file}"
+    },
+    "prune": {
+      "nothing": "Todos los proyectos registrados en {file} siguen ahí; no se eliminó nada.",
+      "removed": "Se eliminó el proyecto {id} ({root}) de {file}: ya no es un proyecto PDT."
+    },
+    "move": {
+      "unchanged": "El proyecto {id} ya está registrado en {root}.",
+      "registered": "Proyecto {id} registrado en {root} en {file}",
+      "moved": "Proyecto {id} movido de {from} a {to}",
+      "changeDirectory": "Tu shell sigue en la ubicación anterior. Para continuar donde estabas: cd {dir}"
     }
   },
   "warn": {
@@ -135,11 +152,18 @@
     "alreadyInitialised": "{path} ya es un proyecto PDT: existe {file}. Para volver a configurarlo desde cero, ejecuta pdt force-reset en el proyecto.",
     "projectRegistered": {
       "here": "El proyecto {id} ya está registrado para este directorio en {file}. Ejecuta pdt force-reset en el proyecto o elimina el registro de {file}.",
-      "elsewhere": "Otro proyecto, en {root}, ya está registrado como {id} en {file}. Cada proyecto necesita su propio id: cambia el id en module.json."
+      "elsewhere": "Otro proyecto, en {root}, ya está registrado como {id} en {file}. Cada proyecto necesita su propio id: cambia el id en module.json. Si ese proyecto ya no existe, ejecuta pdt prune."
     },
     "runState": {
       "unreadable": "No se pudo leer el archivo de estado de ejecución {file}: {reason}",
       "invalid": "El archivo de estado de ejecución {file} no es válido: {problems}"
+    },
+    "move": {
+      "noId": "La configuración de este proyecto no tiene id. Ejecuta pdt force-reset para configurar el proyecto.",
+      "stillAProject": "El proyecto {id} está registrado en {file} en {root}, que sigue siendo un proyecto PDT. Si este proyecto es una copia, dale su propio id en module.json y ejecuta pdt force-reset.",
+      "destinationExists": "{path} ya existe. Indica una ruta que todavía no exista.",
+      "noParent": "El directorio al que mover el proyecto, {path}, no existe.",
+      "intoItself": "No se puede mover el proyecto dentro de sí mismo: {path}"
     }
   },
   "fatal": {

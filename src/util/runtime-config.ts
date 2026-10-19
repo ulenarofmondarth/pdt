@@ -62,6 +62,8 @@ export interface PathsContext {
 
 /** The directories pdt reads from and writes to. None of them need exist yet. */
 export interface PdtPaths {
+  /** Directory pdt was started in. */
+  cwd: string;
   /** Holds the user's configuration file. */
   userConfigDir: string;
   /** Holds data and logs that belong to the user rather than to a project. */
@@ -95,6 +97,7 @@ function userDataDir({ home, platform, env }: PathsContext): string {
  */
 export function resolvePaths(context: PathsContext): PdtPaths {
   return {
+    cwd: context.cwd,
     userConfigDir: userConfigDir(context),
     userDataDir: userDataDir(context),
     pdtConfigDir: findConfig(context.cwd, context.home),
