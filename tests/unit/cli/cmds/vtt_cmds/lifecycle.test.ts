@@ -2,7 +2,16 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
-import { chooseVtt, instanceName, restartVtt, startVtt, stopVtt } from '@/cli/cmds/vtt_cmds/lifecycle.js';
+import {
+  chooseVtt,
+  instanceName,
+  restartVtt,
+  runningProjectVtts,
+  startVtt,
+  stopAllVtts,
+  stopVtt,
+  vttDataDir,
+} from '@/cli/cmds/vtt_cmds/lifecycle.js';
 import { vttSettings } from '@lib/projectVtt.js';
 import FoundryVTTServer from '@lib/VTT/Server/FoundryVTTServer.js';
 import { readRunState, runStateFile, writeRunState, type RunningVtt } from '@util/run-state.js';
@@ -82,11 +91,14 @@ describe('the VTT lifecycle', () => {
     sandbox = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'pdt-lifecycle-')));
     root = path.join(sandbox, 'my-module');
     ctx.paths.pdtConfigDir = path.join(root, '.pdt');
+    ctx.paths.userDataDir = path.join(sandbox, 'data');
     ctx.config.id = 'my-module';
     ctx.config.VTT['my-module'] = vttSettings('13');
     file = runStateFile(ctx.paths.pdtConfigDir);
     host = createHostMock();
-    ctx.createVtt.mockImplementation((name, settings) => new FoundryVTTServer(name, settings.server, host));
+    ctx.createVtt.mockImplementation(
+      (name, settings, account) => new FoundryVTTServer(name, settings.server, host, account),
+    );
   });
 
   afterEach(() => {
@@ -101,10 +113,10 @@ describe('the VTT lifecycle', () => {
 
       await startVtt(ctx, undefined);
 
-      expect(host.start).toHaveBeenCalledExactlyOnceWith(ctx.createVtt.mock.results[0]!.value, {
-        name: 'pdt-my-module',
-        port: 30002,
-      });
+      expect(host.start).toHaveBeenCalledExactlyOnceWith(
+        ctx.createVtt.mock.results[0]!.value,
+        expect.objectContaining({ name: 'pdt-my-module', port: 30002 }),
+      );
     });
 
     test("records it in the project's run state", async () => {
@@ -127,6 +139,7 @@ describe('the VTT lifecycle', () => {
 
       expect(ctx.out.mock.calls).toEqual([
         [m['info.vtt.starting']({ vtt: 'my-module', version: '13', port: 30000 })],
+        [m['info.vtt.waiting']({ vtt: 'my-module', url: 'http://localhost:30000', timeout: 600 })],
         [m['info.vtt.started']({ vtt: 'my-module', url: 'http://localhost:30000' })],
       ]);
     });
@@ -224,6 +237,125 @@ describe('the VTT lifecycle', () => {
       expect(ctx.out).not.toHaveBeenCalledWith(expect.stringContaining('http://'));
     });
 
+    test('gives the VTT its account, secrets and owner, from the configuration', async () => {
+      ctx.config.FOUNDRY = { username: 'me', password: 'hunter2', license_key: 'ABCD' };
+      ctx.config.VTT['my-module']!.server.admin_key = 'adm1n';
+      ctx.owner = { uid: 1000, gid: 100 };
+
+      await startVtt(ctx, undefined);
+
+      expect(ctx.createVtt).toHaveBeenCalledExactlyOnceWith(
+        'my-module',
+        ctx.config.VTT['my-module'],
+        ctx.config.FOUNDRY,
+      );
+      expect(host.start.mock.calls[0]![1].environment).toEqual({
+        FOUNDRY_USERNAME: 'me',
+        FOUNDRY_PASSWORD: 'hunter2',
+        FOUNDRY_LICENSE_KEY: 'ABCD',
+        FOUNDRY_ADMIN_KEY: 'adm1n',
+        FOUNDRY_UID: '1000',
+        FOUNDRY_GID: '100',
+      });
+      expect(ctx.log.warn).not.toHaveBeenCalled();
+    });
+
+    test('never writes a secret to the run state or its output', async () => {
+      ctx.config.FOUNDRY = { username: 'me', password: 'hunter2' };
+
+      await startVtt(ctx, undefined);
+
+      expect(fs.readFileSync(file, 'utf8')).not.toContain('hunter2');
+      expect(ctx.out.mock.calls.flat().join('\n')).not.toContain('hunter2');
+    });
+
+    test('warns that Foundry VTT may not be had without an account to download it with', async () => {
+      ctx.config.FOUNDRY = { username: 'me' };
+
+      await startVtt(ctx, undefined);
+
+      expect(ctx.log.warn).toHaveBeenCalledExactlyOnceWith(m['warn.vtt.noAccount']({ vtt: 'my-module' }));
+      expect(host.start).toHaveBeenCalledOnce();
+    });
+
+    test("gives the VTT its data directory, in the user's data directory, and the project as its module", async () => {
+      ctx.config.FOUNDRY = { username: 'me', password: 'p' };
+
+      await startVtt(ctx, undefined);
+
+      const data = vttDataDir(ctx.paths.userDataDir, 'pdt-my-module');
+      expect(data).toBe(path.join(ctx.paths.userDataDir, 'vtt', 'pdt-my-module'));
+      expect(fs.statSync(data).isDirectory()).toBe(true);
+      expect(host.start.mock.calls[0]![1].mounts).toEqual([
+        { source: data, target: '/data' },
+        { source: root, target: '/data/Data/modules/my-module' },
+      ]);
+    });
+
+    // Regression: Docker made the module's mount point inside the data directory, owned by root, so
+    // the user could not remove the VTT's data.
+    test("makes the module's mount point in the data directory itself, so that the user owns it", async () => {
+      await startVtt(ctx, undefined);
+
+      const mountPoint = path.join(vttDataDir(ctx.paths.userDataDir, 'pdt-my-module'), 'Data', 'modules', 'my-module');
+      expect(fs.statSync(mountPoint).isDirectory()).toBe(true);
+    });
+
+    test('gives a project without an id only its data directory, with a warning', async () => {
+      delete ctx.config.id;
+      ctx.config.FOUNDRY = { username: 'me', password: 'p' };
+
+      await startVtt(ctx, undefined);
+
+      expect(host.start.mock.calls[0]![1].mounts).toEqual([
+        { source: vttDataDir(ctx.paths.userDataDir, 'pdt-my-module'), target: '/data' },
+      ]);
+      expect(ctx.log.warn).toHaveBeenCalledExactlyOnceWith(m['warn.vtt.noModuleMount']({ vtt: 'my-module' }));
+    });
+
+    test('waits until the VTT answers at its address', async () => {
+      ctx.isUrlReachable.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+      host.isRunning.mockResolvedValue(true);
+      ctx.config.VTT['my-module']!.server.ready.timeout = 10;
+
+      await startVtt(ctx, undefined);
+
+      expect(ctx.isUrlReachable).toHaveBeenCalledTimes(2);
+      expect(ctx.isUrlReachable).toHaveBeenCalledWith('http://localhost:30000');
+      expect(host.isRunning).toHaveBeenCalledWith({ id: 'container-id' });
+      expect(ctx.out).toHaveBeenLastCalledWith(
+        m['info.vtt.started']({ vtt: 'my-module', url: 'http://localhost:30000' }),
+      );
+    });
+
+    test('fails, keeping the record, when the VTT stops while it is starting', async () => {
+      ctx.isUrlReachable.mockResolvedValue(false);
+      host.isRunning.mockResolvedValue(false);
+
+      await expect(startVtt(ctx, undefined)).rejects.toThrow(
+        m['error.vtt.stoppedWhileStarting']({ vtt: 'my-module', container: 'pdt-my-module' }),
+      );
+
+      expect(recorded()).toMatchObject({ id: 'container-id' });
+    });
+
+    test('fails, keeping the record, when the VTT does not answer in time', async () => {
+      ctx.isUrlReachable.mockResolvedValue(false);
+      host.isRunning.mockResolvedValue(true);
+      ctx.config.VTT['my-module']!.server.ready.timeout = 0;
+
+      await expect(startVtt(ctx, undefined)).rejects.toThrow(
+        m['error.vtt.notReachable']({
+          vtt: 'my-module',
+          url: 'http://localhost:30000',
+          timeout: 0,
+          container: 'pdt-my-module',
+        }),
+      );
+
+      expect(recorded()).toMatchObject({ id: 'container-id' });
+    });
+
     test('fails, starting nothing, when the host cannot be reached', async () => {
       host.isAccessible.mockResolvedValue(false);
 
@@ -309,6 +441,80 @@ describe('the VTT lifecycle', () => {
       expect(host.stop).not.toHaveBeenCalled();
       expect(recorded()).toEqual(RUNNING);
     });
+  });
+
+  describe('runningProjectVtts', () => {
+    test('is the recorded VTTs that are running', async () => {
+      ctx.config.VTT['staging'] = vttSettings('14');
+      writeRunState(file, { VTT: { 'my-module': RUNNING, staging: { ...RUNNING, id: 'stopped' } } });
+      host.isRunning.mockImplementation(handle => Promise.resolve(handle.id === 'old-id'));
+
+      await expect(runningProjectVtts(ctx)).resolves.toEqual(['my-module']);
+    });
+
+    test('counts a recorded VTT that is no longer configured as running, as it cannot be asked', async () => {
+      writeRunState(file, { VTT: { gone: RUNNING } });
+
+      await expect(runningProjectVtts(ctx)).resolves.toEqual(['gone']);
+      expect(host.isRunning).not.toHaveBeenCalled();
+    });
+
+    test('is nothing without a run state', async () => {
+      await expect(runningProjectVtts(ctx)).resolves.toEqual([]);
+    });
+
+    test('fails when the host of a recorded VTT cannot be reached', async () => {
+      writeRunState(file, { VTT: { 'my-module': RUNNING } });
+      host.isAccessible.mockResolvedValue(false);
+
+      await expect(runningProjectVtts(ctx)).rejects.toThrow(
+        m['error.vtt.hostUnreachable']({ vtt: 'my-module', type: 'docker' }),
+      );
+    });
+  });
+
+  describe('stopAllVtts', () => {
+    test('stops and forgets every recorded VTT', async () => {
+      ctx.config.VTT['staging'] = vttSettings('14');
+      const staging = { ...RUNNING, id: 'staging-id' };
+      writeRunState(file, { VTT: { 'my-module': RUNNING, staging } });
+
+      await stopAllVtts(ctx);
+
+      expect(host.stop.mock.calls).toEqual([[RUNNING], [staging]]);
+      expect(readRunState(file)).toEqual({ VTT: {} });
+    });
+
+    test('forgets a VTT that is no longer configured, warning how to stop it', async () => {
+      writeRunState(file, { VTT: { gone: RUNNING } });
+
+      await stopAllVtts(ctx);
+
+      expect(host.stop).not.toHaveBeenCalled();
+      expect(ctx.log.warn).toHaveBeenCalledExactlyOnceWith(
+        m['warn.vtt.notConfiguredToStop']({ vtt: 'gone', container: 'pdt-my-module' }),
+      );
+      expect(readRunState(file)).toEqual({ VTT: {} });
+    });
+
+    test('fails, keeping the record, when a host cannot be reached', async () => {
+      writeRunState(file, { VTT: { 'my-module': RUNNING } });
+      host.isAccessible.mockResolvedValue(false);
+
+      await expect(stopAllVtts(ctx)).rejects.toThrow(
+        m['error.vtt.hostUnreachable']({ vtt: 'my-module', type: 'docker' }),
+      );
+      expect(recorded()).toEqual(RUNNING);
+    });
+  });
+
+  test.each([
+    ['runningProjectVtts', runningProjectVtts],
+    ['stopAllVtts', stopAllVtts],
+  ])('%s fails outside a project', async (_name, run) => {
+    ctx.paths.pdtConfigDir = undefined;
+
+    await expect(run(ctx)).rejects.toThrow(m['error.notInPdtProject']());
   });
 
   test.each([

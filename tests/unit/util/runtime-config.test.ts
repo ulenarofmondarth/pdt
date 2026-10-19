@@ -143,6 +143,22 @@ describe('resolvePaths', () => {
       expect(paths.userDataDir).toBe(path.join(HOME, '.local', 'share', PDT.PROGRAM_NAME));
     });
 
+    // Regression: XDG_DATA_HOME was ignored, so a run meant to be kept apart still wrote the
+    // user's own run state.
+    test('follows XDG_DATA_HOME', () => {
+      const xdg = path.join(HOME, 'xdg-data');
+
+      const paths = resolvePaths({ ...elsewhere, platform: 'linux', env: { XDG_DATA_HOME: xdg } });
+
+      expect(paths.userDataDir).toBe(path.join(xdg, PDT.PROGRAM_NAME));
+    });
+
+    test('ignores a relative XDG_DATA_HOME', () => {
+      const paths = resolvePaths({ ...elsewhere, platform: 'linux', env: { XDG_DATA_HOME: 'data' } });
+
+      expect(paths.userDataDir).toBe(path.join(HOME, '.local', 'share', PDT.PROGRAM_NAME));
+    });
+
     test('is under ~/Library/Preferences on macOS', () => {
       const paths = resolvePaths({ ...elsewhere, platform: 'darwin', env: {} });
 

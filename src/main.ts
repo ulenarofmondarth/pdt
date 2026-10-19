@@ -12,6 +12,7 @@ import { pdtCommands } from '@/cli/commands.js';
 import { createModule, type Prompter } from '@lib/ModuleGenerator.js';
 import { createVtt } from '@lib/VTT/createVtt.js';
 import { isPortFree } from '@util/ports.js';
+import { isUrlReachable } from '@util/reachable.js';
 import { prettyData } from '@util/diagnostic.js';
 import {
   ConfigError,
@@ -29,6 +30,7 @@ import { inProject, ProjectError, resolveProject } from '@util/runtime-config.js
 import type { Arguments, CommandModule } from 'yargs';
 import type { CommandContext } from '@/cli/context.js';
 import type { PdtPaths } from '@util/runtime-config.js';
+import type { Owner } from '@lib/VTT/VTTServer.js';
 
 /** What a run of pdt depends on. */
 export interface MainContext {
@@ -42,6 +44,8 @@ export interface MainContext {
   err(text: string): void;
   /** How to ask the user questions; absent when nobody can be asked, such as without a terminal. */
   prompter?: Prompter;
+  /** The user pdt runs as; absent where users have no numeric ids, as on Windows. */
+  owner?: Owner;
 }
 
 /** The commands to offer, given what they can work with. */
@@ -135,6 +139,8 @@ export async function main(
     createModule,
     createVtt,
     isPortFree,
+    isUrlReachable,
+    ...(context.owner === undefined ? {} : { owner: context.owner }),
   };
 
   // yargs reports a command line it cannot run through this callback, and still resolves. A command

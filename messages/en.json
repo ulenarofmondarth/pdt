@@ -66,7 +66,9 @@
       },
       "move": {
         "description": "Update the current project's registration after moving it, or move it to a new directory.",
-        "destination": "Where to move the project to. It must not exist yet; its parent directory must."
+        "destination": "Where to move the project to. It must not exist yet; its parent directory must.",
+        "stopAllContainers": "Stop every running VTT of the project before moving it.",
+        "restartAllContainers": "Stop every running VTT of the project before moving it, and start them again once it has moved."
       }
     },
     "opt": {
@@ -88,7 +90,8 @@
       "stoppedOnItsOwn": "VTT {vtt} has stopped since pdt started it; clearing up what is left of it.",
       "stopping": "Stopping VTT {vtt}…",
       "stopped": "VTT {vtt} has stopped.",
-      "notRunning": "VTT {vtt} is not running: pdt has no record of starting it in this project."
+      "notRunning": "VTT {vtt} is not running: pdt has no record of starting it in this project.",
+      "waiting": "Waiting up to {timeout} seconds for VTT {vtt} to answer at {url}…"
     },
     "configSet": "Set {key} in {file}",
     "configCleared": "Cleared {key} from {file}",
@@ -127,7 +130,12 @@
         "noVersion": "it does not set {variable}"
       }
     },
-    "noProjectId": "The project has no id, so it is not registered and has no VTT. Fix module.json, then run pdt force-reset in the project."
+    "noProjectId": "The project has no id, so it is not registered and has no VTT. Fix module.json, then run pdt force-reset in the project.",
+    "vtt": {
+      "noModuleMount": "The project has no id, so it is not given to VTT {vtt} as a module.",
+      "noAccount": "FOUNDRY.username and FOUNDRY.password are not both set, so VTT {vtt} can only use a Foundry VTT it has installed before. Set them with pdt config set --user.",
+      "notConfiguredToStop": "VTT {vtt} is recorded as started, but is no longer configured, so it cannot be stopped. Stop it yourself: docker rm -f {container}"
+    }
   },
   "error": {
     "notInPdtProject": "Not a PDT project.",
@@ -160,7 +168,9 @@
       "containerRunning": "A container named {container} is already running, but this project has no record of starting it. Stop and remove it (docker rm -f {container}), then start the VTT again.",
       "stopFailed": "Could not stop and remove container {container}: {reason}",
       "noFreePort": "No port from {from} up is free.",
-      "portInUse": "Port {port}, which VTT.{vtt}.server.port sets, is in use. Free it, or set the port to auto."
+      "portInUse": "Port {port}, which VTT.{vtt}.server.port sets, is in use. Free it, or set the port to auto.",
+      "stoppedWhileStarting": "VTT {vtt} stopped while it was starting. See why with docker logs {container}.",
+      "notReachable": "VTT {vtt} did not answer at {url} within {timeout} seconds. It is still running: see what it is doing with docker logs {container}, stop it with pdt vtt stop, or allow it longer with VTT.{vtt}.server.ready.timeout."
     },
     "compendium": {
       "notRecognised": "{path} is not a recognised compendium database.",
@@ -180,7 +190,9 @@
       "stillAProject": "Project {id} is registered at {root} in {file}, which is still a PDT project. If this project is a copy, give it its own id in module.json and run pdt force-reset.",
       "destinationExists": "{path} already exists. Give a path that does not exist yet.",
       "noParent": "The directory to move the project into, {path}, does not exist.",
-      "intoItself": "Cannot move the project into itself: {path}"
+      "intoItself": "Cannot move the project into itself: {path}",
+      "stopOrRestart": "Give --stop-all-containers or --restart-all-containers, not both.",
+      "vttsRunning": "VTTs of this project are running: {vtts}. They would lose the project when it moves. Stop them first, or give --stop-all-containers, or --restart-all-containers to start them again once it has moved."
     },
     "project": {
       "empty": "--project needs a project id or the path to a project.",

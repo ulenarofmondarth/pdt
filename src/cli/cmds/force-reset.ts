@@ -4,13 +4,15 @@ import { CONFIG_FILENAME } from '@util/load-config.js';
 import { runStateFile, unregisterProject } from '@util/run-state.js';
 import { m } from '@i18n/messages.js';
 import { initProject } from './init.js';
+import { stopAllVtts } from './vtt_cmds/lifecycle.js';
 
 import type { CommandModule } from 'yargs';
 import type { CommandContext } from '../context.js';
 
 /**
- * `pdt force-reset`: set up the project pdt is run in again from scratch. It removes the project's
- * run state, its registration in the user's run state and its configuration, then initialises the
+ * `pdt force-reset`: set up the project pdt is run in again from scratch. It stops the VTTs the
+ * project's run state records as started, so that none is left running unrecorded, then removes the
+ * project's run state, its registration in the user's run state and its configuration, then initialises the
  * project as `pdt init` would. The rest of the project's `.pdt` directory, such as its log, is kept.
  */
 export function createForceResetCommand(context: CommandContext): CommandModule {
@@ -25,6 +27,7 @@ export function createForceResetCommand(context: CommandContext): CommandModule 
       const pdtPath = paths.pdtConfigDir;
       if (pdtPath === undefined) throw new Error(m['error.notInPdtProject']());
       const root = path.dirname(pdtPath);
+      await stopAllVtts(context);
 
       const removeFile = (file: string) => {
         if (!fs.existsSync(file)) return;

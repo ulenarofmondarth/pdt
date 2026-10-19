@@ -69,6 +69,30 @@ describe('moving and pruning projects', () => {
     expect(fs.existsSync(path.join(project, PDT.PROJECT_RTD_DIR_NAME))).toBe(true);
   });
 
+  test('move fails with the error code, moving nothing, when it cannot tell whether a VTT it started runs', async () => {
+    const config = path.join(project, '.pdt', 'config.json');
+    const settings = JSON.parse(fs.readFileSync(config, 'utf8'));
+    settings.VTT['my-module'].host.socketPath = path.join(sandbox.root, 'no-docker.sock');
+    sandbox.writeJson(config, settings);
+    sandbox.writeJson(path.join(project, '.pdt', 'run.state.json'), {
+      VTT: {
+        'my-module': { id: 'abc', name: 'pdt-my-module', port: 30000, url: 'http://localhost:30000', started: 'x' },
+      },
+    });
+
+    const { code, stderr } = await sandbox.run(['move', '../moved', '--stop-all-containers'], { cwd: project });
+
+    expect(code).toBe(PDT.EXITCODE.ERROR);
+    expect(stderr).toMatch(/Cannot reach the docker host/);
+    expect(fs.existsSync(path.join(project, '.pdt'))).toBe(true);
+  });
+
+  test('move refuses --stop-all-containers with --restart-all-containers, with the usage code', async () => {
+    const { code } = await sandbox.run(['move', '--stop-all-containers', '--restart-all-containers'], { cwd: project });
+
+    expect(code).toBe(PDT.EXITCODE.USAGE);
+  });
+
   test('move fails with the error code outside a project', async () => {
     const { code, stderr } = await sandbox.run(['move']);
 

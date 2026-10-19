@@ -6,6 +6,12 @@
  */
 import VTTHost, { type RunHandle, type RunOptions } from '@lib/VTT/VTTHost.js';
 
+/** A user, by the numeric ids files are owned by. */
+export interface Owner {
+  uid: number;
+  gid: number;
+}
+
 export default abstract class VTTServer {
   /**
    * @param name - Name of this server, unique among the servers of a project
@@ -26,6 +32,19 @@ export default abstract class VTTServer {
 
   /** The address to reach the server at, when it serves on `port`. */
   abstract urlAt(port: number): string;
+
+  /** Where the application keeps its data, inside its host, such as in its container. */
+  abstract get dataPath(): string;
+
+  /** Where the application finds the module `id`, inside its host. */
+  abstract modulePath(id: string): string;
+
+  /**
+   * The variables the application is to be started with, which may hold secrets.
+   *
+   * @param owner - The user the application's files are to belong to, if it can be told
+   */
+  abstract environment(owner?: Owner): Record<string, string>;
 
   /** Start on the server's host, and wait until it has started. */
   start(options: RunOptions): Promise<RunHandle> {

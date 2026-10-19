@@ -63,7 +63,13 @@ For a module `arcane-ledger` created for Foundry VTT 14.368.0, `.pdt/config.json
   "id": "arcane-ledger",
   "VTT": {
     "arcane-ledger": {
-      "server": { "type": "foundry", "hostname": "localhost", "version": "14.368.0", "port": "auto" },
+      "server": {
+        "type": "foundry",
+        "hostname": "localhost",
+        "version": "14.368.0",
+        "port": "auto",
+        "ready": { "timeout": 600 }
+      },
       "host": { "type": "docker", "image": "felddy/foundryvtt" }
     }
   }
@@ -153,10 +159,11 @@ Sets up the current project again from scratch. It takes no arguments and only w
 
 It does the following, in order:
 
-1. It removes the project's run state, `.pdt/run.state.json`.
-2. It removes every registration of the project's root from your user run state (see {ref}`pdt_tlc_init_id`).
-3. It removes the project's configuration, `.pdt/config.json`.
-4. It runs {ref}`pdt_tlc_init` in the project's root. `init` reads the project id and the Foundry VTT version afresh.
+1. It stops every VTT the project's run state records as started, and removes its container (see {ref}`pdt_tlc_vtt_stop`), so that none is left running without a record. If one cannot be stopped, for example because the Docker engine cannot be reached, `force-reset` stops with an error and changes nothing. A recorded VTT that is no longer configured cannot be stopped: {program}`pdt` warns, naming its container, and carries on.
+2. It removes the project's run state, `.pdt/run.state.json`.
+3. It removes every registration of the project's root from your user run state (see {ref}`pdt_tlc_init_id`).
+4. It removes the project's configuration, `.pdt/config.json`.
+5. It runs {ref}`pdt_tlc_init` in the project's root. `init` reads the project id and the Foundry VTT version afresh.
 
 Anything else in the `.pdt` directory, such as the log, is kept. Settings you added to the project's configuration are lost, so note any you want to set again.
 
@@ -180,7 +187,7 @@ Run it when `init` refuses an id that belongs to a project you have deleted.
 
 ## move
 
-{command}`move [destination]`
+{command}`move [destination] [options]`
 
 Keeps your user run state in step with where the current project is. It only works inside a {program}`pdt` project whose `.pdt/config.json` records its `id`.
 
@@ -199,6 +206,18 @@ With a destination, `move` moves the whole project directory there, then registe
 Moved project arcane-ledger from /home/me/work/arcane-ledger to /home/me/projects/arcane-ledger
 Your shell is still in the old location. To carry on where you were: cd /home/me/projects/arcane-ledger/src
 ```
+
+A running VTT of the project has the project mounted from where it was, so `move` refuses (exit code 1), changing nothing, while a VTT it started is running, naming them. Stop them first ({ref}`pdt_tlc_vtt_stop`), or give one of:
+
+`--stop-all-containers`
+
+: Stop every running VTT of the project, then move it.
+
+`--restart-all-containers`
+
+: Stop every running VTT of the project, move it, then start them again from where the project now is.
+
+Giving both is a usage error (exit code 2). Without a destination they work the same way: `--restart-all-containers` starts the VTTs again with the project where you moved it.
 
 Either way, `move` refuses (exit code 1) when the id is registered to another directory that is still a {program}`pdt` project, such as when this project is a copy of that one. Give the copy its own id in `module.json` and run {ref}`pdt_tlc_force_reset`.
 
@@ -460,7 +479,7 @@ Controls the VTTs configured for a project. Each VTT is an entry under `VTT` in 
 
 {command}`vtt start [vtt]`
 
-Starts a VTT of the project {program}`pdt` is run in, and waits until its host has started it.
+Starts a VTT of the project {program}`pdt` is run in, and waits until it answers.
 
 **vtt**
 
@@ -469,12 +488,24 @@ Starts a VTT of the project {program}`pdt` is run in, and waits until its host h
 ```shell
 $ pdt vtt start
 Starting VTT arcane-ledger (version 14.368.0) on port 30002…
+Waiting up to 600 seconds for VTT arcane-ledger to answer at http://localhost:30002…
 VTT arcane-ledger has started: http://localhost:30002
 ```
 
 The port is the VTT's `server.port`. `auto`, the default, is the first port from 30000 that nothing on this machine is listening on, so several VTTs, from one project or several, can run side by side. A number is used as it is, and {program}`pdt` stops with an error if something is listening on it.
 
-On a Docker host, {program}`pdt` pulls the image the first time (tagged with the server's version, for example `felddy/foundryvtt:14.368.0`), then creates and starts a container publishing the server's port on that port. The container is named `pdt-<project id>` for the VTT named after the project, as after `init`, and `pdt-<project id>-<vtt>` for any other.
+On a Docker host, {program}`pdt` pulls the image the first time (tagged with the server's version, for example `felddy/foundryvtt:14.368.0`), then creates and starts a container publishing the server's port on that port. The container is named `pdt-<project id>` for the VTT named after the project, as after `init`, and `pdt-<project id>-<vtt>` for any other. It is given:
+
+- **its data directory**, as `/data`: `vtt/<container name>` in your user data directory (`~/.local/share/pdt/vtt/pdt-arcane-ledger` on Linux). It is kept when the VTT stops, so Foundry VTT is downloaded and installed only on the first start, and worlds you create are kept. It is outside the project so that it is never committed, and so that the project, given to the VTT inside it, does not contain it;
+- **the project, as the module it is**, at `/data/Data/modules/<project id>`, so Foundry VTT runs the module from your working copy. A project without an id is not given, with a warning;
+- **your Foundry VTT account and licence key** (`FOUNDRY.username`, `FOUNDRY.password`, `FOUNDRY.license_key`) and the VTT's administrator password (`VTT.<vtt>.server.admin_key`), from your secrets (see {ref}`pdt_conf_secrets`). They are passed to the container as environment variables and written nowhere else. Without an account, {program}`pdt` warns: Foundry VTT can then only run if an earlier start installed it;
+- **your user**, so that the files Foundry VTT writes in the data directory are yours.
+
+:::{note}
+Anyone who can use the Docker engine can read a container's environment variables with `docker inspect`, your Foundry VTT password among them.
+:::
+
+Once the container has started, {program}`pdt` waits until Foundry VTT answers at the VTT's address, for up to `VTT.<vtt>.server.ready.timeout` seconds (600 unless set; the first start downloads and installs Foundry VTT). If the container stops meanwhile, or the time runs out, {program}`pdt` stops with an error naming the container, whose `docker logs` say what happened. The VTT stays recorded, so `pdt vtt stop` clears it up, as does the next `start`.
 
 {program}`pdt` records the running VTT in the project's run state, `.pdt/run.state.json`: the container, its port and its address. `stop` and `restart` use that record, and so does `start`: a VTT that is running already is left alone, and its address shown. If the VTT has stopped since it was started, for example because Foundry VTT exited, {program}`pdt` removes what is left of it and starts it afresh.
 
@@ -487,10 +518,6 @@ On a Docker host, {program}`pdt` pulls the image the first time (tagged with the
 - no port is free, or the one set is taken;
 - a container of the same name is running that the project has no record of starting (stop it with `docker rm -f <name>`);
 - the image cannot be pulled, or the container cannot be created or started (the error gives Docker's reason).
-
-:::{todo}
-The container is started without the Foundry VTT licence credentials or a data directory, so the `felddy/foundryvtt` container exits straight away and the VTT cannot be reached yet. {program}`pdt` reports the VTT as started once its container has started, not once Foundry VTT answers.
-:::
 
 (pdt_tlc_vtt_stop)=
 

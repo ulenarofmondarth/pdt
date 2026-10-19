@@ -29,6 +29,7 @@ describe.each([
     ctx = createCommandContext();
     sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'pdt-vtt-command-'));
     ctx.paths.pdtConfigDir = path.join(sandbox, '.pdt');
+    ctx.paths.userDataDir = path.join(sandbox, 'data');
     ctx.config.VTT['my-module'] = vttSettings('13');
     host = createHostMock();
     ctx.createVtt.mockImplementation((vtt, settings) => new FoundryVTTServer(vtt, settings.server, host));
@@ -74,6 +75,6 @@ describe.each([
 
     await create(ctx).handler({ _: ['vtt', name], $0: 'pdt', vtt: 'staging' });
 
-    expect(ctx.createVtt).toHaveBeenCalledExactlyOnceWith('staging', ctx.config.VTT['staging']);
+    expect(ctx.createVtt).toHaveBeenCalledExactlyOnceWith('staging', ctx.config.VTT['staging'], undefined);
   });
 });

@@ -67,14 +67,15 @@ export default class DockerHost extends VTTHost {
   }
 
   /**
-   * Run `server` in a new container named `name`, publishing its port on `port`, and wait until it
-   * has started. A stopped container of that name, left from an earlier run, is removed first; a
+   * Run `server` in a new container named `name`, publishing its port on `port`, with its
+   * `environment` and `mounts` (bind mounts of directories on the machine pdt runs on), and wait
+   * until the container has started. A stopped container of that name, left from an earlier run, is removed first; a
    * running one is not touched.
    *
    * @throws When the image cannot be pulled, a container of that name is running, or the container
    *   cannot be created or started
    */
-  async start(server: VTTServer, { name, port }: RunOptions): Promise<RunHandle> {
+  async start(server: VTTServer, { name, port, environment, mounts }: RunOptions): Promise<RunHandle> {
     const image = this.imageFor(server);
     await this._pullImageIfMissing(image);
 
@@ -108,9 +109,12 @@ export default class DockerHost extends VTTHost {
       AttachStderr: false,
       Tty: false,
       ExposedPorts: { [internal]: {} },
+      // Given to the container only: never written anywhere, as the values may be secret.
+      Env: Object.entries(environment).map(([variable, value]) => `${variable}=${value}`),
       HostConfig: {
         AutoRemove: false,
         PortBindings: { [internal]: [{ HostPort: String(port) }] },
+        Mounts: mounts.map(({ source, target }) => ({ Type: 'bind' as const, Source: source, Target: target })),
       },
     } satisfies ContainerCreateOptions;
 

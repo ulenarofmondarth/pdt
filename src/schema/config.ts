@@ -4,6 +4,12 @@ import { z } from 'zod/v4';
 export const DEFAULT_DOCKER_IMAGE = 'felddy/foundryvtt';
 
 /**
+ * How long, in seconds, to wait for a server to answer once its host has started it, when the
+ * settings do not say. The first start of a Foundry VTT container downloads and installs Foundry VTT.
+ */
+export const DEFAULT_START_TIMEOUT = 600;
+
+/**
  * The settings whose values are secret. They are kept in a `secrets.conf`, never in a
  * `config.json`, and are shown masked unless asked for.
  */
@@ -12,6 +18,12 @@ export const secretSettings = z.registry<Record<string, never>>();
 /** A secret text setting. */
 const secret = () => z.string().register(secretSettings, {});
 
+/** How to know a server is ready, once its host has started it. */
+const readiness = z.object({
+  /** How long to wait, in seconds, for the server to answer. */
+  timeout: z.int().min(0).default(DEFAULT_START_TIMEOUT),
+});
+
 const foundryServerSettings = z.object({
   type: z.literal(['foundry']),
   hostname: z.string(),
@@ -19,6 +31,8 @@ const foundryServerSettings = z.object({
   version: z.string(),
   /** The port to serve on, on the machine pdt runs on: a number, or `auto` for the first free one from 30000. */
   port: z.union([z.literal('auto'), z.int().min(1).max(65535)]).default('auto'),
+  /** How to know the server is ready; waited on for 600 seconds unless set. */
+  ready: readiness.prefault({}),
   /** The password of the server's administrator. */
   admin_key: secret().optional(),
 });
@@ -70,11 +84,14 @@ export const vttSchema = z.object({
 export type VttSettings = z.output<typeof vttSchema>;
 
 /** The Foundry VTT account every project's servers use. */
-const foundryAccount = z.object({
+export const foundryAccount = z.object({
   username: secret().optional(),
   password: secret().optional(),
   license_key: secret().optional(),
 });
+
+/** The Foundry VTT account, to download and license Foundry VTT with. */
+export type FoundryAccount = z.output<typeof foundryAccount>;
 
 const npmDebugLevels = z.literal(['error', 'warn', 'info', 'http', 'verbose', 'debug', 'silly']);
 

@@ -1,17 +1,22 @@
 /**
- * Starting and stopping a project's VTTs, for `pdt vtt start`, `stop` and `restart`.
+ * Starting and stopping a project's VTTs, for `pdt vtt start`, `stop` and `restart`, and for the
+ * commands that must stop them first, `force-reset` and `move`.
  *
  * What pdt starts is recorded in the project's run state, so that later commands find it: `start`
  * to see that it is running already, `stop` and `restart` to stop it. Stopping removes what ran
- * the VTT, so each start begins afresh from the configuration.
+ * the VTT, so each start begins afresh from the configuration. The VTT's data is kept, in the
+ * user's data directory.
  */
+import fs from 'node:fs';
 import path from 'node:path';
 import { leaves } from '@util/config-keys.js';
 import { FIRST_AUTO_PORT, findFreePort } from '@util/ports.js';
-import { forgetRunningVtt, recordRunningVtt, runningVtt, runStateFile } from '@util/run-state.js';
+import { waitUntilReachable } from '@util/reachable.js';
+import { forgetRunningVtt, readRunState, recordRunningVtt, runningVtt, runStateFile } from '@util/run-state.js';
 import { m } from '@i18n/messages.js';
 
 import type { CommandContext } from '../../context.js';
+import type { Mount } from '@lib/VTT/VTTHost.js';
 import type VTTServer from '@lib/VTT/VTTServer.js';
 import type { VttSettings } from '@schema/config.js';
 
@@ -60,22 +65,36 @@ export function instanceName(project: string, vtt: string): string {
 }
 
 /**
- * The VTT a command is for (see {@link chooseVtt}), in the project the command is run in.
- *
- * @throws {Error} When not in a project, or no VTT can be chosen
+ * Where the VTT `instance` keeps its data: in the user's data directory, outside the project, as
+ * the project itself is given to the VTT as a module, and a VTT's data can be large.
  */
-function projectVtt(context: CommandContext, given: string | undefined): ProjectVtt {
-  const pdtPath = context.paths.pdtConfigDir;
-  if (pdtPath === undefined) throw new Error(m['error.notInPdtProject']());
-  const name = chooseVtt(context, given);
+export function vttDataDir(userDataDir: string, instance: string): string {
+  return path.join(userDataDir, 'vtt', instance);
+}
+
+/** The project's `.pdt` directory. @throws {Error} When not in a project */
+function projectData({ paths }: CommandContext): string {
+  if (paths.pdtConfigDir === undefined) throw new Error(m['error.notInPdtProject']());
+  return paths.pdtConfigDir;
+}
+
+/** The configured VTT `name`, in the project the command is run in. */
+function projectVtt(context: CommandContext, name: string): ProjectVtt {
+  const pdtPath = projectData(context);
   const settings = context.config.VTT[name] as VttSettings;
   return {
     name,
     settings,
-    server: context.createVtt(name, settings),
+    server: context.createVtt(name, settings, context.config.FOUNDRY),
     runState: runStateFile(pdtPath),
     root: path.dirname(pdtPath),
   };
+}
+
+/** The VTT a command is for (see {@link chooseVtt}), in the project the command is run in. */
+function chosenVtt(context: CommandContext, given: string | undefined): ProjectVtt {
+  projectData(context);
+  return projectVtt(context, chooseVtt(context, given));
 }
 
 /** @throws {Error} When the VTT's host cannot be reached */
@@ -97,9 +116,30 @@ async function portFor({ name, settings }: ProjectVtt, isPortFree: CommandContex
   return port;
 }
 
-/** Start `vtt`, unless it is running, and record it in the project's run state. */
-async function start(vtt: ProjectVtt, { config, log, out, isPortFree }: CommandContext) {
-  const { name, server, runState, root } = vtt;
+/** The directories to give the VTT: its data, and the project as the module it is. */
+function mountsFor({ name, server, root }: ProjectVtt, instance: string, context: CommandContext): Mount[] {
+  const data = vttDataDir(context.paths.userDataDir, instance);
+  fs.mkdirSync(data, { recursive: true });
+  const mounts: Mount[] = [{ source: data, target: server.dataPath }];
+  if (context.config.id === undefined) {
+    context.log.warn(m['warn.vtt.noModuleMount']({ vtt: name }));
+  } else {
+    const target = server.modulePath(context.config.id);
+    // Made here, as the user: Docker would make the mount point inside the data owned by root, and
+    // the user could not remove the data.
+    fs.mkdirSync(path.join(data, path.posix.relative(server.dataPath, target)), { recursive: true });
+    mounts.push({ source: root, target });
+  }
+  return mounts;
+}
+
+/**
+ * Start `vtt`, unless it is running, record it in the project's run state, and wait until it
+ * answers.
+ */
+async function start(vtt: ProjectVtt, context: CommandContext) {
+  const { config, log, out, isPortFree, isUrlReachable, owner } = context;
+  const { name, settings, server, runState, root } = vtt;
   const running = runningVtt(runState, name);
   if (running !== undefined) {
     if (await server.host.isRunning(running)) {
@@ -114,10 +154,33 @@ async function start(vtt: ProjectVtt, { config, log, out, isPortFree }: CommandC
 
   const port = await portFor(vtt, isPortFree);
   const instance = instanceName(config.id ?? path.basename(root), name);
+  const mounts = mountsFor(vtt, instance, context);
+  if (
+    settings.server.type === 'foundry' &&
+    (config.FOUNDRY?.username === undefined || config.FOUNDRY.password === undefined)
+  ) {
+    // A Foundry VTT installed by an earlier start is kept with the VTT's data, so this may not matter.
+    log.warn(m['warn.vtt.noAccount']({ vtt: name }));
+  }
+
   out(m['info.vtt.starting']({ vtt: name, version: server.version, port }));
-  const { id } = await server.start({ name: instance, port });
+  const { id } = await server.start({ name: instance, port, environment: server.environment(owner), mounts });
   const url = server.urlAt(port);
+  // Recorded before waiting, so that a VTT that does not answer can still be stopped.
   recordRunningVtt(runState, name, { id, name: instance, port, url, started: new Date().toISOString() });
+
+  const { timeout } = settings.server.ready;
+  out(m['info.vtt.waiting']({ vtt: name, url, timeout }));
+  const result = await waitUntilReachable({
+    url,
+    timeout: timeout * 1000,
+    isReachable: isUrlReachable,
+    isRunning: () => server.host.isRunning({ id }),
+  });
+  if (result === 'stopped') throw new Error(m['error.vtt.stoppedWhileStarting']({ vtt: name, container: instance }));
+  if (result === 'timedOut') {
+    throw new Error(m['error.vtt.notReachable']({ vtt: name, url, timeout, container: instance }));
+  }
   out(m['info.vtt.started']({ vtt: name, url }));
 }
 
@@ -135,15 +198,15 @@ async function stop({ name, server, runState }: ProjectVtt, { out }: CommandCont
 }
 
 /**
- * Start a VTT of the project, and wait until it has started. A VTT that is running already is left
+ * Start a VTT of the project, and wait until it answers. A VTT that is running already is left
  * alone.
  *
  * @param given - The VTT's name; see {@link chooseVtt} for when none is given
  * @throws {Error} When not in a project, the VTT is not configured, its host cannot be reached, no
- *   port can be had, or the host cannot start it
+ *   port can be had, the host cannot start it, or it stops or does not answer in time
  */
 export async function startVtt(context: CommandContext, given: string | undefined) {
-  const vtt = projectVtt(context, given);
+  const vtt = chosenVtt(context, given);
   await assertHostAccessible(vtt);
   await start(vtt, context);
 }
@@ -157,7 +220,7 @@ export async function startVtt(context: CommandContext, given: string | undefine
  *   the host cannot stop it
  */
 export async function stopVtt(context: CommandContext, given: string | undefined) {
-  const vtt = projectVtt(context, given);
+  const vtt = chosenVtt(context, given);
   if (runningVtt(vtt.runState, vtt.name) !== undefined) await assertHostAccessible(vtt);
   await stop(vtt, context);
 }
@@ -169,8 +232,49 @@ export async function stopVtt(context: CommandContext, given: string | undefined
  * @throws {Error} As {@link stopVtt} and {@link startVtt} do
  */
 export async function restartVtt(context: CommandContext, given: string | undefined) {
-  const vtt = projectVtt(context, given);
+  const vtt = chosenVtt(context, given);
   await assertHostAccessible(vtt);
   await stop(vtt, context);
   await start(vtt, context);
+}
+
+/**
+ * The VTTs the project's run state records that are running, by name. A VTT that is no longer
+ * configured cannot be asked about, so it counts as running.
+ *
+ * @throws {Error} When not in a project, or the host of a recorded VTT cannot be reached
+ */
+export async function runningProjectVtts(context: CommandContext): Promise<string[]> {
+  const recorded = readRunState(runStateFile(projectData(context))).VTT ?? {};
+  const running: string[] = [];
+  for (const [name, record] of Object.entries(recorded)) {
+    if (!Object.hasOwn(context.config.VTT, name)) {
+      running.push(name);
+      continue;
+    }
+    const vtt = projectVtt(context, name);
+    await assertHostAccessible(vtt);
+    if (await vtt.server.host.isRunning(record)) running.push(name);
+  }
+  return running;
+}
+
+/**
+ * Stop every VTT the project's run state records, and forget them. One that is no longer
+ * configured cannot be stopped: it is forgotten, with a warning naming what runs it.
+ *
+ * @throws {Error} When not in a project, or a VTT's host cannot be reached or cannot stop it
+ */
+export async function stopAllVtts(context: CommandContext) {
+  const runState = runStateFile(projectData(context));
+  for (const [name, record] of Object.entries(readRunState(runState).VTT ?? {})) {
+    if (!Object.hasOwn(context.config.VTT, name)) {
+      context.log.warn(m['warn.vtt.notConfiguredToStop']({ vtt: name, container: record.name }));
+      forgetRunningVtt(runState, name);
+      continue;
+    }
+    const vtt = projectVtt(context, name);
+    await assertHostAccessible(vtt);
+    await stop(vtt, context);
+  }
 }

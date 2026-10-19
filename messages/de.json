@@ -66,7 +66,9 @@
       },
       "move": {
         "description": "Die Registrierung des aktuellen Projekts nach dem Verschieben aktualisieren oder es in ein neues Verzeichnis verschieben.",
-        "destination": "Wohin das Projekt verschoben wird. Das Ziel darf noch nicht existieren, sein übergeordnetes Verzeichnis muss existieren."
+        "destination": "Wohin das Projekt verschoben wird. Das Ziel darf noch nicht existieren, sein übergeordnetes Verzeichnis muss existieren.",
+        "stopAllContainers": "Alle laufenden VTTs des Projekts vor dem Verschieben stoppen.",
+        "restartAllContainers": "Alle laufenden VTTs des Projekts vor dem Verschieben stoppen und danach wieder starten."
       }
     },
     "opt": {
@@ -88,7 +90,8 @@
       "stoppedOnItsOwn": "VTT {vtt} ist angehalten, seit pdt es gestartet hat; die Reste werden aufgeräumt.",
       "stopping": "Stoppe VTT {vtt}…",
       "stopped": "VTT {vtt} wurde gestoppt.",
-      "notRunning": "VTT {vtt} läuft nicht: pdt hat in diesem Projekt keinen Eintrag darüber, es gestartet zu haben."
+      "notRunning": "VTT {vtt} läuft nicht: pdt hat in diesem Projekt keinen Eintrag darüber, es gestartet zu haben.",
+      "waiting": "Warte bis zu {timeout} Sekunden, bis VTT {vtt} unter {url} antwortet…"
     },
     "configSet": "{key} in {file} gesetzt",
     "configCleared": "{key} aus {file} entfernt",
@@ -127,7 +130,12 @@
         "noVersion": "die Datei setzt {variable} nicht"
       }
     },
-    "noProjectId": "Das Projekt hat keine ID, daher ist es nicht registriert und hat kein VTT. Korrigiere module.json und führe dann pdt force-reset im Projekt aus."
+    "noProjectId": "Das Projekt hat keine ID, daher ist es nicht registriert und hat kein VTT. Korrigiere module.json und führe dann pdt force-reset im Projekt aus.",
+    "vtt": {
+      "noModuleMount": "Das Projekt hat keine ID und wird VTT {vtt} daher nicht als Modul bereitgestellt.",
+      "noAccount": "FOUNDRY.username und FOUNDRY.password sind nicht beide gesetzt, daher kann VTT {vtt} nur ein bereits installiertes Foundry VTT verwenden. Setze sie mit pdt config set --user.",
+      "notConfiguredToStop": "VTT {vtt} ist als gestartet eingetragen, aber nicht mehr konfiguriert und kann daher nicht gestoppt werden. Stoppe es selbst: docker rm -f {container}"
+    }
   },
   "error": {
     "notInPdtProject": "Kein PDT-Projekt.",
@@ -160,7 +168,9 @@
       "containerRunning": "Ein Container namens {container} läuft bereits, aber dieses Projekt hat keinen Eintrag darüber, ihn gestartet zu haben. Stoppe und entferne ihn (docker rm -f {container}) und starte das VTT dann erneut.",
       "stopFailed": "Container {container} konnte nicht gestoppt und entfernt werden: {reason}",
       "noFreePort": "Ab {from} ist kein Port frei.",
-      "portInUse": "Port {port}, den VTT.{vtt}.server.port festlegt, ist belegt. Gib ihn frei oder setze den Port auf auto."
+      "portInUse": "Port {port}, den VTT.{vtt}.server.port festlegt, ist belegt. Gib ihn frei oder setze den Port auf auto.",
+      "stoppedWhileStarting": "VTT {vtt} wurde beim Starten beendet. Den Grund zeigt docker logs {container}.",
+      "notReachable": "VTT {vtt} hat unter {url} nicht innerhalb von {timeout} Sekunden geantwortet. Es läuft noch: was es tut, zeigt docker logs {container}; stoppe es mit pdt vtt stop, oder gib ihm mit VTT.{vtt}.server.ready.timeout mehr Zeit."
     },
     "compendium": {
       "notRecognised": "{path} ist keine erkannte Kompendium-Datenbank.",
@@ -180,7 +190,9 @@
       "stillAProject": "Projekt {id} ist in {file} unter {root} registriert, das noch ein PDT-Projekt ist. Wenn dieses Projekt eine Kopie ist, gib ihm in module.json eine eigene ID und führe pdt force-reset aus.",
       "destinationExists": "{path} existiert bereits. Gib einen Pfad an, der noch nicht existiert.",
       "noParent": "Das Verzeichnis, in das das Projekt verschoben werden soll, {path}, existiert nicht.",
-      "intoItself": "Das Projekt kann nicht in sich selbst verschoben werden: {path}"
+      "intoItself": "Das Projekt kann nicht in sich selbst verschoben werden: {path}",
+      "stopOrRestart": "Gib --stop-all-containers oder --restart-all-containers an, nicht beide.",
+      "vttsRunning": "VTTs dieses Projekts laufen: {vtts}. Sie würden das Projekt beim Verschieben verlieren. Stoppe sie zuerst, oder gib --stop-all-containers an, oder --restart-all-containers, um sie nach dem Verschieben wieder zu starten."
     },
     "project": {
       "empty": "--project braucht eine Projekt-ID oder den Pfad zu einem Projekt.",
