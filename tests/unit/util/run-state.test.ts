@@ -3,12 +3,15 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import {
+  forgetRunningVtt,
   isPdtProject,
   pruneProjects,
   readRunState,
+  recordRunningVtt,
   registeredProject,
   registerProject,
   RUN_STATE_FILENAME,
+  runningVtt,
   runStateFile,
   unregisterProject,
   writeRunState,
@@ -152,6 +155,51 @@ describe('run state', () => {
     test('writes nothing when there is nothing to prune', () => {
       expect(pruneProjects(file)).toEqual([]);
       expect(fs.existsSync(file)).toBe(false);
+    });
+  });
+
+  describe('running VTTs', () => {
+    const RUNNING = { id: 'abc', name: 'pdt-mod', port: 30000, url: 'http://localhost:30000', started: 'now' };
+
+    test('are recorded by name, keeping what else the run state holds', () => {
+      writeRunState(file, { PROJECTS: { mod: { root: '/x' } } });
+
+      recordRunningVtt(file, 'mod', RUNNING);
+
+      expect(readRunState(file)).toEqual({ PROJECTS: { mod: { root: '/x' } }, VTT: { mod: RUNNING } });
+      expect(runningVtt(file, 'mod')).toEqual(RUNNING);
+    });
+
+    test('are not found when they are not recorded, or there is no run state', () => {
+      expect(runningVtt(file, 'mod')).toBeUndefined();
+      recordRunningVtt(file, 'other', RUNNING);
+      expect(runningVtt(file, 'mod')).toBeUndefined();
+      expect(runningVtt(file, 'toString')).toBeUndefined();
+    });
+
+    test('are forgotten by name, keeping the others', () => {
+      recordRunningVtt(file, 'mod', RUNNING);
+      recordRunningVtt(file, 'other', RUNNING);
+
+      forgetRunningVtt(file, 'mod');
+
+      expect(readRunState(file)).toEqual({ VTT: { other: RUNNING } });
+    });
+
+    test('that are not recorded are forgotten without writing anything', () => {
+      forgetRunningVtt(file, 'mod');
+      expect(fs.existsSync(file)).toBe(false);
+
+      writeRunState(file, { VTT: {} });
+      const before = fs.statSync(file).mtimeMs;
+      forgetRunningVtt(file, 'mod');
+      expect(fs.statSync(file).mtimeMs).toBe(before);
+    });
+
+    test('make a run state invalid when their record is incomplete', () => {
+      writeRunState(file, { VTT: { mod: { id: 'abc' } } } as never);
+
+      expect(() => readRunState(file)).toThrow(/VTT\.mod\.name/);
     });
   });
 });

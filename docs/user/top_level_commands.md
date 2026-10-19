@@ -54,7 +54,7 @@ If `init` cannot read the id, because `module.json` is missing, is not JSON, has
 
 - the VTT is named by the project id;
 - it runs the Foundry VTT version from `VERSION` in `.foundryvtt/.env`, which is the version the module was created for;
-- it runs in Docker, from the `felddy/foundryvtt` image, publishing Foundry VTT's port 30000.
+- it runs in Docker, from the `felddy/foundryvtt` image, on the first free port from 30000 (`"port": "auto"`; see {ref}`pdt_tlc_vtt_start`).
 
 For a module `arcane-ledger` created for Foundry VTT 14.368.0, `.pdt/config.json` holds:
 
@@ -64,7 +64,7 @@ For a module `arcane-ledger` created for Foundry VTT 14.368.0, `.pdt/config.json
   "VTT": {
     "arcane-ledger": {
       "server": { "type": "foundry", "hostname": "localhost", "version": "14.368.0", "port": "auto" },
-      "host": { "type": "docker", "image": "felddy/foundryvtt", "ports": [{ "internal": 30000, "external": "auto" }] }
+      "host": { "type": "docker", "image": "felddy/foundryvtt" }
     }
   }
 }
@@ -319,7 +319,7 @@ Sets a value in a configuration file, creating the file if there is none. Inside
 : The value. Text the setting accepts as it is stays text, so `pdt config set VTT.arcane-ledger.server.version 13` sets the string `"13"`. Anything else is read as JSON, so a number, a list or a group can be given:
 
   ```shell
-  pdt config set VTT.arcane-ledger.host.ports '[{"internal": 30000, "external": 8080}]'
+  pdt config set VTT.arcane-ledger.server '{"hostname": "vtt.local", "port": 8080}'
   ```
 
   Quote a value with spaces or characters your shell treats specially.
@@ -454,34 +454,61 @@ This {program}`pdt` server becomes available to the VTT. Could use the p2p appro
 
 Controls the VTTs configured for a project. Each VTT is an entry under `VTT` in the configuration, naming a Foundry VTT server and the host it runs on. {program}`pdt` has no VTT of its own: {ref}`pdt_tlc_init` configures one for the project's module (see {ref}`pdt_tlc_init_vtt`), and more can be added with {ref}`pdt_tlc_config_set`.
 
+(pdt_tlc_vtt_start)=
+
 ### vtt start
 
 {command}`vtt start [vtt]`
 
-Starts a VTT and waits until its host has started it.
+Starts a VTT of the project {program}`pdt` is run in, and waits until its host has started it.
 
 **vtt**
 
-: The name of the VTT to start. When only one VTT is configured, as after `init`, it can be left out.
+: The name of the VTT to start. Left out, it is the first VTT the project's `.pdt/config.json` (or `.pdt/secrets.conf`) configures, or, if the project configures none, the first VTT configured at all. After `init` that is the project's own VTT.
 
 ```shell
-pdt vtt start
+$ pdt vtt start
+Starting VTT arcane-ledger (version 14.368.0) on port 30002…
+VTT arcane-ledger has started: http://localhost:30002
 ```
 
-On a Docker host, {program}`pdt` pulls the image the first time (tagged with the server's version, for example `felddy/foundryvtt:14.368.0`), creates a container named after the VTT if there is none, and starts it. A VTT that is already running is left alone.
+The port is the VTT's `server.port`. `auto`, the default, is the first port from 30000 that nothing on this machine is listening on, so several VTTs, from one project or several, can run side by side. A number is used as it is, and {program}`pdt` stops with an error if something is listening on it.
 
-If no VTT is named and several are configured, {program}`pdt` lists them and stops with exit code 2.
+On a Docker host, {program}`pdt` pulls the image the first time (tagged with the server's version, for example `felddy/foundryvtt:14.368.0`), then creates and starts a container publishing the server's port on that port. The container is named `pdt-<project id>` for the VTT named after the project, as after `init`, and `pdt-<project id>-<vtt>` for any other.
+
+{program}`pdt` records the running VTT in the project's run state, `.pdt/run.state.json`: the container, its port and its address. `stop` and `restart` use that record, and so does `start`: a VTT that is running already is left alone, and its address shown. If the VTT has stopped since it was started, for example because Foundry VTT exited, {program}`pdt` removes what is left of it and starts it afresh.
 
 {program}`pdt` stops with an error, starting nothing, if:
 
+- it is not run in a project;
 - no VTT is configured at all;
 - there is no VTT of that name in the configuration (the error lists the ones there are);
 - the host cannot be reached, for example because the Docker engine is not running or you are not allowed to use it;
+- no port is free, or the one set is taken;
+- a container of the same name is running that the project has no record of starting (stop it with `docker rm -f <name>`);
 - the image cannot be pulled, or the container cannot be created or started (the error gives Docker's reason).
 
 :::{todo}
-The container is started without the Foundry VTT licence credentials, published ports or a data directory, so the `felddy/foundryvtt` container exits straight away and the VTT cannot be reached yet.
+The container is started without the Foundry VTT licence credentials or a data directory, so the `felddy/foundryvtt` container exits straight away and the VTT cannot be reached yet. {program}`pdt` reports the VTT as started once its container has started, not once Foundry VTT answers.
 :::
+
+(pdt_tlc_vtt_stop)=
+
+### vtt stop
+
+{command}`vtt stop [vtt]`
+
+Stops a VTT that {program}`pdt` started in the project, and removes its container, so that the next `start` creates it afresh from the configuration. The VTT is chosen as for `start`. The record of it in the project's run state is removed.
+
+A VTT that {program}`pdt` has no record of starting is left alone: {program}`pdt` says it is not running, without asking its host. {program}`pdt` stops with an error, keeping the record, if the host cannot be reached or cannot stop the container.
+
+(pdt_tlc_vtt_restart)=
+
+### vtt restart
+
+{command}`vtt restart [vtt]`
+
+Stops the VTT, as `stop` does, then starts it, as `start` does, so that it runs with the configuration as it is now: a new Foundry VTT version or port takes effect. A VTT that is not running is just started.
 
 ### vtt init
 

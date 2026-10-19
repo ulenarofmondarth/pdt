@@ -9,14 +9,18 @@ const { default: ActualDocker } = await vi.importActual<{ default: typeof Docker
 const actualModem = new ActualDocker({ socketPath: '/nonexistent/docker.sock' }).modem;
 
 /**
- * Stand-in for a dockerode `Container`, limited to the methods pdt uses.
+ * Stand-in for a dockerode `Container`, limited to the members pdt uses. Starting, stopping and
+ * removing it succeed; what inspecting it gives is for each test to say.
  *
  * The `satisfies` clause fails the type check if dockerode renames one of these methods.
  */
-export function createContainerMock() {
+export function createContainerMock(id = 'container-id') {
   return {
+    id,
     inspect: vi.fn<() => Promise<ContainerInspectInfo>>(),
     start: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    stop: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    remove: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
   } satisfies Partial<Record<keyof Container, unknown>>;
 }
 

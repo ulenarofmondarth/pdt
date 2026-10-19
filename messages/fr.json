@@ -4,7 +4,7 @@
     "cmd": {
       "arg": {
         "vtt": {
-          "description": "Nom du VTT, tel que configuré sous VTT. Par défaut, le seul VTT, s'il n'y en a qu'un."
+          "description": "Nom du VTT, tel que configuré sous VTT. Par défaut, le premier VTT que le projet configure."
         }
       },
       "vtt": {
@@ -12,6 +12,12 @@
       },
       "start": {
         "description": "Démarrer un VTT dans le projet courant"
+      },
+      "stop": {
+        "description": "Arrêter un VTT du projet courant"
+      },
+      "restart": {
+        "description": "Redémarrer un VTT du projet courant, avec sa configuration actuelle"
       },
       "init": {
         "description": "Initialiser un projet en tant que projet PDT. Dans un répertoire vide, créer d'abord un nouveau module Foundry VTT.",
@@ -76,9 +82,13 @@
     "pdtInitialised": "PDT initialisé pour {path}",
     "creatingModule": "{path} est vide. Création d'un nouveau module Foundry VTT à cet emplacement.",
     "vtt": {
-      "starting": "Démarrage du VTT {vtt} (version {version})…",
-      "started": "Le VTT {vtt} a démarré.",
-      "alreadyRunning": "Le VTT {vtt} est déjà démarré."
+      "starting": "Démarrage du VTT {vtt} (version {version}) sur le port {port}…",
+      "started": "Le VTT {vtt} a démarré : {url}",
+      "alreadyRunning": "Le VTT {vtt} est déjà en cours d'exécution : {url}",
+      "stoppedOnItsOwn": "Le VTT {vtt} s'est arrêté depuis que pdt l'a démarré ; nettoyage de ce qu'il en reste.",
+      "stopping": "Arrêt du VTT {vtt}…",
+      "stopped": "Le VTT {vtt} est arrêté.",
+      "notRunning": "Le VTT {vtt} n'est pas en cours d'exécution : pdt n'a aucune trace de l'avoir démarré dans ce projet."
     },
     "configSet": "{key} défini dans {file}",
     "configCleared": "{key} retiré de {file}",
@@ -144,12 +154,13 @@
       "noVersion": "Le serveur {server} n'a pas de version à exécuter sur un hôte Docker.",
       "pullFailed": "Impossible de télécharger {image} : {reason}",
       "startFailed": "Impossible de démarrer le serveur {server} sur l'hôte Docker : {reason}",
-      "stopUnsupported": "L'arrêt du serveur {server} n'est pas encore pris en charge sur un hôte Docker.",
-      "restartUnsupported": "Le redémarrage du serveur {server} n'est pas encore pris en charge sur un hôte Docker.",
       "unknownVtt": "Aucun VTT nommé {vtt} dans la configuration. VTT configurés : {known}",
       "hostUnreachable": "Impossible de joindre l'hôte {type} du VTT {vtt}. Est-il démarré, et pouvez-vous l'utiliser ?",
       "noneConfigured": "Aucun VTT n'est configuré. Exécutez pdt init dans le projet, ou ajoutez-en un avec pdt config set.",
-      "nameRequired": "Plusieurs VTT sont configurés : indiquez celui à démarrer : {known}"
+      "containerRunning": "Un conteneur nommé {container} est déjà en cours d'exécution, mais ce projet n'a aucune trace de l'avoir démarré. Arrêtez-le et supprimez-le (docker rm -f {container}), puis redémarrez le VTT.",
+      "stopFailed": "Impossible d'arrêter et de supprimer le conteneur {container} : {reason}",
+      "noFreePort": "Aucun port n'est libre à partir de {from}.",
+      "portInUse": "Le port {port}, défini par VTT.{vtt}.server.port, est occupé. Libérez-le, ou réglez le port sur auto."
     },
     "compendium": {
       "notRecognised": "{path} n'est pas une base de données de compendium reconnue.",

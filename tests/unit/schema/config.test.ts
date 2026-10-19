@@ -3,7 +3,7 @@ import { config as configSchema, DEFAULT_DOCKER_IMAGE, hostSchema, serverSchema 
 import defaults from '@/pdt-internal-config/default.json' with { type: 'json' };
 import { vttSettings } from '@lib/projectVtt.js';
 
-const DOCKER_HOST = { type: 'docker', image: 'felddy/foundryvtt-docker', version: '12', ports: [] };
+const DOCKER_HOST = { type: 'docker', image: 'felddy/foundryvtt-docker', version: '12' };
 
 /** A copy of the shipped defaults that a test is free to break. */
 function validConfig() {
@@ -72,27 +72,8 @@ describe('host schema', () => {
     expect(hostSchema.safeParse({ ...DOCKER_HOST, repository: 'ghcr.io' }).success).toBe(true);
   });
 
-  test.each([30000, 'auto'])('accepts %s as an external port', external => {
-    const host = { ...DOCKER_HOST, ports: [{ internal: 30000, external }] };
-
-    expect(hostSchema.safeParse(host).success).toBe(true);
-  });
-
-  test.each(['30000', 'any', 1.5, null])('rejects %s as an external port', external => {
-    const host = { ...DOCKER_HOST, ports: [{ internal: 30000, external }] };
-
-    expect(hostSchema.safeParse(host).success).toBe(false);
-  });
-
   test('rejects a host type it does not know', () => {
     expect(hostSchema.safeParse({ ...DOCKER_HOST, type: 'podman' }).success).toBe(false);
-  });
-
-  test('requires ports', () => {
-    const host: Record<string, unknown> = { ...DOCKER_HOST };
-    delete host['ports'];
-
-    expect(hostSchema.safeParse(host).success).toBe(false);
   });
 
   test('runs the Foundry VTT image when it names no image', () => {
@@ -129,8 +110,16 @@ describe('server schema', () => {
     expect(serverSchema.safeParse({ ...FOUNDRY_SERVER, type: 'roll20' }).success).toBe(false);
   });
 
-  test('accepts a port', () => {
-    expect(serverSchema.safeParse({ ...FOUNDRY_SERVER, port: 'auto' }).success).toBe(true);
+  test.each(['auto', 1, 30000, 65535])('accepts %s as a port', port => {
+    expect(serverSchema.safeParse({ ...FOUNDRY_SERVER, port }).success).toBe(true);
+  });
+
+  test.each(['30000', 'any', 0, 65536, 1.5, null])('rejects %s as a port', port => {
+    expect(serverSchema.safeParse({ ...FOUNDRY_SERVER, port }).success).toBe(false);
+  });
+
+  test('serves on a free port when it sets none', () => {
+    expect(serverSchema.parse(FOUNDRY_SERVER).port).toBe('auto');
   });
 
   test.each(['hostname', 'version'])('requires %s', field => {

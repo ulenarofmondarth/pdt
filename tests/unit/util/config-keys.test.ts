@@ -97,20 +97,17 @@ describe('parseValue', () => {
   test.each([
     ['text for a string setting', 'Logging.level', 'debug', 'debug'],
     ['digits for a string setting', 'VTT.prj.server.version', '13', '13'],
-    ['JSON for an empty list', 'VTT.prj.host.ports', '[]', []],
-    [
-      'JSON for a list',
-      'VTT.prj.host.ports',
-      '[{"internal":1,"external":"auto"}]',
-      [{ internal: 1, external: 'auto' }],
-    ],
+    ['JSON for an empty list', 'DOCS.host.ports', '[]', []],
+    ['JSON for a number', 'VTT.prj.server.port', '8080', 8080],
+    ['text a setting takes as it is', 'VTT.prj.server.port', 'auto', 'auto'],
+    ['JSON for a list', 'DOCS.host.ports', '[{"internal":1,"external":"auto"}]', [{ internal: 1, external: 'auto' }]],
     ['JSON for a group', 'Logging', '{"level":"info"}', { level: 'info' }],
   ])('reads %s', (_case, key, text, expected) => {
     expect(parseValue(parseKey(key), text)).toEqual(expected);
   });
 
   test('keeps text that is not JSON as it is, to be refused by validation', () => {
-    expect(parseValue(parseKey('VTT.prj.host.ports'), 'lots')).toBe('lots');
+    expect(parseValue(parseKey('DOCS.host.ports'), 'lots')).toBe('lots');
   });
 
   test('refuses a key that is not a setting', () => {

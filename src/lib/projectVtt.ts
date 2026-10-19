@@ -81,7 +81,7 @@ export function readFoundryVersion(dir: string): Found<string> {
 export function vttSettings(version: string): VttSettings {
   return {
     server: { type: 'foundry', hostname: 'localhost', version, port: 'auto' },
-    host: { type: 'docker', image: DEFAULT_DOCKER_IMAGE, ports: [{ internal: 30000, external: 'auto' }] },
+    host: { type: 'docker', image: DEFAULT_DOCKER_IMAGE },
   };
 }
 

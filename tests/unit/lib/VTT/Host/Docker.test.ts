@@ -24,11 +24,12 @@ const HOST_CONFIG: DockerHostSettings = {
   type: 'docker',
   socketPath: '/var/run/docker.sock',
   image: 'felddy/foundryvtt',
-  ports: [],
 };
-const SERVER: FoundryServerSettings = { type: 'foundry', version: '12', hostname: 'h', port: '1' };
+const SERVER: FoundryServerSettings = { type: 'foundry', version: '12', hostname: 'h', port: 'auto' };
 const IMAGE = 'felddy/foundryvtt:12';
-const CONTAINER_NAME = 'test-server';
+const CONTAINER_NAME = 'pdt-test';
+const RUN = { name: CONTAINER_NAME, port: 30001 };
+const HANDLE = { id: 'container-id' };
 
 describe('DockerHost', () => {
   let container: ContainerMock;
@@ -39,9 +40,12 @@ describe('DockerHost', () => {
 
   beforeEach(() => {
     container = createContainerMock();
-    created = createContainerMock();
+    // No container of the name exists, until a test says one does.
+    container.inspect.mockRejectedValue(dockerError(404));
+    created = createContainerMock('created-id');
     image = createImageMock();
     docker = createDockerMock(container, image);
+    docker.createContainer.mockResolvedValue(created);
     server = new FoundryVTTServer('test-server', SERVER, createHostMock());
   });
 
@@ -101,36 +105,30 @@ describe('DockerHost', () => {
   describe('isRunning', () => {
     test('is true when the container is running', async () => {
       container.inspect.mockResolvedValue(inspectInfo(true));
-      const host = hostWith();
 
-      await expect(host.isRunning(server)).resolves.toBe(true);
-      expect(docker.getContainer).toHaveBeenCalledWith(CONTAINER_NAME);
+      await expect(hostWith().isRunning(HANDLE)).resolves.toBe(true);
+      expect(docker.getContainer).toHaveBeenCalledWith('container-id');
     });
 
     test('is false when the container exists but is stopped', async () => {
       container.inspect.mockResolvedValue(inspectInfo(false));
-      const host = hostWith();
 
-      await expect(host.isRunning(server)).resolves.toBe(false);
+      await expect(hostWith().isRunning(HANDLE)).resolves.toBe(false);
     });
 
     test('is false when the container does not exist', async () => {
-      container.inspect.mockRejectedValue(dockerError(404));
-      const host = hostWith();
-
-      await expect(host.isRunning(server)).resolves.toBe(false);
+      await expect(hostWith().isRunning(HANDLE)).resolves.toBe(false);
     });
   });
 
   describe('start', () => {
     test('waits for a pull whose progress messages are split across chunks', async () => {
-      container.inspect.mockResolvedValue(inspectInfo(true));
       docker.pull.mockResolvedValue(
         pullStream('{"status":"Pulling fr', 'om library/image"}\n{"status":"Downloaded"}\n{"sta', 'tus":"Done"}\n'),
       );
       const host = hostWith();
 
-      await expect(host.start(server)).resolves.toBeUndefined();
+      await expect(host.start(server, RUN)).resolves.toEqual({ id: 'created-id' });
     });
 
     test('fails naming the image when the pull is refused, such as for a tag the registry does not have', async () => {
@@ -138,7 +136,7 @@ describe('DockerHost', () => {
       docker.pull.mockRejectedValue(cause);
       const host = hostWith();
 
-      await expect(host.start(server)).rejects.toMatchObject({
+      await expect(host.start(server, RUN)).rejects.toMatchObject({
         message: m['error.vtt.pullFailed']({ image: IMAGE, reason: 'manifest unknown' }),
         cause,
       });
@@ -150,7 +148,7 @@ describe('DockerHost', () => {
       docker.pull.mockResolvedValue(failingPullStream(cause));
       const host = hostWith();
 
-      await expect(host.start(server)).rejects.toMatchObject({
+      await expect(host.start(server, RUN)).rejects.toMatchObject({
         message: m['error.vtt.pullFailed']({ image: IMAGE, reason: 'connection reset' }),
         cause,
       });
@@ -163,18 +161,17 @@ describe('DockerHost', () => {
       );
       const host = hostWith();
 
-      await expect(host.start(server)).rejects.toThrow(
+      await expect(host.start(server, RUN)).rejects.toThrow(
         m['error.vtt.pullFailed']({ image: IMAGE, reason: 'unauthorized: authentication required' }),
       );
       expect(container.inspect).not.toHaveBeenCalled();
     });
 
     test('does not pull an image the engine already has', async () => {
-      container.inspect.mockResolvedValue(inspectInfo(true));
       image.inspect.mockResolvedValue({} as ImageInspectInfo);
       const host = hostWith();
 
-      await host.start(server);
+      await host.start(server, RUN);
 
       expect(docker.getImage).toHaveBeenCalledExactlyOnceWith(IMAGE);
       expect(docker.pull).not.toHaveBeenCalled();
@@ -185,66 +182,69 @@ describe('DockerHost', () => {
       image.inspect.mockRejectedValue(cause);
       const host = hostWith();
 
-      await expect(host.start(server)).rejects.toBe(cause);
+      await expect(host.start(server, RUN)).rejects.toBe(cause);
       expect(docker.pull).not.toHaveBeenCalled();
       expect(container.inspect).not.toHaveBeenCalled();
     });
 
     test('pulls the server image before touching the container', async () => {
-      container.inspect.mockResolvedValue(inspectInfo(true));
-      const host = hostWith();
-
-      await host.start(server);
+      await hostWith().start(server, RUN);
 
       expect(docker.pull).toHaveBeenCalledExactlyOnceWith(IMAGE, {});
       expect(docker.pull.mock.invocationCallOrder[0]).toBeLessThan(container.inspect.mock.invocationCallOrder[0]!);
     });
 
-    test('leaves an already running container alone', async () => {
-      container.inspect.mockResolvedValue(inspectInfo(true));
-      const host = hostWith();
+    test('creates and starts a container of the name it is given, and gives back its id', async () => {
+      await expect(hostWith().start(server, RUN)).resolves.toEqual({ id: 'created-id' });
 
-      await host.start(server);
-
-      expect(container.start).not.toHaveBeenCalled();
-      expect(docker.createContainer).not.toHaveBeenCalled();
-    });
-
-    test('starts an existing container that is stopped', async () => {
-      container.inspect.mockResolvedValue(inspectInfo(false));
-      const host = hostWith();
-
-      await host.start(server);
-
-      expect(container.start).toHaveBeenCalledOnce();
-      expect(docker.createContainer).not.toHaveBeenCalled();
-    });
-
-    test('creates and starts the container when it does not exist', async () => {
-      const created = createContainerMock();
-      container.inspect.mockRejectedValue(dockerError(404));
-      docker.createContainer.mockResolvedValue(created);
-      const host = hostWith();
-
-      await host.start(server);
-
+      expect(docker.getContainer).toHaveBeenCalledWith(CONTAINER_NAME);
       expect(docker.createContainer).toHaveBeenCalledExactlyOnceWith(
         expect.objectContaining({ name: CONTAINER_NAME, Image: IMAGE }),
       );
       expect(created.start).toHaveBeenCalledOnce();
     });
 
-    test('names the container after the server and tags the image with its version', async () => {
-      container.inspect.mockRejectedValue(dockerError(404));
-      const other = new FoundryVTTServer('other-server', { ...SERVER, version: '13.351' }, createHostMock());
-      const host = hostWith();
+    test("publishes the server's port on the port it is given", async () => {
+      await hostWith().start(server, RUN);
 
-      await host.start(other);
+      expect(docker.createContainer).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          ExposedPorts: { '30000/tcp': {} },
+          HostConfig: expect.objectContaining({ PortBindings: { '30000/tcp': [{ HostPort: '30001' }] } }),
+        }),
+      );
+    });
+
+    test('removes a stopped container of the name, left from an earlier run, and creates it afresh', async () => {
+      container.inspect.mockResolvedValue(inspectInfo(false));
+
+      await hostWith().start(server, RUN);
+
+      expect(container.remove).toHaveBeenCalledOnce();
+      expect(container.remove.mock.invocationCallOrder[0]).toBeLessThan(
+        docker.createContainer.mock.invocationCallOrder[0]!,
+      );
+      expect(created.start).toHaveBeenCalledOnce();
+    });
+
+    test('refuses, touching nothing, when a container of the name is running', async () => {
+      container.inspect.mockResolvedValue(inspectInfo(true));
+
+      await expect(hostWith().start(server, RUN)).rejects.toThrow(
+        m['error.vtt.containerRunning']({ container: CONTAINER_NAME }),
+      );
+      expect(container.remove).not.toHaveBeenCalled();
+      expect(docker.createContainer).not.toHaveBeenCalled();
+    });
+
+    test('tags the image with the server version', async () => {
+      const other = new FoundryVTTServer('other-server', { ...SERVER, version: '13.351' }, createHostMock());
+
+      await hostWith().start(other, RUN);
 
       expect(docker.pull).toHaveBeenCalledExactlyOnceWith('felddy/foundryvtt:13.351', {});
-      expect(docker.getContainer).toHaveBeenCalledWith('other-server');
       expect(docker.createContainer).toHaveBeenCalledExactlyOnceWith(
-        expect.objectContaining({ name: 'other-server', Image: 'felddy/foundryvtt:13.351' }),
+        expect.objectContaining({ Image: 'felddy/foundryvtt:13.351' }),
       );
     });
 
@@ -252,10 +252,7 @@ describe('DockerHost', () => {
       [{ image: 'example/foundry' }, 'example/foundry:12'],
       [{ image: 'felddy/foundryvtt', repository: 'ghcr.io' }, 'ghcr.io/felddy/foundryvtt:12'],
     ])('uses the image configured for the host (%o)', async (imageConfig, expected) => {
-      container.inspect.mockRejectedValue(dockerError(404));
-      const host = hostWith({ ...HOST_CONFIG, ...imageConfig });
-
-      await host.start(server);
+      await hostWith({ ...HOST_CONFIG, ...imageConfig }).start(server, RUN);
 
       expect(docker.pull).toHaveBeenCalledExactlyOnceWith(expected, {});
       expect(docker.createContainer).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ Image: expected }));
@@ -263,107 +260,86 @@ describe('DockerHost', () => {
 
     test('fails without touching Docker when the server has no version', async () => {
       const unversioned = new FoundryVTTServer('test-server', { ...SERVER, version: '' }, createHostMock());
-      const host = hostWith();
 
-      await expect(host.start(unversioned)).rejects.toThrow(m['error.vtt.noVersion']({ server: 'test-server' }));
+      await expect(hostWith().start(unversioned, RUN)).rejects.toThrow(
+        m['error.vtt.noVersion']({ server: 'test-server' }),
+      );
       expect(docker.pull).not.toHaveBeenCalled();
     });
 
     test('creates the container detached from all standard streams', async () => {
-      container.inspect.mockRejectedValue(dockerError(404));
-      const host = hostWith();
-
-      await host.start(server);
+      await hostWith().start(server, RUN);
 
       const [options] = docker.createContainer.mock.calls[0]!;
       expect(options).toMatchObject({ AttachStdin: false, AttachStdout: false, AttachStderr: false });
-      expect(options).not.toHaveProperty('AttackStdout');
-    });
-
-    test('fails with the cause when the container cannot be created', async () => {
-      const cause = dockerError(500);
-      container.inspect.mockRejectedValue(dockerError(404));
-      docker.createContainer.mockRejectedValue(cause);
-      const host = hostWith();
-
-      await expect(host.start(server)).rejects.toMatchObject({
-        message: m['error.vtt.startFailed']({ server: CONTAINER_NAME, reason: cause.message }),
-        cause,
-      });
-    });
-
-    test('fails with the cause when the container cannot be inspected', async () => {
-      const cause = dockerError(500);
-      container.inspect.mockRejectedValue(cause);
-      const host = hostWith();
-
-      await expect(host.start(server)).rejects.toMatchObject({
-        message: m['error.vtt.startFailed']({ server: CONTAINER_NAME, reason: cause.message }),
-        cause,
-      });
-      expect(docker.createContainer).not.toHaveBeenCalled();
-    });
-
-    // Regression: the start was not awaited, so its failure was an unhandled rejection.
-    test('fails with the cause when a newly created container cannot be started', async () => {
-      const cause = dockerError(500);
-      const created = createContainerMock();
-      created.start.mockRejectedValue(cause);
-      container.inspect.mockRejectedValue(dockerError(404));
-      docker.createContainer.mockResolvedValue(created);
-      const host = hostWith();
-
-      await expect(host.start(server)).rejects.toMatchObject({
-        message: m['error.vtt.startFailed']({ server: CONTAINER_NAME, reason: cause.message }),
-        cause,
-      });
-    });
-
-    test('fails with the cause when a stopped container cannot be started', async () => {
-      const cause = dockerError(500);
-      container.inspect.mockResolvedValue(inspectInfo(false));
-      container.start.mockRejectedValue(cause);
-      const host = hostWith();
-
-      await expect(host.start(server)).rejects.toMatchObject({
-        message: m['error.vtt.startFailed']({ server: CONTAINER_NAME, reason: cause.message }),
-        cause,
-      });
     });
 
     test.each([
-      ['a stopped container', () => container.inspect.mockResolvedValue(inspectInfo(false)), () => container],
-      [
-        'a new container',
-        () => {
-          container.inspect.mockRejectedValue(dockerError(404));
-          docker.createContainer.mockResolvedValue(created);
-        },
-        () => created,
-      ],
-    ])('waits until %s has started', async (_case, arrange, started) => {
-      arrange();
+      ['inspected', () => container.inspect],
+      ['removed', () => container.remove, () => container.inspect.mockResolvedValue(inspectInfo(false))],
+      ['created', () => docker.createContainer],
+      ['started', () => created.start],
+    ] as const)('fails with the cause when the container cannot be %s', async (_case, failing, arrange?) => {
+      const cause = dockerError(500);
+      arrange?.();
+      (failing() as { mockRejectedValue(value: unknown): void }).mockRejectedValue(cause);
+
+      await expect(hostWith().start(server, RUN)).rejects.toMatchObject({
+        message: m['error.vtt.startFailed']({ server: 'test-server', reason: cause.message }),
+        cause,
+      });
+    });
+
+    // Regression: the start was not awaited, so its failure was an unhandled rejection.
+    test('waits until the container has started', async () => {
       let finished = false;
-      started().start.mockImplementation(async () => {
+      created.start.mockImplementation(async () => {
         await new Promise(resolve => setTimeout(resolve, 5));
         finished = true;
       });
-      const host = hostWith();
 
-      await host.start(server);
+      await hostWith().start(server, RUN);
 
       expect(finished).toBe(true);
     });
   });
 
-  // Not built yet; saying so is better than reporting a stop or restart that did not happen.
-  test('cannot stop a server yet', async () => {
-    await expect(hostWith().stop(server)).rejects.toThrow(m['error.vtt.stopUnsupported']({ server: CONTAINER_NAME }));
-  });
+  describe('stop', () => {
+    test('stops the container, then removes it', async () => {
+      await hostWith().stop(HANDLE);
 
-  test('cannot restart a server yet', async () => {
-    await expect(hostWith().restart(server)).rejects.toThrow(
-      m['error.vtt.restartUnsupported']({ server: CONTAINER_NAME }),
-    );
+      expect(docker.getContainer).toHaveBeenCalledWith('container-id');
+      expect(container.stop).toHaveBeenCalledOnce();
+      expect(container.remove).toHaveBeenCalledOnce();
+      expect(container.stop.mock.invocationCallOrder[0]).toBeLessThan(container.remove.mock.invocationCallOrder[0]!);
+    });
+
+    test('removes a container that has stopped already', async () => {
+      container.stop.mockRejectedValue(dockerError(304));
+
+      await hostWith().stop(HANDLE);
+
+      expect(container.remove).toHaveBeenCalledOnce();
+    });
+
+    test('is done when the container is gone', async () => {
+      container.stop.mockRejectedValue(dockerError(404));
+      container.remove.mockRejectedValue(dockerError(404));
+
+      await expect(hostWith().stop(HANDLE)).resolves.toBeUndefined();
+    });
+
+    test.each([
+      ['stopped', () => container.stop],
+      ['removed', () => container.remove],
+    ] as const)('fails with the cause when the container cannot be %s', async (_case, failing) => {
+      const cause = dockerError(500);
+      failing().mockRejectedValue(cause);
+
+      await expect(hostWith().stop(HANDLE)).rejects.toMatchObject({
+        message: m['error.vtt.stopFailed']({ container: 'container-id', reason: cause.message }),
+        cause,
+      });
+    });
   });
 });

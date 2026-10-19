@@ -3,6 +3,9 @@ import VTTHost from '@lib/VTT/VTTHost.js';
 
 import type { FoundryServerSettings } from '@schema/config.js';
 
+/** The port Foundry VTT serves on, by default. */
+export const FOUNDRY_PORT = 30000;
+
 /** A Foundry VTT server. */
 export default class FoundryVTTServer extends VTTServer {
   /**
@@ -26,8 +29,17 @@ export default class FoundryVTTServer extends VTTServer {
     return this.settings.hostname;
   }
 
-  /** The port to serve on, or undefined when it is not set. */
-  get port(): string | undefined {
+  /** The port to serve on, or `auto` for the first free one. */
+  get port(): FoundryServerSettings['port'] {
     return this.settings.port;
+  }
+
+  /** Foundry VTT serves on 30000 unless told otherwise. */
+  get internalPort(): number {
+    return FOUNDRY_PORT;
+  }
+
+  urlAt(port: number): string {
+    return `http://${this.hostname}:${port}`;
   }
 }
