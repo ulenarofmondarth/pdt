@@ -1,3 +1,4 @@
+import yargs from 'yargs';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { createInfoCommand } from '@/cli/cmds/info.js';
 import { m } from '@i18n/messages.js';
@@ -31,4 +32,19 @@ describe('info command', () => {
   });
 
   test.todo('prints the runtime configuration of the project');
+
+  // Regression: `info [dir] [options]` accepted two words, and ignored both.
+  test('takes no arguments', async () => {
+    const parse = (commandLine: string) =>
+      new Promise((resolve, reject) => {
+        yargs()
+          .strict()
+          .command({ ...createInfoCommand(ctx), handler: argv => resolve(argv) })
+          .fail((message: string) => reject(new Error(message)))
+          .parse(commandLine);
+      });
+
+    await expect(parse('info')).resolves.toBeDefined();
+    await expect(parse('info somewhere')).rejects.toThrow('somewhere');
+  });
 });

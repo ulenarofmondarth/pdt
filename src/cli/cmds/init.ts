@@ -158,7 +158,7 @@ export async function initProject(
 export function createInitCommand(context: CommandContext): CommandModule<object, InitArgs> {
   const { log } = context;
   return {
-    command: 'init [dir] [options]',
+    command: 'init [dir]',
 
     describe: m['ui.cmd.init.description'](),
 

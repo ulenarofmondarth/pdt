@@ -500,6 +500,7 @@ describe('init command', () => {
     function parse(commandLine: string): Promise<Record<string, unknown>> {
       return new Promise((resolve, reject) => {
         yargs()
+          .strict()
           .command({ ...createInitCommand(createCommandContext()), handler: argv => resolve(argv) })
           .fail((message: string) => reject(new Error(message)))
           .parse(commandLine);
@@ -513,6 +514,12 @@ describe('init command', () => {
 
     test('take the project directory as a positional', async () => {
       await expect(parse('init some/dir')).resolves.toMatchObject({ dir: 'some/dir' });
+    });
+
+    // Regression: `[options]` in the command was taken as a second positional, so a stray word was
+    // accepted and ignored.
+    test('take no more than the project directory', async () => {
+      await expect(parse('init some/dir stray')).rejects.toThrow('stray');
     });
 
     test.each(['-f', '--force'])('accept %s to force initialisation', async flag => {
