@@ -46,20 +46,18 @@ describe('FoundryVTTServer', () => {
   });
 
   describe('environment', () => {
-    test('has the account, licence key, administrator password and owner, in the variables the image reads', () => {
+    test('has the account, licence key and administrator password, in the variables the image reads', () => {
       const server = new FoundryVTTServer('unit-test-vtt', { ...SETTINGS, admin_key: 'adm1n' }, createHostMock(), {
         username: 'me',
         password: 'hunter2',
         license_key: 'ABCD',
       });
 
-      expect(server.environment({ uid: 1000, gid: 100 })).toEqual({
+      expect(server.environment()).toEqual({
         FOUNDRY_USERNAME: 'me',
         FOUNDRY_PASSWORD: 'hunter2',
         FOUNDRY_LICENSE_KEY: 'ABCD',
         FOUNDRY_ADMIN_KEY: 'adm1n',
-        FOUNDRY_UID: '1000',
-        FOUNDRY_GID: '100',
       });
     });
 

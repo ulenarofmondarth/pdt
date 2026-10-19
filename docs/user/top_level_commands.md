@@ -499,7 +499,7 @@ On a Docker host, {program}`pdt` pulls the image the first time (tagged with the
 - **its data directory**, as `/data`: `vtt/<container name>` in your user data directory (`~/.local/share/pdt/vtt/pdt-arcane-ledger` on Linux). It is kept when the VTT stops, so Foundry VTT is downloaded and installed only on the first start, and worlds you create are kept. It is outside the project so that it is never committed, and so that the project, given to the VTT inside it, does not contain it;
 - **the project, as the module it is**, at `/data/Data/modules/<project id>`, so Foundry VTT runs the module from your working copy. A project without an id is not given, with a warning;
 - **your Foundry VTT account and licence key** (`FOUNDRY.username`, `FOUNDRY.password`, `FOUNDRY.license_key`) and the VTT's administrator password (`VTT.<vtt>.server.admin_key`), from your secrets (see {ref}`pdt_conf_secrets`). They are passed to the container as environment variables and written nowhere else. Without an account, {program}`pdt` warns: Foundry VTT can then only run if an earlier start installed it;
-- **your user**, so that the files Foundry VTT writes in the data directory are yours.
+- **your user** to run as, so that the files Foundry VTT writes in the data directory are yours.
 
 :::{note}
 Anyone who can use the Docker engine can read a container's environment variables with `docker inspect`, your Foundry VTT password among them.

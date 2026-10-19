@@ -164,7 +164,13 @@ async function start(vtt: ProjectVtt, context: CommandContext) {
   }
 
   out(m['info.vtt.starting']({ vtt: name, version: server.version, port }));
-  const { id } = await server.start({ name: instance, port, environment: server.environment(owner), mounts });
+  const { id } = await server.start({
+    name: instance,
+    port,
+    environment: server.environment(),
+    mounts,
+    ...(owner === undefined ? {} : { user: owner }),
+  });
   const url = server.urlAt(port);
   // Recorded before waiting, so that a VTT that does not answer can still be stopped.
   recordRunningVtt(runState, name, { id, name: instance, port, url, started: new Date().toISOString() });
