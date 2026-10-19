@@ -1,9 +1,9 @@
 import { createConfigCommand } from './cmds/config.js';
 import { createForceResetCommand } from './cmds/force-reset.js';
-import { createInfoCommand } from './cmds/info.js';
 import { createInitCommand } from './cmds/init.js';
 import { createMoveCommand } from './cmds/move.js';
 import { createPruneCommand } from './cmds/prune.js';
+import { createStatusCommand } from './cmds/status.js';
 import { createVttCommand } from './cmds/vtt.js';
 import { anyCommand } from './command.js';
 
@@ -17,7 +17,7 @@ export function pdtCommands(context: CommandContext): readonly CommandModule[] {
   return [
     createVttCommand(context),
     anyCommand(createInitCommand(context)),
-    createInfoCommand(context),
+    createStatusCommand(context),
     createConfigCommand(context),
     createForceResetCommand(context),
     createPruneCommand(context),

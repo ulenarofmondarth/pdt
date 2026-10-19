@@ -29,11 +29,11 @@ describe('configOverrides', () => {
   });
 
   test('ignores anything after --', () => {
-    expect(configOverrides(['info', '--', '--config', 'Logging.level=debug'])).toEqual([]);
+    expect(configOverrides(['status', '--', '--config', 'Logging.level=debug'])).toEqual([]);
   });
 
   test('leaves a --config without a value for the parser to report', () => {
-    expect(configOverrides(['info', '--config'])).toEqual([]);
+    expect(configOverrides(['status', '--config'])).toEqual([]);
   });
 
   test.each(['Logging.level', '=debug'])('refuses %j, which is not <key>=<value>', text => {

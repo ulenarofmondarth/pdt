@@ -122,6 +122,11 @@ export async function main(
   const commandContext: CommandContext = {
     paths: context.paths,
     config,
+    projectConfig: pdtConfigDir =>
+      resolveConfig({
+        ...sources,
+        files: configFiles({ userConfigDir: context.paths.userConfigDir, pdtConfigDir }),
+      }).config,
     sourceOf: resolved.sourceOf,
     writeConfig: (target, key, value) => writeSetting(sources, target, key, value),
     configFiles: sources.files,

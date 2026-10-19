@@ -32,8 +32,8 @@
         },
         "newModuleGroup": "Options du nouveau module (répertoire vide uniquement) :"
       },
-      "info": {
-        "description": "Afficher les informations d'exécution d'un projet PDT existant."
+      "status": {
+        "description": "Afficher l'état d'exécution de pdt : les VTT du projet courant, ou hors d'un projet ceux de chaque projet enregistré, et si chacun tourne."
       },
       "config": {
         "description": "Afficher ou modifier la configuration.",
@@ -111,7 +111,18 @@
       "moved": "Projet {id} déplacé de {from} vers {to}",
       "changeDirectory": "Votre shell est toujours dans l'ancien emplacement. Pour reprendre là où vous étiez : cd {dir}"
     },
-    "gitignored": "{entries} ajouté à {file}, pour qu'ils ne soient pas commités."
+    "gitignored": "{entries} ajouté à {file}, pour qu'ils ne soient pas commités.",
+    "status": {
+      "project": "Projet {project} ({root})",
+      "running": "{vtt} : en cours à {url} (conteneur {container})",
+      "stopped": "{vtt} : arrêté",
+      "unknown": "{vtt} : inconnu, {reason}",
+      "noVtts": "Aucun VTT n'est configuré.",
+      "missing": "Projet {project} ({root}) : disparu. Lancez pdt prune pour l'oublier.",
+      "unusable": "Projet {project} ({root}) : illisible. {reason}",
+      "noProjects": "Aucun projet n'est enregistré dans {file}.",
+      "notConfigured": "enregistré comme démarré mais plus configuré, il ne peut donc pas être interrogé. Son conteneur est {container}."
+    }
   },
   "warn": {
     "pdtParentExists": "Tentative de création d'un sous-projet PDT (utiliser -f pour forcer).\n  Projet parent dans {path}",

@@ -38,7 +38,7 @@ describe('configuration', () => {
   }
 
   test('logs at the default level without any configuration', async () => {
-    await sandbox.run(['info']);
+    await sandbox.run(['status']);
 
     expect(sandbox.logged(userLog)).not.toContainEqual(expect.stringMatching(DEBUG_LINE));
   });
@@ -47,7 +47,7 @@ describe('configuration', () => {
   test("applies the user's configuration file", async () => {
     userConfig({ Logging: { level: 'debug' } });
 
-    await sandbox.run(['info']);
+    await sandbox.run(['status']);
 
     expect(sandbox.logged(userLog)).toContainEqual(expect.stringMatching(DEBUG_LINE));
   });
@@ -56,7 +56,7 @@ describe('configuration', () => {
     const xdg = path.join(sandbox.root, 'xdg');
     userConfig({ Logging: { level: 'debug' } }, path.join(xdg, 'pdt'));
 
-    await sandbox.run(['info'], { env: { XDG_CONFIG_HOME: xdg } });
+    await sandbox.run(['status'], { env: { XDG_CONFIG_HOME: xdg } });
 
     expect(sandbox.logged(userLog)).toContainEqual(expect.stringMatching(DEBUG_LINE));
   });
@@ -65,7 +65,7 @@ describe('configuration', () => {
     userConfig({ Logging: { level: 'debug' } });
     projectConfig({ Logging: { level: 'error' } });
 
-    await sandbox.run(['info'], { cwd: project });
+    await sandbox.run(['status'], { cwd: project });
 
     expect(sandbox.logged(projectLog)).toEqual([]);
   });
@@ -73,7 +73,7 @@ describe('configuration', () => {
   test('lets PDT_LOG_LEVEL override every file', async () => {
     projectConfig({ Logging: { level: 'error' } });
 
-    await sandbox.run(['info'], { cwd: project, env: { PDT_LOG_LEVEL: 'debug' } });
+    await sandbox.run(['status'], { cwd: project, env: { PDT_LOG_LEVEL: 'debug' } });
 
     expect(sandbox.logged(projectLog)).toContainEqual(expect.stringMatching(DEBUG_LINE));
   });
@@ -81,7 +81,7 @@ describe('configuration', () => {
   test('names the log file as configured', async () => {
     userConfig({ Logging: { level: 'debug', filename: 'mine.log' } });
 
-    await sandbox.run(['info']);
+    await sandbox.run(['status']);
 
     expect(fs.readdirSync(sandbox.userDataDir)).toEqual(['mine.log']);
   });

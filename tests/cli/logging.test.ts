@@ -18,7 +18,7 @@ describe('logging', () => {
   const debug = { env: { PDT_LOG_LEVEL: 'debug' } };
 
   test('logs to the user data directory outside a project', async () => {
-    await sandbox.run(['info'], debug);
+    await sandbox.run(['status'], debug);
 
     expect(sandbox.logged(path.join(sandbox.userDataDir, 'pdt.log'))).not.toEqual([]);
   });
@@ -29,7 +29,7 @@ describe('logging', () => {
     fs.mkdirSync(deep, { recursive: true });
     fs.mkdirSync(path.join(project, PDT.PROJECT_RTD_DIR_NAME));
 
-    await sandbox.run(['info'], { ...debug, cwd: deep });
+    await sandbox.run(['status'], { ...debug, cwd: deep });
 
     expect(sandbox.logged(path.join(project, PDT.PROJECT_RTD_DIR_NAME, 'pdt.log'))).not.toEqual([]);
     expect(fs.existsSync(sandbox.userDataDir)).toBe(false);
@@ -42,9 +42,9 @@ describe('logging', () => {
   });
 
   test('writes log messages to standard error, keeping standard output for results', async () => {
-    const { stdout, stderr } = await sandbox.run(['info'], debug);
+    const { stdout, stderr } = await sandbox.run(['config', 'get', 'Logging.level'], debug);
 
-    expect(stdout).toBe('');
+    expect(stdout).toBe('debug\n');
     expect(stderr).toContain('Parser callback');
   });
 
@@ -57,13 +57,14 @@ describe('logging', () => {
     });
 
     test('still runs the command, with its own exit code', async () => {
-      const { code } = await sandbox.run(['info'], debug);
+      const { code, stdout } = await sandbox.run(['config', 'get', 'Logging.level'], debug);
 
       expect(code).toBe(PDT.EXITCODE.OK);
+      expect(stdout).toBe('debug\n');
     });
 
     test('says so once on standard error, without a crash', async () => {
-      const { stderr } = await sandbox.run(['info'], debug);
+      const { stderr } = await sandbox.run(['status'], debug);
 
       expect(stderr.match(new RegExp(path.join(sandbox.userDataDir, 'pdt.log'), 'g'))).toHaveLength(1);
       expect(stderr).not.toMatch(/^\s+at /m);

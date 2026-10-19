@@ -143,7 +143,7 @@ describe('moving and pruning projects', () => {
     });
 
     test('fails with the usage code for a path that does not exist', async () => {
-      const { code, stderr } = await sandbox.run(['info', '--project', 'nosuch']);
+      const { code, stderr } = await sandbox.run(['status', '--project', 'nosuch']);
 
       expect(code).toBe(PDT.EXITCODE.USAGE);
       expect(stderr).toContain('does not exist');

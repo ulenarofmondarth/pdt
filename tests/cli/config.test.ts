@@ -162,7 +162,7 @@ describe('config', () => {
   });
 
   test('fails with the invalid configuration code for a --config that is not <key>=<value>', async () => {
-    const { code, stderr } = await sandbox.run(['info', '--config', 'Logging.level']);
+    const { code, stderr } = await sandbox.run(['status', '--config', 'Logging.level']);
 
     expect(code).toBe(PDT.EXITCODE.INVALID_CONFIG);
     expect(stderr).toContain('--config');

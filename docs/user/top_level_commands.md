@@ -226,13 +226,32 @@ Either way, `move` refuses (exit code 1) when the id is registered to another di
 On Windows a directory cannot be renamed while a program, such as your shell or an editor, is using it. Run `pdt move` with a destination from outside the project there.
 :::
 
-(pdt_tlc_info)=
+(pdt_tlc_status)=
 
-## info
+## status
 
-{command}`info`
+{command}`status`
 
-Display the current project's runtime configuration. It takes no arguments; to ask about another project, give {ref}`--project <pdt_cli_project>`.
+Shows {program}`pdt`'s runtime state. It takes no arguments.
+
+In a project, it lists the project's VTTs and what each is doing:
+
+```text
+$ pdt status
+Project arcane-ledger (/home/me/work/arcane-ledger)
+  arcane-ledger: running at http://localhost:30002 (container pdt-arcane-ledger)
+  staging: stopped
+```
+
+- **running**: {program}`pdt` started it, and its host says it is running.
+- **stopped**: {program}`pdt` has no record of starting it, or it has stopped since, for example because Foundry VTT exited or its container was removed.
+- **unknown**: {program}`pdt` cannot tell, and says why: its host cannot be reached, or it is recorded as started but no longer configured (the line names its container, to stop yourself).
+
+A VTT with no record is reported as stopped without asking its host, so `status` works without the Docker engine for a project with nothing running.
+
+Outside a project, it does the same for every project registered in your user run state (see {ref}`pdt_tlc_init_id`), each read with its own configuration. A project whose directory has gone is shown as gone, with a pointer to {ref}`pdt_tlc_prune`, and one whose configuration or run state cannot be read says why; the rest are listed regardless. With {ref}`--project <pdt_cli_project>`, it reports only that project.
+
+`status` exits with code 0 whatever it finds.
 
 (pdt_tlc_config)=
 
@@ -546,14 +565,8 @@ Stops the VTT, as `stop` does, then starts it, as `start` does, so that it runs 
 {command}`vtt init`
 
 :::{note}
-`vtt init`, `vtt status` and `vtt install` are planned, and not available yet.
+`vtt init` and `vtt install` are planned, and not available yet. For whether a VTT is running, see {ref}`pdt_tlc_status`.
 :::
-
-### vtt status
-
-{command}`vtt status`
-
-Display the current status of the VTT; one of "running", "stopped", "missing".
 
 ### vtt install
 

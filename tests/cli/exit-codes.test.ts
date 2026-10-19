@@ -46,11 +46,11 @@ describe('exit codes and output', () => {
   test.each([
     ['no command', []],
     ['an unknown command', ['nosuchcmd']],
-    ['an unknown option', ['info', '--bogus']],
+    ['an unknown option', ['status', '--bogus']],
     ['vtt without its command', ['vtt']],
     ['an unknown vtt command', ['vtt', 'explode']],
     ['init with a stray argument', ['init', 'here', 'stray']],
-    ['info with an argument', ['info', 'somewhere']],
+    ['status with an argument', ['status', 'somewhere']],
   ])('%s fails with the usage code, explaining on standard error', async (_case, args) => {
     const { code, stdout, stderr } = await sandbox.run(args);
 

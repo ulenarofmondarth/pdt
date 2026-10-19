@@ -36,6 +36,7 @@ export function createCommandContext() {
     isPortFree: ReturnType<typeof vi.fn<CommandContext['isPortFree']>>;
     isUrlReachable: ReturnType<typeof vi.fn<CommandContext['isUrlReachable']>>;
     sourceOf: ReturnType<typeof vi.fn<CommandContext['sourceOf']>>;
+    projectConfig: ReturnType<typeof vi.fn<CommandContext['projectConfig']>>;
     writeConfig: ReturnType<typeof vi.fn<CommandContext['writeConfig']>>;
     filesSetting: ReturnType<typeof vi.fn<CommandContext['filesSetting']>>;
     clearConfig: ReturnType<typeof vi.fn<CommandContext['clearConfig']>>;
@@ -47,6 +48,7 @@ export function createCommandContext() {
       pdtConfigDir: undefined,
     },
     config: configSchema.parse(defaults),
+    projectConfig: vi.fn<CommandContext['projectConfig']>(() => configSchema.parse(defaults)),
     sourceOf: vi.fn<CommandContext['sourceOf']>((): ConfigSource => 'default'),
     writeConfig: vi.fn<CommandContext['writeConfig']>(() => []),
     configFiles: [

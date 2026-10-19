@@ -430,6 +430,38 @@ describe('main', () => {
       expect(given.sourceOf(['Logging', 'filename'])).toBe('default');
     });
 
+    test("reads another project's configuration as a run in it would, with the user's files, environment and command line", async () => {
+      writeUserConfig('{ "Logging": { "filename": "user.log" } }');
+      const other = path.join(sandbox, 'other', '.pdt');
+      fs.mkdirSync(other, { recursive: true });
+      fs.writeFileSync(path.join(other, 'config.json'), '{ "id": "other", "Logging": { "level": "error" } }');
+      let given: CommandContext | undefined;
+      await main(
+        ['run', '--config', 'Logging.filename=cli.log'],
+        { ...context, env: { PDT_LOG_LEVEL: 'info' } },
+        ctx => {
+          given = ctx;
+          return [command('run')];
+        },
+      );
+
+      const config = given!.projectConfig(other);
+
+      expect(config.id).toBe('other');
+      // The environment and the command line come after the project's file, as in a run in it.
+      expect(config.Logging).toEqual({ level: 'info', filename: 'cli.log' });
+      expect(given!.config.id).toBeUndefined();
+    });
+
+    test('fails to read a project whose configuration is invalid', async () => {
+      const other = path.join(sandbox, 'other', '.pdt');
+      fs.mkdirSync(other, { recursive: true });
+      fs.writeFileSync(path.join(other, 'config.json'), '{ "Logging": { "level": "chatty" } }');
+      const given = await contextGiven();
+
+      expect(() => given.projectConfig(other)).toThrow(ConfigError);
+    });
+
     test('writes settings to the configuration files it read', async () => {
       const given = await contextGiven();
 
