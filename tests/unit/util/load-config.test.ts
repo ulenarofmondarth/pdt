@@ -89,14 +89,6 @@ describe('loadConfig', () => {
     expect(loadConfig({ files: [user, project], env: {} }).VTT).toEqual({});
   });
 
-  test('replaces lists rather than merging them', () => {
-    write(userFile, { DOCS: { host: { ports: [{ internal: 9000, external: 9000 }] } } });
-
-    const config = loadConfig({ files: [user], env: {} });
-
-    expect(config.DOCS.host.ports).toEqual([{ internal: 9000, external: 9000 }]);
-  });
-
   test('adds servers a file defines', () => {
     write(userFile, { VTT: { mod: vttSettings('13') } });
     write(projectFile, { VTT: { staging: vttSettings('14') } });
@@ -263,16 +255,6 @@ describe('where values come from', () => {
 
     expect(resolved.sourceOf(['Logging', 'level'])).toBe(source);
   });
-
-  test('is the source of a list as a whole', () => {
-    write('user', { DOCS: { host: { image: 'docs' } } });
-    write('project', { DOCS: { host: { ports: [{ internal: 1, external: 2 }] } } });
-
-    const resolved = resolveConfig(sources);
-
-    expect(resolved.sourceOf(['DOCS', 'host', 'ports'])).toBe('project');
-    expect(resolved.sourceOf(['DOCS', 'host', 'image'])).toBe('user');
-  });
 });
 
 describe('writeSetting', () => {
@@ -317,11 +299,9 @@ describe('writeSetting', () => {
   test('stores a value by the type of the setting', () => {
     writeSetting(sources, 'user', 'VTT.mod', JSON.stringify(vttSettings('13')));
     writeSetting(sources, 'user', 'VTT.mod.server.port', '8080');
-    writeSetting(sources, 'user', 'DOCS.host.ports', '[{"internal":30000,"external":"auto"}]');
 
     expect(read(userFile)).toEqual({
       VTT: { mod: { ...vttSettings('13'), server: { ...vttSettings('13').server, port: 8080 } } },
-      DOCS: { host: { ports: [{ internal: 30000, external: 'auto' }] } },
     });
   });
 

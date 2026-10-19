@@ -61,16 +61,6 @@ const dockerHostSettings = z.object({
 
 export const hostSchema = z.discriminatedUnion('type', [dockerHostSettings]);
 
-/** The Docker host that serves the documentation, and the ports it publishes. */
-const docsHostSettings = dockerHostSettings.extend({
-  ports: z.array(
-    z.object({
-      internal: z.int32(),
-      external: z.union([z.literal('auto'), z.int32()]),
-    }),
-  ),
-});
-
 /** A Docker host's settings. */
 export type DockerHostSettings = z.output<typeof dockerHostSettings>;
 
@@ -109,7 +99,6 @@ export const config = z.object({
   }),
   VTT: z.record(z.string(), vttSchema),
   FOUNDRY: foundryAccount.optional(),
-  DOCS: z.object({ host: docsHostSettings }),
 });
 
 export type Config = z.infer<typeof config>;

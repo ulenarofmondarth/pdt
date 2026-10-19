@@ -11,7 +11,7 @@ describe('config get command', () => {
 
   beforeEach(() => {
     ctx = createCommandContext();
-    ctx.sourceOf.mockImplementation(key => (key[0] === 'Logging' ? 'user' : 'default'));
+    ctx.sourceOf.mockImplementation(key => (key.join('.') === 'Logging.level' ? 'user' : 'default'));
   });
 
   /**
@@ -107,7 +107,7 @@ describe('config get command', () => {
       await run('get --list-all --show-source');
 
       expect(ctx.out.mock.calls[0]![0]).toContain('Logging.level "warn" [user]');
-      expect(ctx.out.mock.calls[0]![0]).toContain('DOCS.host.image "ulenarofmondarth/sphinx-docs" [default]');
+      expect(ctx.out.mock.calls[0]![0]).toContain('Logging.filename "pdt.log" [default]');
     });
   });
 

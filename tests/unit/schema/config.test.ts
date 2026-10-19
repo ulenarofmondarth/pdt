@@ -38,7 +38,7 @@ describe('config schema', () => {
     expect(result.error?.issues[0]?.path).toEqual(['id']);
   });
 
-  test.each(['Logging', 'VTT', 'DOCS'])('requires the %s section', section => {
+  test.each(['Logging', 'VTT'])('requires the %s section', section => {
     const config = validConfig();
     delete config[section];
 

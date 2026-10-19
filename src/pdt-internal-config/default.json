@@ -3,19 +3,5 @@
     "filename": "pdt.log",
     "level": "warn"
   },
-  "VTT": {},
-  "DOCS": {
-    "host": {
-      "type": "docker",
-      "repository": "ghcr.io",
-      "image": "ulenarofmondarth/sphinx-docs",
-      "version": "latest",
-      "ports": [
-        {
-          "internal": 8000,
-          "external": "auto"
-        }
-      ]
-    }
-  }
+  "VTT": {}
 }
