@@ -46,8 +46,11 @@ export function createCommandContext() {
     },
     config: configSchema.parse(defaults),
     sourceOf: vi.fn<CommandContext['sourceOf']>((): ConfigSource => 'default'),
-    writeConfig: vi.fn<CommandContext['writeConfig']>(),
-    configFiles: [{ path: '/nonexistent/config/config.json', source: 'user' }],
+    writeConfig: vi.fn<CommandContext['writeConfig']>(() => []),
+    configFiles: [
+      { path: '/nonexistent/config/config.json', source: 'user', secrets: false },
+      { path: '/nonexistent/config/secrets.conf', source: 'user', secrets: true },
+    ],
     filesSetting: vi.fn<CommandContext['filesSetting']>(() => []),
     clearConfig: vi.fn<CommandContext['clearConfig']>(() => []),
     log: createLogMock(),

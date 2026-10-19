@@ -3,7 +3,7 @@
  * against the configuration schema.
  */
 import { z } from 'zod/v4';
-import { config as configSchema } from '@schema/config.js';
+import { config as configSchema, secretSettings } from '@schema/config.js';
 import { m } from '@i18n/messages.js';
 
 /** A key, split at its dots. */
@@ -16,6 +16,9 @@ export interface ConfigLeaf {
 }
 
 type Settings = Record<string, unknown>;
+
+/** What a secret value is shown as. */
+export const SECRET_MASK = '*****';
 
 /** Whether `value` is a group of settings, as opposed to a value (lists included). */
 export function isSettings(value: unknown): value is Settings {
@@ -78,6 +81,62 @@ export function settingKey(key: string): ConfigKey {
   const keys = parseKey(key);
   if (schemaAt(keys) === undefined) throw new Error(m['error.config.unknownKey']({ key }));
   return keys;
+}
+
+/** Whether `schema`, or a schema it wraps, is registered as secret. */
+function isSecretSchema(schema: z.core.$ZodType): boolean {
+  let current = schema;
+  for (;;) {
+    if (secretSettings.has(current)) return true;
+    if (!(current instanceof z.ZodOptional || current instanceof z.ZodDefault)) return false;
+    current = current.unwrap();
+  }
+}
+
+/** Whether the setting at `key` is secret. A group of settings is not, though it may hold some. */
+export function isSecretKey(key: readonly string[]): boolean {
+  const [first, ...rest] = key;
+  if (first === undefined) return false;
+  const schema = schemaAt([first, ...rest]);
+  return schema !== undefined && isSecretSchema(schema);
+}
+
+/**
+ * `value`, at `key`, with every secret value in it replaced by {@link SECRET_MASK}.
+ *
+ * @param value - A value or a group of settings
+ * @param key - Where `value` is; empty for the whole configuration
+ */
+export function maskSecrets(value: unknown, key: readonly string[] = []): unknown {
+  if (isSecretKey(key)) return SECRET_MASK;
+  if (!isSettings(value)) return value;
+  return Object.fromEntries(Object.entries(value).map(([part, inner]) => [part, maskSecrets(inner, [...key, part])]));
+}
+
+/**
+ * `settings`, at `key`, split into the secret values and the rest, each as a group of settings
+ * holding only what it was given. A group left empty is dropped.
+ */
+export function splitSecrets(
+  settings: Settings,
+  key: readonly string[] = [],
+): { plain: Settings | undefined; secret: Settings | undefined } {
+  const plain: Settings = {};
+  const secret: Settings = {};
+  for (const [part, inner] of Object.entries(settings)) {
+    const at = [...key, part];
+    if (isSecretKey(at)) {
+      secret[part] = inner;
+    } else if (isSettings(inner)) {
+      const split = splitSecrets(inner, at);
+      if (split.plain !== undefined) plain[part] = split.plain;
+      if (split.secret !== undefined) secret[part] = split.secret;
+    } else {
+      plain[part] = inner;
+    }
+  }
+  const some = (group: Settings) => (Object.keys(group).length === 0 ? undefined : group);
+  return { plain: some(plain), secret: some(secret) };
 }
 
 /** `settings` without the value at `key`, and without any group the removal leaves empty. */

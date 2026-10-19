@@ -3,8 +3,9 @@ import path from 'node:path';
 import PDT from '@/constants.js';
 import { generatorOptions, pickGivenAnswers, type GivenAnswers } from '@lib/ModuleGenerator.js';
 import { projectVtt, readModuleId } from '@lib/projectVtt.js';
-import { CONFIG_FILENAME } from '@util/load-config.js';
-import { registeredProject, registerProject, runStateFile } from '@util/run-state.js';
+import { GITIGNORE, ignoreProjectFiles } from '@util/gitignore.js';
+import { CONFIG_FILENAME, SECRETS_FILENAME } from '@util/load-config.js';
+import { RUN_STATE_FILENAME, registeredProject, registerProject, runStateFile } from '@util/run-state.js';
 import { m } from '@i18n/messages.js';
 
 import type { ArgumentsCamelCase, CommandModule } from 'yargs';
@@ -95,13 +96,14 @@ function configureProject(
  * The project's id is the module's id, read from its manifest once any new module has been
  * generated, so that a new module and an existing one are read alike. The id must not already be
  * registered in the user's run state. The project's configuration records the id and the VTT named
- * by it, and the user's run state registers the project.
+ * by it, and the user's run state registers the project. The files in `.pdt` that belong to this
+ * user on this machine, its secrets, run state and log, are added to the project's `.gitignore`.
  *
  * @throws {Error} When the directory is a pdt project already, the module cannot be created, or the
  *   project id is registered already
  */
 export async function initProject(
-  { paths, log, out, prompter, createModule }: CommandContext,
+  { paths, config, log, out, prompter, createModule }: CommandContext,
   { dir, force = false, yes = false, given = {} }: InitOptions,
 ) {
   // A relative directory is taken from where pdt is working, as `--project` may have set it.
@@ -144,6 +146,8 @@ export async function initProject(
     log.warn(id.problem);
     log.warn(m['warn.noProjectId']());
   }
+  const ignored = ignoreProjectFiles(root, [SECRETS_FILENAME, RUN_STATE_FILENAME, config.Logging.filename]);
+  if (ignored.length > 0) out(m['info.gitignored']({ entries: ignored.join(', '), file: path.join(root, GITIGNORE) }));
   log.info(m['info.pdtInitialised']({ path: dir }));
 }
 

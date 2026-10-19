@@ -56,6 +56,7 @@ describe('init command', () => {
       expect(ctx.createModule).not.toHaveBeenCalled();
       expect(fs.readdirSync(project).sort()).toEqual([
         '.foundryvtt',
+        '.gitignore',
         PDT.PROJECT_RTD_DIR_NAME,
         'module.json',
         'package.json',
@@ -120,6 +121,51 @@ describe('init command', () => {
 
       expect(ctx.log.setDirectory).toHaveBeenCalledExactlyOnceWith(projectData);
       expect(ctx.log.setDirectory.mock.invocationCallOrder[0]).toBeLessThan(ctx.log.info.mock.invocationCallOrder[0]!);
+    });
+
+    describe("the project's .gitignore", () => {
+      const gitignore = () => path.join(project, '.gitignore');
+
+      test('names the files in .pdt that belong to this user on this machine, saying so', async () => {
+        fs.writeFileSync(gitignore(), 'node_modules\n');
+
+        await runInit(project);
+
+        expect(fs.readFileSync(gitignore(), 'utf8')).toBe(
+          'node_modules\n.pdt/secrets.conf\n.pdt/run.state.json\n.pdt/pdt.log\n',
+        );
+        expect(ctx.out).toHaveBeenLastCalledWith(
+          m['info.gitignored']({
+            entries: '.pdt/secrets.conf, .pdt/run.state.json, .pdt/pdt.log',
+            file: gitignore(),
+          }),
+        );
+      });
+
+      test('names the log by the name it is configured with', async () => {
+        ctx.config.Logging.filename = 'mine.log';
+
+        await runInit(project);
+
+        expect(fs.readFileSync(gitignore(), 'utf8')).toContain('.pdt/mine.log\n');
+      });
+
+      test('says nothing when it names them already', async () => {
+        fs.writeFileSync(gitignore(), '.pdt/\n');
+
+        await runInit(project);
+
+        expect(fs.readFileSync(gitignore(), 'utf8')).toBe('.pdt/\n');
+        expect(ctx.out).not.toHaveBeenCalledWith(expect.stringContaining('.gitignore'));
+      });
+
+      test('names them even when the project has no id', async () => {
+        fs.rmSync(path.join(project, 'module.json'));
+
+        await runInit(project);
+
+        expect(fs.readFileSync(gitignore(), 'utf8')).toContain('.pdt/secrets.conf\n');
+      });
     });
 
     describe('the project id', () => {
@@ -217,7 +263,7 @@ describe('init command', () => {
         expect(vttSchema.parse((read() as { VTT: Record<string, unknown> }).VTT['my-module'])).toEqual(
           vttSettings('13.351'),
         );
-        expect(ctx.out).toHaveBeenLastCalledWith(
+        expect(ctx.out).toHaveBeenCalledWith(
           m['info.vttConfigured']({ vtt: 'my-module', version: '13.351', file: configFile() }),
         );
         expect(ctx.log.warn).not.toHaveBeenCalled();
@@ -327,6 +373,10 @@ describe('init command', () => {
         '✔ wrote 2 files',
         m['info.projectRegistered']({ id: 'new-module', file: userRunState }),
         m['info.vttConfigured']({ vtt: 'new-module', version: '14.360', file: path.join(freshData, 'config.json') }),
+        m['info.gitignored']({
+          entries: '.pdt/secrets.conf, .pdt/run.state.json, .pdt/pdt.log',
+          file: path.join(fresh, '.gitignore'),
+        }),
       ]);
     });
 

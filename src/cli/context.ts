@@ -25,14 +25,15 @@ export interface CommandContext {
   /** Where the value at a key of the configuration comes from. */
   sourceOf(key: readonly string[]): ConfigSource;
   /**
-   * Set a value in the user or the project configuration file, and return the file. Nothing is
-   * written unless the configuration with the change is valid.
+   * Set a value in the user's or the project's configuration, and return the files written: its
+   * `config.json`, its `secrets.conf` for a secret value, or both for a group holding some. Nothing
+   * is written unless the configuration with the change is valid.
    *
    * @throws {ConfigError} When the key is not a setting, or the change would make the
    *   configuration invalid
    */
-  writeConfig(target: 'user' | 'project', key: string, value: string): string;
-  /** The configuration files pdt reads, the user's first; a file need not exist. */
+  writeConfig(target: 'user' | 'project', key: string, value: string): string[];
+  /** The configuration files pdt reads, the user's first, each `config.json` before its `secrets.conf`; a file need not exist. */
   configFiles: readonly ConfigFile[];
   /**
    * The configuration files that set a value at a key.

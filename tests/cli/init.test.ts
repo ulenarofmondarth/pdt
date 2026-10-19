@@ -87,13 +87,16 @@ describe('init', () => {
     expect(fs.existsSync(path.join(sandbox.work, PDT.PROJECT_RTD_DIR_NAME, 'config.json'))).toBe(false);
   });
 
-  test('makes an existing project a pdt project without generating anything', async () => {
+  test('makes an existing project a pdt project without generating anything, keeping its own files out of git', async () => {
     fs.writeFileSync(path.join(sandbox.work, 'package.json'), '{}');
 
     const { code } = await sandbox.run(['init']);
 
     expect(code).toBe(PDT.EXITCODE.OK);
-    expect(fs.readdirSync(sandbox.work).sort()).toEqual([PDT.PROJECT_RTD_DIR_NAME, 'package.json']);
+    expect(fs.readdirSync(sandbox.work).sort()).toEqual(['.gitignore', PDT.PROJECT_RTD_DIR_NAME, 'package.json']);
+    expect(fs.readFileSync(path.join(sandbox.work, '.gitignore'), 'utf8')).toBe(
+      '.pdt/secrets.conf\n.pdt/run.state.json\n.pdt/pdt.log\n',
+    );
   });
 
   test('fails with the error code in an existing pdt project, pointing to force-reset', async () => {

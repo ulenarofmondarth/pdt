@@ -36,7 +36,8 @@
           "key": "Clave del ajuste o grupo, separada por puntos, como Logging.level.",
           "listAll": "Listar todos los ajustes.",
           "format": "Cómo escribir un grupo de ajustes.",
-          "showSource": "Mostrar de dónde viene cada valor (solo flat y tree)."
+          "showSource": "Mostrar de dónde viene cada valor (solo flat y tree).",
+          "printSecrets": "Mostrar los valores secretos, en lugar de *****."
         },
         "set": {
           "description": "Definir un valor en el archivo de configuración del proyecto, o del usuario fuera de un proyecto.",
@@ -96,7 +97,8 @@
       "registered": "Proyecto {id} registrado en {root} en {file}",
       "moved": "Proyecto {id} movido de {from} a {to}",
       "changeDirectory": "Tu shell sigue en la ubicación anterior. Para continuar donde estabas: cd {dir}"
-    }
+    },
+    "gitignored": "Se añadió {entries} a {file}, para que no se confirmen."
   },
   "warn": {
     "pdtParentExists": "Intento de crear un subproyecto PDT (use -f para forzarlo).\n  Proyecto principal en {path}",
@@ -132,7 +134,8 @@
       "keyRequired": "Indica una clave de configuración, o --list-all para listar todos los ajustes.",
       "badOverride": "--config espera <clave>=<valor>, no «{value}».",
       "keyAndListAll": "Indica una clave de configuración o --list-all, no ambos.",
-      "noProject": "No estás en un proyecto PDT, así que no hay archivo de configuración del proyecto. Usa --user para tu archivo de configuración de usuario."
+      "noProject": "No estás en un proyecto PDT, así que no hay archivo de configuración del proyecto. Usa --user para tu archivo de configuración de usuario.",
+      "secretInConfig": "{file} contiene ajustes secretos, que pdt solo lee de {secrets}: {keys}. Muévelos a mano a {secrets}, para que no puedan confirmarse con la configuración."
     },
     "commandRequired": "Se requiere al menos un comando de nivel superior.",
     "vtt": {

@@ -36,7 +36,8 @@
           "key": "Clé du paramètre ou du groupe, séparée par des points, par exemple Logging.level.",
           "listAll": "Lister tous les paramètres.",
           "format": "Comment écrire un groupe de paramètres.",
-          "showSource": "Indiquer d'où vient chaque valeur (flat et tree uniquement)."
+          "showSource": "Indiquer d'où vient chaque valeur (flat et tree uniquement).",
+          "printSecrets": "Afficher les valeurs secrètes, au lieu de *****."
         },
         "set": {
           "description": "Définir une valeur dans le fichier de configuration du projet, ou de l'utilisateur hors d'un projet.",
@@ -96,7 +97,8 @@
       "registered": "Projet {id} enregistré dans {root} dans {file}",
       "moved": "Projet {id} déplacé de {from} vers {to}",
       "changeDirectory": "Votre shell est toujours dans l'ancien emplacement. Pour reprendre là où vous étiez : cd {dir}"
-    }
+    },
+    "gitignored": "{entries} ajouté à {file}, pour qu'ils ne soient pas commités."
   },
   "warn": {
     "pdtParentExists": "Tentative de création d'un sous-projet PDT (utiliser -f pour forcer).\n  Projet parent dans {path}",
@@ -132,7 +134,8 @@
       "keyRequired": "Donnez une clé de configuration, ou --list-all pour lister tous les paramètres.",
       "badOverride": "--config attend <clé>=<valeur>, pas « {value} ».",
       "keyAndListAll": "Donnez une clé de configuration ou --list-all, pas les deux.",
-      "noProject": "Pas dans un projet PDT : il n'y a pas de fichier de configuration de projet. Utilisez --user pour votre fichier de configuration utilisateur."
+      "noProject": "Pas dans un projet PDT : il n'y a pas de fichier de configuration de projet. Utilisez --user pour votre fichier de configuration utilisateur.",
+      "secretInConfig": "{file} contient des paramètres secrets, que pdt ne lit que dans {secrets} : {keys}. Déplacez-les à la main dans {secrets}, pour qu'ils ne puissent pas être commités avec la configuration."
     },
     "commandRequired": "Au moins une commande de premier niveau est requise.",
     "vtt": {

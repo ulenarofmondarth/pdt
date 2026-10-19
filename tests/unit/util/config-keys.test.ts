@@ -1,5 +1,17 @@
 import { describe, expect, test } from 'vitest';
-import { leaves, parseKey, parseValue, schemaAt, settingKey, valueAt, withoutKey } from '@util/config-keys.js';
+import {
+  isSecretKey,
+  leaves,
+  maskSecrets,
+  parseKey,
+  parseValue,
+  schemaAt,
+  SECRET_MASK,
+  settingKey,
+  splitSecrets,
+  valueAt,
+  withoutKey,
+} from '@util/config-keys.js';
 import { m } from '@i18n/messages.js';
 
 describe('parseKey', () => {
@@ -154,5 +166,81 @@ describe('withoutKey', () => {
     withoutKey(settings, ['Logging', 'level']);
 
     expect(settings).toEqual(copy);
+  });
+});
+
+describe('isSecretKey', () => {
+  test.each([
+    ['FOUNDRY', 'username'],
+    ['FOUNDRY', 'password'],
+    ['FOUNDRY', 'license_key'],
+    ['VTT', 'any', 'server', 'admin_key'],
+  ])('is true for the secret setting %s.%s', (...key) => {
+    expect(isSecretKey(key)).toBe(true);
+  });
+
+  test.each([
+    [['Logging', 'level']],
+    [['VTT', 'any', 'server', 'version']],
+    [['FOUNDRY']],
+    [['VTT', 'any', 'server']],
+    [['Nothing', 'here']],
+    [[]],
+  ])('is false for a setting, a group or a key that is not a secret: %j', key => {
+    expect(isSecretKey(key)).toBe(false);
+  });
+});
+
+describe('maskSecrets', () => {
+  const settings = {
+    Logging: { level: 'warn' },
+    FOUNDRY: { username: 'me', password: 'hunter2' },
+    VTT: { mod: { server: { version: '14', admin_key: 'k' } } },
+  };
+
+  test('masks every secret in a group, keeping the rest, without changing the group', () => {
+    expect(maskSecrets(settings)).toEqual({
+      Logging: { level: 'warn' },
+      FOUNDRY: { username: SECRET_MASK, password: SECRET_MASK },
+      VTT: { mod: { server: { version: '14', admin_key: SECRET_MASK } } },
+    });
+    expect(settings.FOUNDRY.password).toBe('hunter2');
+  });
+
+  test('masks a secret given by its key', () => {
+    expect(maskSecrets('hunter2', ['FOUNDRY', 'password'])).toBe(SECRET_MASK);
+  });
+
+  test('keeps a value that is not secret', () => {
+    expect(maskSecrets('warn', ['Logging', 'level'])).toBe('warn');
+  });
+});
+
+describe('splitSecrets', () => {
+  test('splits a group into its secrets and the rest', () => {
+    expect(
+      splitSecrets({ Logging: { level: 'warn' }, VTT: { mod: { server: { version: '14', admin_key: 'k' } } } }),
+    ).toEqual({
+      plain: { Logging: { level: 'warn' }, VTT: { mod: { server: { version: '14' } } } },
+      secret: { VTT: { mod: { server: { admin_key: 'k' } } } },
+    });
+  });
+
+  test('has nothing on a side that has no settings', () => {
+    expect(splitSecrets({ Logging: { level: 'warn' } })).toEqual({
+      plain: { Logging: { level: 'warn' } },
+      secret: undefined,
+    });
+    expect(splitSecrets({ FOUNDRY: { password: 'p' } })).toEqual({
+      plain: undefined,
+      secret: { FOUNDRY: { password: 'p' } },
+    });
+  });
+
+  test('splits a group found at a key', () => {
+    expect(splitSecrets({ password: 'p', other: 1 }, ['FOUNDRY'])).toEqual({
+      plain: { other: 1 },
+      secret: { password: 'p' },
+    });
   });
 });

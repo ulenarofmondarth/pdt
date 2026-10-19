@@ -1,3 +1,4 @@
+import { isSecretKey, parseKey } from '@util/config-keys.js';
 import { m } from '@i18n/messages.js';
 
 import type { CommandModule } from 'yargs';
@@ -29,8 +30,9 @@ export function createConfigClearCommand({
         .option('all', { describe: m['ui.cmd.config.clear.all'](), type: 'boolean', default: false }),
 
     /**
-     * Remove the setting from the project's file, the user's with `--user`, or every file that sets it
-     * with `--all`. A setting the file does not have is warned about and left alone, wherever else
+     * Remove the setting from the project's files, the user's with `--user`, or every file that sets
+     * it with `--all`. A group of settings is removed from both the `config.json` and the
+     * `secrets.conf`. A setting the file does not have is warned about and left alone, wherever else
      * it is set.
      *
      * @throws When the key is not a setting, there is no project file to clear, or the change would
@@ -44,16 +46,15 @@ export function createConfigClearCommand({
           log.warn(m['warn.configNotSetAnywhere']({ key }));
           return;
         }
-        for (const file of clearConfig(
-          setting.map(file => file.source),
-          key,
-        )) {
+        for (const file of clearConfig([...new Set(setting.map(file => file.source))], key)) {
           out(m['info.configCleared']({ key, file }));
         }
         return;
       }
 
-      const target = configFiles.find(file => file.source === (user ? 'user' : 'project'));
+      // The file a setting would be in: secrets.conf for a secret, config.json for anything else.
+      const secret = isSecretKey(parseKey(key));
+      const target = configFiles.find(file => file.source === (user ? 'user' : 'project') && file.secrets === secret);
       if (target === undefined) throw new Error(m['error.config.noProject']());
 
       if (setting.some(file => file.source === target.source)) {
