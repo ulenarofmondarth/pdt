@@ -28,6 +28,27 @@
       },
       "info": {
         "description": "Laufzeitinformationen zu einem bestehenden PDT-Projekt anzeigen."
+      },
+      "config": {
+        "description": "Die Konfiguration anzeigen oder ändern.",
+        "get": {
+          "description": "Einen Konfigurationswert oder alle Werte anzeigen.",
+          "key": "Durch Punkte getrennter Schlüssel der Einstellung oder Gruppe, etwa Logging.level.",
+          "listAll": "Alle Einstellungen auflisten.",
+          "format": "Wie eine Gruppe von Einstellungen ausgegeben wird.",
+          "showSource": "Zeigen, woher jeder Wert stammt (nur flat und tree)."
+        },
+        "set": {
+          "description": "Einen Wert in der Projektkonfiguration setzen, außerhalb eines Projekts in der Benutzerkonfiguration.",
+          "key": "Durch Punkte getrennter Schlüssel der Einstellung, etwa Logging.level.",
+          "value": "Der Wert. Text, den die Einstellung so annimmt, bleibt Text; alles andere wird als JSON gelesen.",
+          "user": "Den Wert in der Benutzerkonfiguration setzen, auch innerhalb eines Projekts."
+        }
+      }
+    },
+    "opt": {
+      "config": {
+        "description": "Eine Einstellung nur für diesen Aufruf überschreiben, als <Schlüssel>=<Wert>. Mehrfach möglich."
       }
     }
   },
@@ -38,7 +59,8 @@
       "starting": "VTT {vtt} (Version {version}) wird gestartet…",
       "started": "VTT {vtt} wurde gestartet.",
       "alreadyRunning": "VTT {vtt} läuft bereits."
-    }
+    },
+    "configSet": "{key} in {file} gesetzt"
   },
   "warn": {
     "pdtParentExists": "Versuch, ein PDT-Unterprojekt anzulegen (mit -f erzwingen).\n  Übergeordnetes Projekt unter {path}",
@@ -53,7 +75,14 @@
     "config": {
       "invalid": "Die Konfiguration ist ungültig:",
       "unreadable": "Die Konfigurationsdatei {file} konnte nicht gelesen werden: {reason}",
-      "notAnObject": "Die Konfigurationsdatei {file} muss ein JSON-Objekt enthalten."
+      "notAnObject": "Die Konfigurationsdatei {file} muss ein JSON-Objekt enthalten.",
+      "badKey": "„{key}“ ist kein Konfigurationsschlüssel: gib seine Teile durch Punkte getrennt an, etwa Logging.level.",
+      "unknownKey": "{key} ist keine Konfigurationseinstellung.",
+      "notSet": "{key} ist nicht gesetzt.",
+      "noFile": "Hier gibt es keine {target}-Konfigurationsdatei.",
+      "keyRequired": "Gib einen Konfigurationsschlüssel an, oder --list-all, um alle Einstellungen aufzulisten.",
+      "badOverride": "--config erwartet <Schlüssel>=<Wert>, nicht „{value}“.",
+      "keyAndListAll": "Gib einen Konfigurationsschlüssel oder --list-all an, nicht beides."
     },
     "commandRequired": "Mindestens ein Befehl der obersten Ebene ist erforderlich.",
     "vtt": {
