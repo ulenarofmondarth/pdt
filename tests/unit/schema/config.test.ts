@@ -122,6 +122,18 @@ describe('server schema', () => {
     expect(serverSchema.parse(FOUNDRY_SERVER).port).toBe('auto');
   });
 
+  test('reloads modules as they change when it does not say', () => {
+    expect(serverSchema.parse(FOUNDRY_SERVER).hot_reload).toBe(true);
+  });
+
+  test.each([true, false])('accepts %s for hot reload', hotReload => {
+    expect(serverSchema.parse({ ...FOUNDRY_SERVER, hot_reload: hotReload }).hot_reload).toBe(hotReload);
+  });
+
+  test.each(['true', 1, null])('rejects %j for hot reload', hotReload => {
+    expect(serverSchema.safeParse({ ...FOUNDRY_SERVER, hot_reload: hotReload }).success).toBe(false);
+  });
+
   test('waits 600 seconds for the server to be ready when it sets no time', () => {
     expect(serverSchema.parse(FOUNDRY_SERVER).ready).toEqual({ timeout: 600 });
     expect(serverSchema.parse({ ...FOUNDRY_SERVER, ready: {} }).ready).toEqual({ timeout: 600 });

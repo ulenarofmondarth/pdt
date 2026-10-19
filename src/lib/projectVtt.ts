@@ -86,6 +86,7 @@ export function vttSettings(version: string): VttSettings {
       version,
       port: 'auto',
       ready: { timeout: DEFAULT_START_TIMEOUT },
+      hot_reload: true,
     },
     host: { type: 'docker', image: DEFAULT_DOCKER_IMAGE },
   };

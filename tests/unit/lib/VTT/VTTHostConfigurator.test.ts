@@ -8,7 +8,7 @@ describe('createVTTConfiguration', () => {
     const host = createHostMock();
     const server = new FoundryVTTServer(
       'unit-test-vtt',
-      { type: 'foundry', version: '12', hostname: 'h', port: 'auto', ready: { timeout: 600 } },
+      { type: 'foundry', version: '12', hostname: 'h', port: 'auto', ready: { timeout: 600 }, hot_reload: false },
       host,
     );
 

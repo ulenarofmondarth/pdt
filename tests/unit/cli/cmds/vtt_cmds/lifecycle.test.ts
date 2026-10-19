@@ -254,6 +254,7 @@ describe('the VTT lifecycle', () => {
         FOUNDRY_PASSWORD: 'hunter2',
         FOUNDRY_LICENSE_KEY: 'ABCD',
         FOUNDRY_ADMIN_KEY: 'adm1n',
+        FOUNDRY_HOT_RELOAD: 'true',
       });
       expect(host.start.mock.calls[0]![1].user).toEqual({ uid: 1000, gid: 100 });
       expect(ctx.log.warn).not.toHaveBeenCalled();

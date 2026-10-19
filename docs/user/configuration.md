@@ -75,6 +75,7 @@ Each VTT, `VTT.<vtt>`, has a `server`, the Foundry VTT it runs, and a `host`, wh
 | `hostname` | The name the VTT is reached at; `localhost` after `init`. |
 | `port` | The port to serve on: a number, or `auto` (the default) for the first free one from 30000. |
 | `ready.timeout` | How long `pdt vtt start` waits, in seconds, for the server to answer once its host has started it; 600 unless set. The first start downloads and installs Foundry VTT. |
+| `hot_reload` | Whether Foundry VTT reloads a module's styles, templates and translations as you change them; `true` unless set. Turn it off with `pdt config set VTT.<vtt>.server.hot_reload false`. |
 | `admin_key` | The server's administrator password; a secret (see {ref}`pdt_conf_secrets`). |
 
 Besides its `type`, the `host` can set:

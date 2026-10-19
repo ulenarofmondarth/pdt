@@ -62,13 +62,18 @@ export default class FoundryVTTServer extends VTTServer {
     return path.posix.join(FOUNDRY_DATA_PATH, 'Data', 'modules', id);
   }
 
-  /** The account, licence key and administrator password that are set, in the variables the felddy/foundryvtt image reads. */
+  /**
+   * The account, licence key and administrator password that are set, and whether to reload modules
+   * as they change, in the variables the felddy/foundryvtt image reads.
+   */
   environment(): Record<string, string> {
     const variables: Record<string, string | undefined> = {
       FOUNDRY_USERNAME: this.account.username,
       FOUNDRY_PASSWORD: this.account.password,
       FOUNDRY_LICENSE_KEY: this.account.license_key,
       FOUNDRY_ADMIN_KEY: this.settings.admin_key,
+      // Off is the image's default, so only on is said.
+      FOUNDRY_HOT_RELOAD: this.settings.hot_reload ? 'true' : undefined,
     };
     return Object.fromEntries(
       Object.entries(variables).filter((entry): entry is [string, string] => entry[1] !== undefined),

@@ -12,6 +12,7 @@ const FOUNDRY: ServerSettings = {
   hostname: 'localhost',
   port: 'auto',
   ready: { timeout: 600 },
+  hot_reload: false,
 };
 
 describe('createServer', () => {

@@ -123,6 +123,7 @@ describe('config get command', () => {
             port: 'auto',
             admin_key: 'k3y',
             ready: { timeout: 600 },
+            hot_reload: false,
           },
           host: { type: 'docker', image: 'felddy/foundryvtt' },
         },
@@ -152,6 +153,7 @@ describe('config get command', () => {
           'VTT.mod.server.port "auto"',
           'VTT.mod.server.admin_key "*****"',
           'VTT.mod.server.ready.timeout 600',
+          'VTT.mod.server.hot_reload false',
         ].join('\n'),
       );
     });
