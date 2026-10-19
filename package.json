@@ -34,7 +34,10 @@
     }
   },
   "scripts": {
-    "build": "vite build && chmod +x dist/index.js",
+    "build": "vite build",
+    "build:watch": "vite build --watch",
+    "dev:link": "pnpm add --global \"link:$(pwd)\"",
+    "dev:unlink": "pnpm remove --global @mondarth/pdt",
     "build:clean": "pnpm run clean && pnpm run build",
     "test": "vitest --run",
     "test:coverage": "vitest run --coverage",

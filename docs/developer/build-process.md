@@ -4,6 +4,8 @@
 
 Running the build is as simple as `pnpm build`. This invokes {program}`vite` and it does all the heavy lifting.
 
+`pnpm build:watch` builds, then rebuilds whenever a source file changes, for running your working copy as `pdt` (see {ref}`running-development-version`). Every build, including each rebuild, makes `dist/index.js` executable, so it also runs as a program of its own through its `#!` line.
+
 ## Typescript configuration
 
 `tsconfig.json` runs the compiler in `strict` mode with `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes` and `noImplicitOverride` enabled. It targets `esnext` with `lib: ["esnext"]`; the `dom` library is deliberately left out because {program}`pdt` runs on Node, so accidental use of browser globals fails the type check.
