@@ -39,12 +39,8 @@ export default abstract class VTTServer {
   /** Where the application finds the module `id`, inside its host. */
   abstract modulePath(id: string): string;
 
-  /**
-   * The variables the application is to be started with, which may hold secrets.
-   *
-   * @param owner - The user the application's files are to belong to, if it can be told
-   */
-  abstract environment(owner?: Owner): Record<string, string>;
+  /** The variables the application is to be started with, which may hold secrets. */
+  abstract environment(): Record<string, string>;
 
   /** Start on the server's host, and wait until it has started. */
   start(options: RunOptions): Promise<RunHandle> {

@@ -1,4 +1,4 @@
-import VTTServer from './VTTServer.js';
+import VTTServer, { type Owner } from './VTTServer.js';
 
 /** How a host is to run a server. */
 export interface RunOptions {
@@ -10,6 +10,8 @@ export interface RunOptions {
   environment: Record<string, string>;
   /** Directories of the machine pdt runs on to give the server, each at a path inside the host. */
   mounts: readonly Mount[];
+  /** The user to run the server as, so that what it writes to the mounts is theirs; the host's choice when absent. */
+  user?: Owner;
 }
 
 /** A directory given to a server. */

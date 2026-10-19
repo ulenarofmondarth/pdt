@@ -13,7 +13,7 @@ const server = createVtt('arcane-ledger', config.VTT['arcane-ledger'], config.FO
 const handle = await server.start({
   name: 'pdt-arcane-ledger',
   port: 30002,
-  environment: server.environment({ uid: 1000, gid: 1000 }),
+  environment: server.environment(),
   mounts: [{ source: '/home/me/.local/share/pdt/vtt/pdt-arcane-ledger', target: server.dataPath }],
 });
 await server.host.isRunning(handle);
@@ -24,7 +24,7 @@ No VTT is built in: `pdt init` writes one into the project's configuration, name
 
 Commands get `createVtt` from their context (see {doc}`commands`), so their tests give them VTTs on a stand-in host. They get `isPortFree`, `isUrlReachable` and `owner` (the uid and gid pdt runs as, from `src/index.ts`) the same way, so no test binds a real port, makes a request, or depends on who runs it.
 
-A server says what its application needs from a host, so a host need not know the application: `internalPort`, `dataPath` and `modulePath(id)` (where it serves, keeps its data and finds a module, inside the host), `urlAt(port)`, and `environment(owner)`, the variables to start it with. `FoundryVTTServer` follows the felddy/foundryvtt image: data in `/data`, modules in `/data/Data/modules`, and `FOUNDRY_USERNAME`, `FOUNDRY_PASSWORD`, `FOUNDRY_LICENSE_KEY`, `FOUNDRY_ADMIN_KEY`, `FOUNDRY_UID` and `FOUNDRY_GID`, from the `FOUNDRY` account and the server's `admin_key`. The environment holds secrets: it goes to the host and nowhere else, never into the run state, the output or the log.
+A server says what its application needs from a host, so a host need not know the application: `internalPort`, `dataPath` and `modulePath(id)` (where it serves, keeps its data and finds a module, inside the host), `urlAt(port)`, and `environment()`, the variables to start it with. `FoundryVTTServer` follows the felddy/foundryvtt image: data in `/data`, modules in `/data/Data/modules`, and `FOUNDRY_USERNAME`, `FOUNDRY_PASSWORD`, `FOUNDRY_LICENSE_KEY` and `FOUNDRY_ADMIN_KEY`, from the `FOUNDRY` account and the server's `admin_key`. The environment holds secrets: it goes to the host and nowhere else, never into the run state, the output or the log.
 
 The settings types (`FoundryServerSettings`, `DockerHostSettings`, ...) come from the zod schema in `src/schema/config.ts`, so a setting is declared once, and the configuration and the code cannot disagree about it.
 
@@ -49,7 +49,7 @@ For a server with version `14.368.0`, run as `pdt-arcane-ledger` on port 30002, 
 1. works out the image, `[repository/]image:14.368.0` (the image is `felddy/foundryvtt` unless the settings name another), and refuses a server without a version, as an untagged pull would fetch every tag;
 2. pulls the image unless the engine already has it;
 3. refuses if a container named `pdt-arcane-ledger` is running, and removes one that has stopped;
-4. creates the container, publishing the server's `internalPort` (30000 for Foundry VTT) on port 30002, with the environment as `Env` and the mounts as bind mounts, starts it, and returns its id.
+4. creates the container, publishing the server's `internalPort` (30000 for Foundry VTT) on port 30002, with the environment as `Env`, the mounts as bind mounts and, given a user, as that user (`User`), starts it, and returns its id.
 
 `DockerHost.stop` stops the container and removes it; a container that has stopped (304) or is gone (404) is not an error.
 

@@ -1,5 +1,5 @@
 import path from 'node:path';
-import VTTServer, { type Owner } from '@lib/VTT/VTTServer.js';
+import VTTServer from '@lib/VTT/VTTServer.js';
 import VTTHost from '@lib/VTT/VTTHost.js';
 
 import type { FoundryAccount, FoundryServerSettings } from '@schema/config.js';
@@ -62,18 +62,13 @@ export default class FoundryVTTServer extends VTTServer {
     return path.posix.join(FOUNDRY_DATA_PATH, 'Data', 'modules', id);
   }
 
-  /**
-   * The account, licence key and administrator password that are set, and the user to own the
-   * data as, in the variables the felddy/foundryvtt image reads.
-   */
-  environment(owner?: Owner): Record<string, string> {
+  /** The account, licence key and administrator password that are set, in the variables the felddy/foundryvtt image reads. */
+  environment(): Record<string, string> {
     const variables: Record<string, string | undefined> = {
       FOUNDRY_USERNAME: this.account.username,
       FOUNDRY_PASSWORD: this.account.password,
       FOUNDRY_LICENSE_KEY: this.account.license_key,
       FOUNDRY_ADMIN_KEY: this.settings.admin_key,
-      FOUNDRY_UID: owner === undefined ? undefined : String(owner.uid),
-      FOUNDRY_GID: owner === undefined ? undefined : String(owner.gid),
     };
     return Object.fromEntries(
       Object.entries(variables).filter((entry): entry is [string, string] => entry[1] !== undefined),

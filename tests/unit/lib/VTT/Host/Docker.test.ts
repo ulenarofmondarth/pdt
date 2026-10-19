@@ -37,7 +37,7 @@ const CONTAINER_NAME = 'pdt-test';
 const RUN = {
   name: CONTAINER_NAME,
   port: 30001,
-  environment: { FOUNDRY_PASSWORD: 'hunter2', FOUNDRY_UID: '1000' },
+  environment: { FOUNDRY_PASSWORD: 'hunter2', FOUNDRY_ADMIN_KEY: 'adm1n' },
   mounts: [
     { source: '/home/me/.local/share/pdt/vtt/pdt-test', target: '/data' },
     { source: '/work/my-module', target: '/data/Data/modules/my-module' },
@@ -245,8 +245,22 @@ describe('DockerHost', () => {
       await hostWith().start(server, RUN);
 
       expect(docker.createContainer).toHaveBeenCalledExactlyOnceWith(
-        expect.objectContaining({ Env: ['FOUNDRY_PASSWORD=hunter2', 'FOUNDRY_UID=1000'] }),
+        expect.objectContaining({ Env: ['FOUNDRY_PASSWORD=hunter2', 'FOUNDRY_ADMIN_KEY=adm1n'] }),
       );
+    });
+
+    // Regression: the owner was passed as FOUNDRY_UID and FOUNDRY_GID, which the felddy/foundryvtt
+    // image ignores, so its files were owned by the image's own user.
+    test('runs the container as the user it is given', async () => {
+      await hostWith().start(server, { ...RUN, user: { uid: 1234, gid: 567 } });
+
+      expect(docker.createContainer).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ User: '1234:567' }));
+    });
+
+    test("runs the container as the image's own user when it is given none", async () => {
+      await hostWith().start(server, RUN);
+
+      expect(docker.createContainer.mock.calls[0]![0]).not.toHaveProperty('User');
     });
 
     test('bind mounts the directories it is given', async () => {

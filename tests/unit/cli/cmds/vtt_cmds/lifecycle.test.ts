@@ -254,10 +254,15 @@ describe('the VTT lifecycle', () => {
         FOUNDRY_PASSWORD: 'hunter2',
         FOUNDRY_LICENSE_KEY: 'ABCD',
         FOUNDRY_ADMIN_KEY: 'adm1n',
-        FOUNDRY_UID: '1000',
-        FOUNDRY_GID: '100',
       });
+      expect(host.start.mock.calls[0]![1].user).toEqual({ uid: 1000, gid: 100 });
       expect(ctx.log.warn).not.toHaveBeenCalled();
+    });
+
+    test('runs the VTT as no user in particular where pdt has no numeric ids', async () => {
+      await startVtt(ctx, undefined);
+
+      expect(host.start.mock.calls[0]![1]).not.toHaveProperty('user');
     });
 
     test('never writes a secret to the run state or its output', async () => {
