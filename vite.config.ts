@@ -1,8 +1,24 @@
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
+import fs from 'node:fs';
 import path from 'node:path';
 import { defineConfig } from 'vitest/config';
 import { nodeExternals } from 'rollup-plugin-node-externals';
 import tsconfigPaths from 'vite-tsconfig-paths';
+
+import type { Plugin } from 'vite';
+
+/**
+ * Makes the CLI entry point executable after every build, including each rebuild in watch mode,
+ * which writes the file afresh without the bit.
+ */
+function executableEntry(): Plugin {
+  return {
+    name: 'pdt:executable-entry',
+    writeBundle(options) {
+      fs.chmodSync(path.join(options.dir ?? 'dist', 'index.js'), 0o755);
+    },
+  };
+}
 
 export default defineConfig({
   test: {
@@ -53,5 +69,6 @@ export default defineConfig({
     paraglideVitePlugin({ project: './project.inlang', outdir: './src/paraglide' }),
     tsconfigPaths(),
     nodeExternals(),
+    executableEntry(),
   ],
 });
