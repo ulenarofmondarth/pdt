@@ -34,11 +34,33 @@ describe('command line parser', () => {
     expect(err?.message).toContain('bogus');
   });
 
-  test.each(['init', 'info', 'vtt'])('offers the %s command in its help', async command => {
+  test.each(['init', 'info', 'vtt', 'config'])('offers the %s command in its help', async command => {
     const { err, output } = await parse('--help');
 
     expect(err).toBeFalsy();
     expect(output).toMatch(new RegExp(`^\\s+\\S+ ${command}\\b`, 'm'));
+  });
+
+  test('offers --config, to override a setting, in its help', async () => {
+    const { output } = await parse('--help');
+
+    expect(output).toContain('--config');
+  });
+
+  test.each([
+    ['before the command', '--config Logging.level=debug info'],
+    ['after the command', 'info --config Logging.level=debug'],
+    ['more than once', 'info --config Logging.level=debug --config=Logging.filename=x.log'],
+  ])('accepts --config %s', async (_case, commandLine) => {
+    const { err } = await parse(commandLine);
+
+    expect(err).toBeFalsy();
+  });
+
+  test('requires a value for --config', async () => {
+    const { err } = await parse('info --config');
+
+    expect(err?.message).toContain('config');
   });
 
   // Regression guard: the parser was built once, from the process's arguments, when its module loaded.

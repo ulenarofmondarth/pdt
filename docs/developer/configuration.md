@@ -10,14 +10,17 @@ flowchart LR
   d["defaults<br/><code>src/pdt-internal-config/default.json</code>"] --> u["user<br/><code>~/.config/pdt/config.json</code>"]
   u --> p["project<br/><code>.pdt/config.json</code>"]
   p --> e["environment<br/><code>PDT_LOG_LEVEL</code>"]
-  e --> v{"validated by<br/><code>@schema/config.ts</code>"}
+  e --> c["cli<br/><code>--config key=value</code>"]
+  c --> v{"validated by<br/><code>@schema/config.ts</code>"}
 ```
 
 ## Modules
 
 - **`@util/runtime-config.ts`**: `resolvePaths({ cwd, home, platform, env })` works out the user configuration directory, the user data directory and the project's `.pdt` directory. It creates nothing; directories are created when something is first written to them. `src/index.ts` works them out for the running process, and commands get them from their context (see {doc}`commands`).
-- **`@util/load-config.ts`**: `loadConfig({ files, env })` merges the defaults, each file that exists and the environment variables, and validates the result with the zod schema in `@schema/config.ts`. It returns the typed `Config`, or throws a `ConfigError` whose `problems` name each invalid setting. `configFiles(paths)` lists the user's and the project's files. Neither function looks at the running process, so tests pass in temporary files and variables.
-- **`src/main.ts`**: `main()` loads the configuration for the run before anything else. A `ConfigError` is written to standard error and `main()` returns exit code 127 (`EXITCODE.INVALID_CONFIG`); the logger cannot report it, as it is configured from this. `main()` then hands each part the settings it needs, such as `configureLogger(config.Logging)`.
+- **`@util/load-config.ts`**: `loadConfig({ files, env, overrides })` merges the defaults, each file that exists, the environment variables and the command line settings, and validates the result with the zod schema in `@schema/config.ts`. It returns the typed `Config`, or throws a `ConfigError` whose `problems` name each invalid setting. `resolveConfig` does the same and also keeps where each value came from (`sourceOf(key)`): the source that last set it, or `default` for a value no source set, including those the schema fills in. `writeSetting(sources, target, key, value)` sets a value in the user or project file, and `clearSetting(sources, targets, key)` removes one from files, each validating the whole configuration with the change before writing; `filesSetting(sources, key)` lists the files that set a key. `configFiles(paths)` lists the user's and the project's files, each labelled with its source. None of these looks at the running process, so tests pass in temporary files and variables.
+- **`@util/config-keys.ts`**: keys, such as `VTT.prj.server.version`. `parseKey` splits one, `settingKey` also refuses one the schema lacks, `schemaAt` finds what the schema says about it (walking objects, records and unions), `valueAt` finds its value, `leaves` lists every value in a group, `withoutKey` removes one (with the groups that leaves empty), and `parseValue` reads a value given as text: as text if the setting accepts it as it is, otherwise as JSON.
+- **`src/cli/overrides.ts`**: `configOverrides(args)` picks the `--config <key>=<value>` settings out of the command line. The configuration is read before yargs parses the command line, since the logger and the commands depend on it; yargs declares the option too, for the help and strict parsing.
+- **`src/main.ts`**: `main()` resolves the configuration for the run before anything else. A `ConfigError` is written to standard error and `main()` returns exit code 127 (`EXITCODE.INVALID_CONFIG`); the logger cannot report it, as it is configured from this. `main()` then hands each part the settings it needs, such as `configureLogger(config.Logging)`, and gives commands `sourceOf` and `writeConfig` (see {doc}`commands`).
 
 Nothing loads the configuration as it is imported, so code that needs settings receives them as arguments, typed by the schema (for example `createHost(config.VTT['prj'].host)`; see {doc}`vtt`).
 
@@ -27,6 +30,8 @@ Nothing loads the configuration as it is imported, so code that needs settings r
 2. Give it a default in `src/pdt-internal-config/default.json`, unless it is optional.
 3. To let an environment variable set it, add the variable to `ENVIRONMENT_SETTINGS` in `@util/load-config.ts`.
 4. Document it in {doc}`/user/configuration`.
+
+`pdt config get` and `set`, and `--config`, work for the new setting without changes: they follow the schema.
 
 (runtime-configuration)=
 

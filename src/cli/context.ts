@@ -1,6 +1,7 @@
 import type { createModule, Prompter } from '@lib/ModuleGenerator.js';
 import type { createVtt } from '@lib/VTT/createVtt.js';
 import type { Config } from '@schema/config.js';
+import type { ConfigFile, ConfigSource } from '@util/load-config.js';
 import type { PdtPaths } from '@util/runtime-config.js';
 
 /** Where a command reports what it is doing. */
@@ -21,6 +22,31 @@ export interface CommandContext {
   paths: PdtPaths;
   /** The validated configuration. */
   config: Config;
+  /** Where the value at a key of the configuration comes from. */
+  sourceOf(key: readonly string[]): ConfigSource;
+  /**
+   * Set a value in the user or the project configuration file, and return the file. Nothing is
+   * written unless the configuration with the change is valid.
+   *
+   * @throws {ConfigError} When the key is not a setting, or the change would make the
+   *   configuration invalid
+   */
+  writeConfig(target: 'user' | 'project', key: string, value: string): string;
+  /** The configuration files pdt reads, the user's first; a file need not exist. */
+  configFiles: readonly ConfigFile[];
+  /**
+   * The configuration files that set a value at a key.
+   *
+   * @throws When the key is not a setting
+   */
+  filesSetting(key: string): ConfigFile[];
+  /**
+   * Remove the value at a key from configuration files, and return the files written. Nothing is
+   * written unless the configuration with the change is valid.
+   *
+   * @throws When the key is not a setting, or the change would make the configuration invalid
+   */
+  clearConfig(targets: readonly ConfigFile['source'][], key: string): string[];
   log: CommandLog;
   /** Writes what the user asked for, or the progress of what they asked for. */
   out(text: string): void;

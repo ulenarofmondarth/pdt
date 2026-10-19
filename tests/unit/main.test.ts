@@ -9,6 +9,8 @@ import { m } from '@i18n/messages.js';
 import { createModule } from '@lib/ModuleGenerator.js';
 import { createVtt } from '@lib/VTT/createVtt.js';
 import { UNASKED_PROMPTER } from '@tests/unit/mocks/context.js';
+import { UsageError } from '@/cli/usage-error.js';
+import { ConfigError } from '@util/load-config.js';
 
 import type { CommandModule } from 'yargs';
 import type { CommandContext } from '@/cli/context.js';
@@ -81,6 +83,25 @@ describe('main', () => {
 
       await expect(main(['broken'], context, () => [broken])).resolves.toBe(PDT.EXITCODE.ERROR);
       expect(logger.error).toHaveBeenCalledExactlyOnceWith('it broke');
+    });
+
+    test('logs each problem with the configuration when the command fails with them', async () => {
+      const broken = command('broken', async () => {
+        throw new ConfigError('it is invalid', ['a is wrong', 'b is wrong']);
+      });
+
+      await expect(main(['broken'], context, () => [broken])).resolves.toBe(PDT.EXITCODE.ERROR);
+      expect(logger.error).toHaveBeenCalledExactlyOnceWith('it is invalid\n\ta is wrong\n\tb is wrong');
+    });
+
+    test('fails with the usage code, explaining on standard error, when the command refuses its command line', async () => {
+      const picky = command('picky', async () => {
+        throw new UsageError('not like that');
+      });
+
+      await expect(main(['picky'], context, () => [picky])).resolves.toBe(PDT.EXITCODE.USAGE);
+      expect(err).toEqual(['not like that']);
+      expect(logger.error).not.toHaveBeenCalled();
     });
 
     test('fails with the error code when the command throws something that is not an Error', async () => {
@@ -174,6 +195,25 @@ describe('main', () => {
       expect(err.join('\n')).toContain(m['error.config.invalid']());
       expect(err.join('\n')).toContain('Logging.level');
       expect(err.join('\n')).toContain('Logging.filename');
+    });
+
+    test('applies settings given with --config, over every file', async () => {
+      writeUserConfig('{ "Logging": { "level": "debug" } }');
+
+      await main(['run', '--config', 'Logging.level=error'], context, () => [command('run')]);
+
+      expect(configureLogger).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ level: 'error' }));
+    });
+
+    test('fails with the invalid configuration code, running nothing, for a --config it cannot use', async () => {
+      const run = command('run');
+
+      await expect(main(['run', '--config', 'Logging.colour=red'], context, () => [run])).resolves.toBe(
+        PDT.EXITCODE.INVALID_CONFIG,
+      );
+
+      expect(run.handler).not.toHaveBeenCalled();
+      expect(err).toEqual([m['error.config.unknownKey']({ key: 'Logging.colour' })]);
     });
 
     test('names a configuration file that is not JSON', async () => {
@@ -270,6 +310,36 @@ describe('main', () => {
       const given = await contextGiven();
 
       expect(given.createModule).toBe(createModule);
+    });
+
+    test('knows where each value of the configuration comes from', async () => {
+      writeUserConfig('{ "Logging": { "level": "debug" } }');
+
+      const given = await contextGiven();
+
+      expect(given.sourceOf(['Logging', 'level'])).toBe('user');
+      expect(given.sourceOf(['Logging', 'filename'])).toBe('default');
+    });
+
+    test('writes settings to the configuration files it read', async () => {
+      const given = await contextGiven();
+
+      const file = given.writeConfig('user', 'Logging.level', 'debug');
+
+      expect(file).toBe(path.join(context.paths.userConfigDir, 'config.json'));
+      expect(JSON.parse(fs.readFileSync(file, 'utf8'))).toEqual({ Logging: { level: 'debug' } });
+    });
+
+    test('clears settings from the configuration files it read', async () => {
+      writeUserConfig('{ "Logging": { "level": "debug", "filename": "mine.log" } }');
+      const file = path.join(context.paths.userConfigDir, 'config.json');
+
+      const given = await contextGiven();
+
+      expect(given.configFiles).toEqual([{ path: file, source: 'user' }]);
+      expect(given.filesSetting('Logging.level')).toEqual([{ path: file, source: 'user' }]);
+      expect(given.clearConfig(['user'], 'Logging.level')).toEqual([file]);
+      expect(JSON.parse(fs.readFileSync(file, 'utf8'))).toEqual({ Logging: { filename: 'mine.log' } });
     });
 
     test('creates VTTs with the VTT factory', async () => {

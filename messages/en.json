@@ -28,6 +28,33 @@
       },
       "info": {
         "description": "Show runtime information for an existing PDT project."
+      },
+      "config": {
+        "description": "Show or change the configuration.",
+        "get": {
+          "description": "Show a configuration value, or every value.",
+          "key": "Dot separated key of the setting, or group of settings, such as Logging.level.",
+          "listAll": "List every setting.",
+          "format": "How to write a group of settings.",
+          "showSource": "Show where each value comes from (flat and tree only)."
+        },
+        "set": {
+          "description": "Set a value in the project configuration file, or the user configuration file outside a project.",
+          "key": "Dot separated key of the setting, such as Logging.level.",
+          "value": "The value. Text the setting accepts as it is is kept as text; anything else is read as JSON.",
+          "user": "Set the value in the user configuration file, even inside a project."
+        },
+        "clear": {
+          "description": "Remove a setting from the project configuration file, or the user configuration file with --user.",
+          "key": "Dot separated key of the setting, or group of settings, such as Logging.level.",
+          "user": "Remove the setting from the user configuration file instead.",
+          "all": "Remove the setting from every configuration file that sets it."
+        }
+      }
+    },
+    "opt": {
+      "config": {
+        "description": "Override a setting for this run only, as <key>=<value>. Can be given more than once."
       }
     }
   },
@@ -38,13 +65,18 @@
       "starting": "Starting VTT {vtt} (version {version})…",
       "started": "VTT {vtt} has started.",
       "alreadyRunning": "VTT {vtt} is already running."
-    }
+    },
+    "configSet": "Set {key} in {file}",
+    "configCleared": "Cleared {key} from {file}"
   },
   "warn": {
     "pdtParentExists": "Attempt to create sub-PDT project (use -f to force).\n  Parent project at {path}",
     "alreadyExists": "The {description} already exists.",
     "moduleNotGenerated": "{path} is not empty, so no module is generated there. Ignored: {options}",
-    "logFileUnavailable": "Cannot write the log file {file}, so messages go to the console only: {reason}"
+    "logFileUnavailable": "Cannot write the log file {file}, so messages go to the console only: {reason}",
+    "configNotSet": "{key} is not set in {file}, so nothing was cleared.",
+    "configSetElsewhere": "{key} is not set in {file}, so nothing was cleared. It is set in {others}: use --all to clear it there.",
+    "configNotSetAnywhere": "{key} is not set in any configuration file, so nothing was cleared."
   },
   "error": {
     "notInPdtProject": "Not a PDT project.",
@@ -53,7 +85,15 @@
     "config": {
       "invalid": "The configuration is invalid:",
       "unreadable": "Could not read the configuration file {file}: {reason}",
-      "notAnObject": "The configuration file {file} must contain a JSON object."
+      "notAnObject": "The configuration file {file} must contain a JSON object.",
+      "badKey": "\"{key}\" is not a configuration key: give its parts, separated by dots, such as Logging.level.",
+      "unknownKey": "{key} is not a configuration setting.",
+      "notSet": "{key} is not set.",
+      "noFile": "There is no {target} configuration file here.",
+      "keyRequired": "Give a configuration key, or --list-all to list every setting.",
+      "badOverride": "--config takes <key>=<value>, not \"{value}\".",
+      "keyAndListAll": "Give a configuration key or --list-all, not both.",
+      "noProject": "Not in a PDT project, so there is no project configuration file. Use --user for your user configuration file."
     },
     "commandRequired": "At least one top level command is required.",
     "vtt": {

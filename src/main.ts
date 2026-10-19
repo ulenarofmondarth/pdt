@@ -6,16 +6,26 @@
  */
 import PDT from '@/constants.js';
 import { createParser } from '@/cli/parsers.js';
+import { configOverrides } from '@/cli/overrides.js';
+import { UsageError } from '@/cli/usage-error.js';
 import { pdtCommands } from '@/cli/commands.js';
 import { createModule, type Prompter } from '@lib/ModuleGenerator.js';
 import { createVtt } from '@lib/VTT/createVtt.js';
 import { prettyData } from '@util/diagnostic.js';
-import { ConfigError, configFiles, loadConfig } from '@util/load-config.js';
+import {
+  ConfigError,
+  configFiles,
+  resolveConfig,
+  writeSetting,
+  clearSetting,
+  filesSetting,
+  type ConfigSources,
+  type ResolvedConfig,
+} from '@util/load-config.js';
 import logger, { configureLogger, setLogDirectory } from '@util/logger.js';
 
 import type { Arguments, CommandModule } from 'yargs';
 import type { CommandContext } from '@/cli/context.js';
-import type { Config } from '@schema/config.js';
 import type { PdtPaths } from '@util/runtime-config.js';
 
 /** What a run of pdt depends on. */
@@ -35,17 +45,29 @@ export interface MainContext {
 /** The commands to offer, given what they can work with. */
 export type CommandsFor = (context: CommandContext) => readonly CommandModule[];
 
+/** What went wrong, with each problem with the configuration on a line of its own. */
+function describeError(error: unknown): string {
+  if (error instanceof ConfigError && error.problems.length > 0) {
+    return `${error.message}\n\t${error.problems.join('\n\t')}`;
+  }
+  return error instanceof Error ? error.message : String(error);
+}
+
 /**
- * The configuration, or the exit code to stop with after reporting why it cannot be used.
+ * The configuration and where it comes from, or the exit code to stop with after reporting why it
+ * cannot be used.
  */
-function configure(context: MainContext): Config | number {
+function configure(
+  args: readonly string[],
+  context: MainContext,
+): { sources: ConfigSources; resolved: ResolvedConfig } | number {
   try {
-    return loadConfig({ files: configFiles(context.paths), env: context.env });
+    const sources = { files: configFiles(context.paths), env: context.env, overrides: configOverrides(args) };
+    return { sources, resolved: resolveConfig(sources) };
   } catch (error) {
     if (!(error instanceof ConfigError)) throw error;
     // The logger takes its settings from the configuration, so it cannot report this.
-    context.err(error.message);
-    if (error.problems.length > 0) context.err(`\t${error.problems.join('\n\t')}`);
+    context.err(describeError(error));
     return PDT.EXITCODE.INVALID_CONFIG;
   }
 }
@@ -63,8 +85,10 @@ export async function main(
   context: MainContext,
   commands: CommandsFor = pdtCommands,
 ): Promise<number> {
-  const config = configure(context);
-  if (typeof config === 'number') return config;
+  const configured = configure(args, context);
+  if (typeof configured === 'number') return configured;
+  const { sources, resolved } = configured;
+  const { config } = resolved;
 
   configureLogger(config.Logging);
   setLogDirectory(context.paths.pdtConfigDir ?? context.paths.userDataDir);
@@ -72,6 +96,11 @@ export async function main(
   const commandContext: CommandContext = {
     paths: context.paths,
     config,
+    sourceOf: resolved.sourceOf,
+    writeConfig: (target, key, value) => writeSetting(sources, target, key, value),
+    configFiles: sources.files,
+    filesSetting: key => filesSetting(sources, key),
+    clearConfig: (targets, key) => clearSetting(sources, targets, key),
     log: {
       error: message => logger.error(message),
       warn: message => logger.warn(message),
@@ -101,7 +130,11 @@ export async function main(
       },
     );
   } catch (error) {
-    logger.error(error instanceof Error ? error.message : String(error));
+    if (error instanceof UsageError) {
+      context.err(error.message);
+      return PDT.EXITCODE.USAGE;
+    }
+    logger.error(describeError(error));
     return PDT.EXITCODE.ERROR;
   }
 

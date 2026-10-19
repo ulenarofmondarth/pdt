@@ -104,74 +104,141 @@ Display the current project's runtime configuration.
 
 ## config
 
-{command}`config [options] [show|get|set]`
+{command}`config <get|set|clear>`
 
-Manipulates the PDT configuration. An initial 'user' configuration is created when a module is initialised in PDT.
+Shows and changes the configuration (see {doc}`configuration`). A setting is named by its key: the path to it, its parts separated by dots, such as `Logging.level` or `VTT.prj.server.version`. A key can also name a group of settings, such as `Logging` or `VTT.prj`.
 
-### Options
-
--e, --environment
-
-: Sub-commands operate on the configuration file for the specified environment.
-
-  :::{admonition} Examples
-  `pdt config -e DEV get logger.filename` will return the configuration value appropriate for the `DEV` environment. This could be from user's defaults `pdt.config.json` or the environment specific `pdt.dev.config.json`.
-
-  `pdt config -e DEV set logger.filename my-pdt.log` will set the `logger.filename` to `my-pdt.log` in the `pdt.dev.config.json` file.
-  :::
-
-  :::{note}
-  The environment value is normalised to lowercase (see examples above).
-  :::
-
-### config show
-
-{command}`config show [options]`
-
-Shows the current status including:
-
-- Defaults supplied 'out of the box' by PDT
-- User supplied defaults from user config file
-- User supplied values from environment variables
-
-  - From shell
-  - From `.env`
-
-#### Options
-
--s, --source
-
-: Show where each configuration value was assigned.
+(pdt_tlc_config_get)=
 
 ### config get
 
-{command}`config get [options] PARAM`
+{command}`config get [key] [options]`
 
-**PARAM**
+Shows the value of a setting, or of a group of settings.
 
-: The configuration parameter to be returned.
+**key**
 
-  Returns an error if the `PARAM` does not exist.
+: The setting, or group of settings, to show.
+
+A single setting is shown as its value alone, so that a script can use it as it is:
+
+```shell
+$ pdt config get Logging.level
+warn
+```
+
+A group is shown in the format chosen with `--format`.
+
+{{pdt}} stops with an error, writing nothing to standard output, if the key is not a setting {{pdt}} has, or if the setting has no value (an optional setting that is not set). Without a key, `--list-all` is required.
 
 #### Options
 
--s, --source
+`--list-all`
 
-: Show where each configuration value was assigned.
+: Show every setting, instead of the one named by a key.
+
+`--format flat|tree|json|yml`
+
+: How to show a group of settings. Default: `flat`.
+
+  `flat`
+  : A line for each setting: its full key, a space, then its value. Strings are quoted; lists are shown as JSON.
+
+    ```text
+    Logging.filename "pdt.log"
+    Logging.level "warn"
+    ```
+
+  `tree`
+  : The keys as a tree, each value after its name.
+
+    ```text
+    Logging
+    ├── filename: "pdt.log"
+    └── level: "warn"
+    ```
+
+  `json`
+  : The settings as JSON.
+
+  `yml`
+  : The settings as YAML.
+
+  For a single setting, `json` and `yml` show its value serialised (a string quoted in JSON, for example); `flat` and `tree` show it alone.
+
+`--show-source`
+
+: Add where each value comes from after it, in brackets: `[default]`, `[user]`, `[project]`, `[environment]` or `[cli]` (from `--config`). Shown by `flat` and `tree`, and for a single setting; ignored by `json` and `yml`.
+
+  ```text
+  $ pdt config get Logging --show-source
+  Logging.filename "pdt.log" [default]
+  Logging.level "debug" [user]
+  ```
+
+(pdt_tlc_config_set)=
 
 ### config set
 
-{command}`config set PARAM VALUE`
+{command}`config set <key> <value> [options]`
 
-**PARAM**
+Sets a value in a configuration file, creating the file if there is none. Inside a project the project's `.pdt/config.json` is written; outside one, your user configuration file.
 
-: The configuration parameter to be set. This is a simple dot-separated path within this configuration.
+**key**
 
-**VALUE**
+: The setting to set, or a group of settings to set all at once.
 
-: The value to be assigned to the `PARAM`.
+**value**
 
-  Strings containing spaces should be enclosed in quotation marks (single or double).
+: The value. Text the setting accepts as it is stays text, so `pdt config set VTT.prj.server.version 13` sets the string `"13"`. Anything else is read as JSON, so a number, a list or a group can be given:
+
+  ```shell
+  pdt config set VTT.prj.host.ports '[{"internal": 30000, "external": 8080}]'
+  ```
+
+  Quote a value with spaces or characters your shell treats specially.
+
+Nothing is written if the key is not a setting, or if the configuration with the new value would be invalid; {{pdt}} names the problem and stops with an error. Other settings in the file are kept.
+
+#### Options
+
+`--user`
+
+: Write your user configuration file, even inside a project.
+
+(pdt_tlc_config_clear)=
+
+### config clear
+
+{command}`config clear <key> [options]`
+
+Removes a setting from the project's `.pdt/config.json`, so that it takes its value from the sources before it again (your user file, or the default). Groups left empty by the removal are removed too; other settings in the file are kept.
+
+**key**
+
+: The setting, or group of settings, to remove.
+
+```shell
+pdt config clear VTT.prj.server.version          # from the project's file
+pdt config clear Logging.level --user            # from your user file
+pdt config clear Logging.level --all             # from every file that sets it
+```
+
+Only the one file is changed: unlike `set`, `clear` does not use your user file outside a project, but stops with an error; give `--user` there.
+
+If the file does not set the key, nothing is changed and {{pdt}} warns you. The warning names any other file that does set it, which `--all` would clear.
+
+{{pdt}} stops with an error, changing nothing, if the key is not a setting {{pdt}} has, or if the configuration without the setting would be invalid (for example, removing a required setting of a VTT your file defines).
+
+#### Options
+
+`--user`
+
+: Remove the setting from your user configuration file instead of the project's.
+
+`--all`
+
+: Remove the setting from every configuration file that sets it: your user file and, inside a project, the project's.
 
 (pdt_tlc_pack)=
 

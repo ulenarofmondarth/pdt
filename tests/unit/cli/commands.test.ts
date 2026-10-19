@@ -5,8 +5,8 @@ import { createCommandContext } from '@tests/unit/mocks/context.js';
 describe('pdtCommands', () => {
   const commands = pdtCommands(createCommandContext());
 
-  test('are vtt, init and info', () => {
-    expect(commands.map(command => String(command.command).split(' ')[0])).toEqual(['vtt', 'init', 'info']);
+  test('are vtt, init, info and config', () => {
+    expect(commands.map(command => String(command.command).split(' ')[0])).toEqual(['vtt', 'init', 'info', 'config']);
   });
 
   test.each(commands.map(command => [command.command, command] as const))(

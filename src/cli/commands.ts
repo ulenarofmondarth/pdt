@@ -1,3 +1,4 @@
+import { createConfigCommand } from './cmds/config.js';
 import { createInfoCommand } from './cmds/info.js';
 import { createInitCommand } from './cmds/init.js';
 import { createVttCommand } from './cmds/vtt.js';
@@ -10,5 +11,10 @@ import type { CommandContext } from './context.js';
  * pdt's top level commands, working with `context`.
  */
 export function pdtCommands(context: CommandContext): readonly CommandModule[] {
-  return [createVttCommand(context), anyCommand(createInitCommand(context)), createInfoCommand(context)];
+  return [
+    createVttCommand(context),
+    anyCommand(createInitCommand(context)),
+    createInfoCommand(context),
+    createConfigCommand(context),
+  ];
 }
