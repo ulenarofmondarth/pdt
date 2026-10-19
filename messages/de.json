@@ -36,7 +36,8 @@
           "key": "Durch Punkte getrennter Schlüssel der Einstellung oder Gruppe, etwa Logging.level.",
           "listAll": "Alle Einstellungen auflisten.",
           "format": "Wie eine Gruppe von Einstellungen ausgegeben wird.",
-          "showSource": "Zeigen, woher jeder Wert stammt (nur flat und tree)."
+          "showSource": "Zeigen, woher jeder Wert stammt (nur flat und tree).",
+          "printSecrets": "Geheime Werte anzeigen, statt *****."
         },
         "set": {
           "description": "Einen Wert in der Projektkonfiguration setzen, außerhalb eines Projekts in der Benutzerkonfiguration.",
@@ -96,7 +97,8 @@
       "registered": "Projekt {id} unter {root} in {file} registriert",
       "moved": "Projekt {id} von {from} nach {to} verschoben",
       "changeDirectory": "Deine Shell ist noch am alten Ort. Um dort weiterzumachen, wo du warst: cd {dir}"
-    }
+    },
+    "gitignored": "{entries} zu {file} hinzugefügt, damit sie nicht committet werden."
   },
   "warn": {
     "pdtParentExists": "Versuch, ein PDT-Unterprojekt anzulegen (mit -f erzwingen).\n  Übergeordnetes Projekt unter {path}",
@@ -132,7 +134,8 @@
       "keyRequired": "Gib einen Konfigurationsschlüssel an, oder --list-all, um alle Einstellungen aufzulisten.",
       "badOverride": "--config erwartet <Schlüssel>=<Wert>, nicht „{value}“.",
       "keyAndListAll": "Gib einen Konfigurationsschlüssel oder --list-all an, nicht beides.",
-      "noProject": "Kein PDT-Projekt, daher gibt es keine Projektkonfiguration. Verwende --user für deine Benutzerkonfiguration."
+      "noProject": "Kein PDT-Projekt, daher gibt es keine Projektkonfiguration. Verwende --user für deine Benutzerkonfiguration.",
+      "secretInConfig": "{file} enthält geheime Einstellungen, die pdt nur aus {secrets} liest: {keys}. Verschiebe sie von Hand nach {secrets}, damit sie nicht mit der Konfiguration committet werden können."
     },
     "commandRequired": "Mindestens ein Befehl der obersten Ebene ist erforderlich.",
     "vtt": {

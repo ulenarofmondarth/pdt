@@ -6,6 +6,9 @@
  * line, and the result is validated. Later sources win: an object is merged key by key, anything
  * else, lists included, is replaced whole. Which source each value came from is kept.
  *
+ * Secret settings live in a `secrets.conf` next to each `config.json`, read straight after it, so
+ * that a configuration file can be shared, or committed, without them.
+ *
  * Nothing here depends on the running process, so callers say which files and variables to use.
  */
 import fs from 'node:fs';
@@ -18,6 +21,7 @@ import {
   parseKey,
   parseValue,
   settingKey,
+  splitSecrets,
   valueAt,
   withoutKey,
   type ConfigKey,
@@ -28,6 +32,9 @@ import type { PdtPaths } from '@util/runtime-config.js';
 
 /** Name of the configuration file in each configuration directory. */
 export const CONFIG_FILENAME = 'config.json';
+
+/** Name of the file of secret settings in each configuration directory. */
+export const SECRETS_FILENAME = 'secrets.conf';
 
 /** The configuration cannot be used. */
 export class ConfigError extends Error {
@@ -47,12 +54,18 @@ export class ConfigError extends Error {
 }
 
 /** Where a value in the configuration came from. */
-export type ConfigSource = 'default' | 'user' | 'project' | 'environment' | 'cli';
+export type ConfigSource = 'default' | 'user' | 'user-secrets' | 'project' | 'project-secrets' | 'environment' | 'cli';
 
-/** A configuration file, and which of the sources it is. */
+/** A configuration file, whose it is, and whether it is the file of secret settings. */
 export interface ConfigFile {
   path: string;
   source: 'user' | 'project';
+  secrets: boolean;
+}
+
+/** The source a configuration file's values come from. */
+function sourceOfFile({ source, secrets }: ConfigFile): ConfigSource {
+  return secrets ? `${source}-secrets` : source;
 }
 
 /** A setting given on the command line, as `--config <key>=<value>`. */
@@ -149,6 +162,32 @@ function readFile(file: string): Settings {
 }
 
 /**
+ * The settings in a configuration file, or none if it does not exist.
+ *
+ * @throws {ConfigError} When the file cannot be read, is not JSON, does not hold an object, or is a
+ *   `config.json` that holds a secret setting
+ */
+function readSettings(file: ConfigFile): Settings {
+  const settings = readFile(file.path);
+  if (file.secrets) return settings;
+  const { secret } = splitSecrets(settings);
+  if (secret !== undefined) {
+    const keys = leaves(secret).map(leaf => leaf.key.join('.'));
+    const secrets = path.join(path.dirname(file.path), SECRETS_FILENAME);
+    throw new ConfigError(m['error.config.secretInConfig']({ file: file.path, keys: keys.join(', '), secrets }));
+  }
+  return settings;
+}
+
+/** Write `settings` to `file`, which only its owner may read if it holds secrets. */
+function writeSettings(file: ConfigFile, settings: Settings) {
+  fs.mkdirSync(path.dirname(file.path), { recursive: true });
+  fs.writeFileSync(file.path, `${JSON.stringify(settings, null, 2)}\n`, file.secrets ? { mode: 0o600 } : {});
+  // The mode is only given to a new file; one made some other way may be readable by others.
+  if (file.secrets) fs.chmodSync(file.path, 0o600);
+}
+
+/**
  * A setting given on the command line, as settings to merge.
  *
  * @throws {ConfigError} When it is not `<key>=<value>`, or the key is not a setting
@@ -166,7 +205,7 @@ function overrideSettings({ key, value }: ConfigOverride): Settings {
 function readLayers({ files, env, overrides = [] }: ConfigSources): Layer[] {
   const layers: Layer[] = [{ source: 'default', settings: defaults }];
   for (const file of files) {
-    layers.push({ source: file.source, settings: readFile(file.path) });
+    layers.push({ source: sourceOfFile(file), settings: readSettings(file) });
   }
   for (const [variable, keys] of Object.entries(ENVIRONMENT_SETTINGS)) {
     const value = env[variable];
@@ -222,29 +261,47 @@ export function loadConfig(sources: ConfigSources): Config {
 }
 
 /**
- * Set a value in one of the configuration files, creating the file if there is none.
+ * Set a value in the user's or the project's configuration, creating the files if there are none.
+ * Secret values go to the `secrets.conf`, the rest to the `config.json`: a group of settings may be
+ * split between them.
  *
  * The value is read as {@link parseValue} reads it. Nothing is written unless the whole
  * configuration, with the change, is valid.
  *
- * @param sources - The configuration's sources; the file written is one of them
- * @param target - Which file to write
+ * @param sources - The configuration's sources; the files written are among them
+ * @param target - Whose files to write
  * @param key - The dot separated key of the setting
  * @param value - The value, as text
- * @returns The file written
+ * @returns The files written
  * @throws {ConfigError} When the key is not a setting, a file cannot be read, or the change would
  *   make the configuration invalid
  */
-export function writeSetting(sources: ConfigSources, target: ConfigFile['source'], key: string, value: string): string {
-  const file = sources.files.find(candidate => candidate.source === target);
-  if (file === undefined) throw new Error(m['error.config.noFile']({ target }));
-  const changed = merge(readFile(file.path), overrideSettings({ key, value }));
+export function writeSetting(
+  sources: ConfigSources,
+  target: ConfigFile['source'],
+  key: string,
+  value: string,
+): string[] {
+  const split = splitSecrets(overrideSettings({ key, value }));
+  const changes = new Map<ConfigSource, { file: ConfigFile; settings: Settings }>();
+  for (const [secrets, over] of [
+    [false, split.plain],
+    [true, split.secret],
+  ] as const) {
+    if (over === undefined) continue;
+    const file = sources.files.find(candidate => candidate.source === target && candidate.secrets === secrets);
+    if (file === undefined) throw new Error(m['error.config.noFile']({ target }));
+    changes.set(sourceOfFile(file), { file, settings: merge(readFile(file.path), over) });
+  }
 
-  resolve(readLayers(sources).map(layer => (layer.source === target ? { source: target, settings: changed } : layer)));
+  resolve(
+    readLayers(sources).map(layer => ({ ...layer, settings: changes.get(layer.source)?.settings ?? layer.settings })),
+  );
 
-  fs.mkdirSync(path.dirname(file.path), { recursive: true });
-  fs.writeFileSync(file.path, `${JSON.stringify(changed, null, 2)}\n`);
-  return file.path;
+  return [...changes.values()].map(({ file, settings }) => {
+    writeSettings(file, settings);
+    return file.path;
+  });
 }
 
 /**
@@ -259,43 +316,47 @@ export function filesSetting(sources: ConfigSources, key: string): ConfigFile[] 
 }
 
 /**
- * Remove the value at `key` from configuration files, with any group the removal leaves empty.
+ * Remove the value at `key` from the user's or the project's configuration files, with any group
+ * the removal leaves empty. Both the `config.json` and the `secrets.conf` are cleared: a group of
+ * settings may be split between them.
  *
  * Nothing is written unless the whole configuration, with the change, is valid.
  *
  * @param sources - The configuration's sources; the files changed are among them
- * @param targets - Which files to change
+ * @param targets - Whose files to change
  * @param key - The dot separated key of the setting, or group of settings
- * @returns The files written
+ * @returns The files written: those that set a value at `key`
  * @throws {Error} When the key is not a setting
  * @throws {ConfigError} When a file cannot be read, or the change would make the configuration
  *   invalid
  */
 export function clearSetting(sources: ConfigSources, targets: readonly ConfigFile['source'][], key: string): string[] {
   const keys = settingKey(key);
-  const changes = new Map(
-    targets.map(target => {
-      const file = sources.files.find(candidate => candidate.source === target);
-      if (file === undefined) throw new Error(m['error.config.noFile']({ target }));
-      return [target, { file, settings: withoutKey(readFile(file.path), keys) }] as const;
-    }),
-  );
+  const changes = new Map<ConfigSource, { file: ConfigFile; settings: Settings }>();
+  for (const target of new Set(targets)) {
+    const files = sources.files.filter(candidate => candidate.source === target);
+    if (files.length === 0) throw new Error(m['error.config.noFile']({ target }));
+    for (const file of files) {
+      const settings = readFile(file.path);
+      if (valueAt(settings, keys) !== undefined) {
+        changes.set(sourceOfFile(file), { file, settings: withoutKey(settings, keys) });
+      }
+    }
+  }
 
   resolve(
-    readLayers(sources).map(layer => {
-      const change = changes.get(layer.source as ConfigFile['source']);
-      return change === undefined ? layer : { source: layer.source, settings: change.settings };
-    }),
+    readLayers(sources).map(layer => ({ ...layer, settings: changes.get(layer.source)?.settings ?? layer.settings })),
   );
 
   return [...changes.values()].map(({ file, settings }) => {
-    fs.writeFileSync(file.path, `${JSON.stringify(settings, null, 2)}\n`);
+    writeSettings(file, settings);
     return file.path;
   });
 }
 
 /**
- * The configuration files for a set of directories: the user's, then the project's.
+ * The configuration files for a set of directories: the user's, then the project's, each
+ * `config.json` followed by its `secrets.conf`.
  *
  * @param paths - The user configuration directory, and the project's `.pdt` directory if there is one
  */
@@ -303,8 +364,11 @@ export function configFiles({
   userConfigDir,
   pdtConfigDir,
 }: Pick<PdtPaths, 'userConfigDir' | 'pdtConfigDir'>): ConfigFile[] {
-  const user: ConfigFile = { path: path.join(userConfigDir, CONFIG_FILENAME), source: 'user' };
+  const filesIn = (dir: string, source: ConfigFile['source']): ConfigFile[] => [
+    { path: path.join(dir, CONFIG_FILENAME), source, secrets: false },
+    { path: path.join(dir, SECRETS_FILENAME), source, secrets: true },
+  ];
   return pdtConfigDir === undefined
-    ? [user]
-    : [user, { path: path.join(pdtConfigDir, CONFIG_FILENAME), source: 'project' }];
+    ? filesIn(userConfigDir, 'user')
+    : [...filesIn(userConfigDir, 'user'), ...filesIn(pdtConfigDir, 'project')];
 }

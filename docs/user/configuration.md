@@ -7,8 +7,8 @@
 The configuration is built up in this order, later sources overriding earlier ones:
 
 1. The defaults built into {{pdt}}.
-2. Your user configuration file.
-3. The project's configuration file, `.pdt/config.json` in the project root, when {{pdt}} runs inside a project or is given one with `--project` (see {ref}`pdt_cli_project`).
+2. Your user configuration file, then your user secrets file (see {ref}`pdt_conf_secrets`).
+3. The project's configuration file, `.pdt/config.json` in the project root, then the project's secrets file, `.pdt/secrets.conf`, when {{pdt}} runs inside a project or is given one with `--project` (see {ref}`pdt_cli_project`).
 4. Environment variables (below).
 5. Settings given on the command line with `--config` (below).
 
@@ -42,6 +42,26 @@ Rather than editing the files by hand, you can use `pdt config set` and `pdt con
 The built-in defaults configure no VTT: `pdt init` adds one for the project's module to the project's file (see {ref}`pdt_tlc_init_vtt`). It also records the project's id there, as the top-level setting `id` (see {ref}`pdt_tlc_init_id`).
 
 {{pdt}} checks the combined configuration before doing anything else. If a file is not valid JSON, or a setting has a value it does not accept, {{pdt}} names the file or the setting and stops with exit code 127.
+
+(pdt_conf_secrets)=
+
+## Secrets
+
+Some settings are secret: passwords, keys and the like. They are kept apart from the rest, in a `secrets.conf` beside each `config.json`, so that a project's configuration can be shared and committed without them:
+
+| Setting | What it is |
+| --- | --- |
+| `FOUNDRY.username`, `FOUNDRY.password` | Your Foundry VTT account, used to download Foundry VTT |
+| `FOUNDRY.license_key` | Your Foundry VTT licence key |
+| `VTT.<name>.server.admin_key` | The administrator password of a VTT's server |
+
+Your Foundry VTT account is the same for every project, so `FOUNDRY` usually belongs in your user secrets file, `secrets.conf` in your user configuration directory (`~/.config/pdt/secrets.conf` on Linux).
+
+A `secrets.conf` holds JSON, like a `config.json`, and is read straight after it. Use `pdt config set` to write it: a secret setting goes to `secrets.conf`, everything else to `config.json`, and a group of settings given at once is split between the two. {{pdt}} makes a `secrets.conf` readable only by you when it writes it. Inside a project it also adds `.pdt/secrets.conf` to the project's `.gitignore`, as `pdt init` does (see {ref}`pdt_tlc_init`).
+
+{{pdt}} refuses to run, with exit code 127, if a `config.json` holds a secret setting, naming the setting and the `secrets.conf` it belongs in. Move it there by hand.
+
+`pdt config get` shows a secret as `*****`; give `--print-secrets` to see it (see {ref}`pdt_tlc_config`). Secrets given to `pdt config set` or `--config` are masked in the log as well.
 
 ## Environment variables
 

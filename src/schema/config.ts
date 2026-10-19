@@ -3,12 +3,23 @@ import { z } from 'zod/v4';
 /** Image a Docker host runs when its settings name none. */
 export const DEFAULT_DOCKER_IMAGE = 'felddy/foundryvtt';
 
+/**
+ * The settings whose values are secret. They are kept in a `secrets.conf`, never in a
+ * `config.json`, and are shown masked unless asked for.
+ */
+export const secretSettings = z.registry<Record<string, never>>();
+
+/** A secret text setting. */
+const secret = () => z.string().register(secretSettings, {});
+
 const foundryServerSettings = z.object({
   type: z.literal(['foundry']),
   hostname: z.string(),
   /** The Foundry VTT release to run. */
   version: z.string(),
   port: z.string().optional(),
+  /** The password of the server's administrator. */
+  admin_key: secret().optional(),
 });
 
 export const serverSchema = z.discriminatedUnion('type', [foundryServerSettings]);
@@ -53,6 +64,13 @@ export const vttSchema = z.object({
 /** A VTT's settings: its server, and the host it runs on. */
 export type VttSettings = z.output<typeof vttSchema>;
 
+/** The Foundry VTT account every project's servers use. */
+const foundryAccount = z.object({
+  username: secret().optional(),
+  password: secret().optional(),
+  license_key: secret().optional(),
+});
+
 const npmDebugLevels = z.literal(['error', 'warn', 'info', 'http', 'verbose', 'debug', 'silly']);
 
 export const config = z.object({
@@ -66,6 +84,7 @@ export const config = z.object({
     level: npmDebugLevels,
   }),
   VTT: z.record(z.string(), vttSchema),
+  FOUNDRY: foundryAccount.optional(),
   DOCS: z.object({ host: hostSchema }),
 });
 

@@ -111,6 +111,57 @@ describe('config get command', () => {
     });
   });
 
+  describe('secrets', () => {
+    beforeEach(() => {
+      ctx.config.FOUNDRY = { username: 'u53rname', password: 'hunter2' };
+      ctx.config.VTT = {
+        mod: {
+          server: { type: 'foundry', hostname: 'localhost', version: '14', admin_key: 'k3y' },
+          host: { type: 'docker', image: 'felddy/foundryvtt', ports: [] },
+        },
+      };
+    });
+
+    test('writes a secret value masked', async () => {
+      await run('get FOUNDRY.password');
+
+      expect(ctx.out).toHaveBeenCalledExactlyOnceWith('*****');
+    });
+
+    test('writes a secret value as it is with --print-secrets', async () => {
+      await run('get FOUNDRY.password --print-secrets');
+
+      expect(ctx.out).toHaveBeenCalledExactlyOnceWith('hunter2');
+    });
+
+    test('masks the secrets in a group, keeping the rest', async () => {
+      await run('get VTT.mod.server');
+
+      expect(ctx.out).toHaveBeenCalledExactlyOnceWith(
+        [
+          'VTT.mod.server.type "foundry"',
+          'VTT.mod.server.hostname "localhost"',
+          'VTT.mod.server.version "14"',
+          'VTT.mod.server.admin_key "*****"',
+        ].join('\n'),
+      );
+    });
+
+    test.each(['flat', 'tree', 'json', 'yml'])('masks every secret in every setting, in %s', async format => {
+      await run(`get --list-all --format ${format}`);
+
+      const text = ctx.out.mock.calls.flat().join('\n');
+      for (const secret of ['u53rname', 'hunter2', 'k3y']) expect(text).not.toContain(secret);
+      expect(text).toContain('*****');
+    });
+
+    test('writes every secret with --list-all --print-secrets', async () => {
+      await run('get --list-all --print-secrets');
+
+      expect(ctx.out.mock.calls.flat().join('\n')).toContain('FOUNDRY.password "hunter2"');
+    });
+  });
+
   describe('a command line it cannot run', () => {
     test('refuses neither a key nor --list-all, writing nothing', async () => {
       await expect(run('get')).rejects.toEqual(new UsageError(m['error.config.keyRequired']()));

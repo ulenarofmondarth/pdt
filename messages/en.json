@@ -36,7 +36,8 @@
           "key": "Dot separated key of the setting, or group of settings, such as Logging.level.",
           "listAll": "List every setting.",
           "format": "How to write a group of settings.",
-          "showSource": "Show where each value comes from (flat and tree only)."
+          "showSource": "Show where each value comes from (flat and tree only).",
+          "printSecrets": "Show secret values, instead of *****."
         },
         "set": {
           "description": "Set a value in the project configuration file, or the user configuration file outside a project.",
@@ -96,7 +97,8 @@
       "registered": "Registered project {id} at {root} in {file}",
       "moved": "Moved project {id} from {from} to {to}",
       "changeDirectory": "Your shell is still in the old location. To carry on where you were: cd {dir}"
-    }
+    },
+    "gitignored": "Added {entries} to {file}, so that they are not committed."
   },
   "warn": {
     "pdtParentExists": "Attempt to create sub-PDT project (use -f to force).\n  Parent project at {path}",
@@ -132,7 +134,8 @@
       "keyRequired": "Give a configuration key, or --list-all to list every setting.",
       "badOverride": "--config takes <key>=<value>, not \"{value}\".",
       "keyAndListAll": "Give a configuration key or --list-all, not both.",
-      "noProject": "Not in a PDT project, so there is no project configuration file. Use --user for your user configuration file."
+      "noProject": "Not in a PDT project, so there is no project configuration file. Use --user for your user configuration file.",
+      "secretInConfig": "{file} holds secret settings, which pdt only reads from {secrets}: {keys}. Move them to {secrets} by hand, so that they cannot be committed with the configuration."
     },
     "commandRequired": "At least one top level command is required.",
     "vtt": {

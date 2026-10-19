@@ -6,7 +6,7 @@
  */
 import PDT from '@/constants.js';
 import { createParser } from '@/cli/parsers.js';
-import { configOverrides, projectOption } from '@/cli/overrides.js';
+import { configOverrides, projectOption, redactArgv } from '@/cli/overrides.js';
 import { UsageError } from '@/cli/usage-error.js';
 import { pdtCommands } from '@/cli/commands.js';
 import { createModule, type Prompter } from '@lib/ModuleGenerator.js';
@@ -146,7 +146,7 @@ export async function main(
         usageError = err ?? undefined;
         output = text;
         logger.debug(
-          `Parser callback:\nerr =\n${prettyData(err)}\n\nargv =\n${prettyData(argv)}\n\noutput = \n"${text}"`,
+          `Parser callback:\nerr =\n${prettyData(err)}\n\nargv =\n${prettyData(redactArgv(argv))}\n\noutput = \n"${text}"`,
         );
       },
     );

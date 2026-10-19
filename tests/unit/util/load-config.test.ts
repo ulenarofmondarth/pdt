@@ -28,8 +28,8 @@ describe('loadConfig', () => {
     sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'pdt-config-'));
     userFile = path.join(sandbox, 'user', 'config.json');
     projectFile = path.join(sandbox, 'project', 'config.json');
-    user = { path: userFile, source: 'user' };
-    project = { path: projectFile, source: 'project' };
+    user = { path: userFile, source: 'user', secrets: false };
+    project = { path: projectFile, source: 'project', secrets: false };
   });
 
   afterEach(() => {
@@ -298,7 +298,7 @@ describe('writeSetting', () => {
   const read = (file: string): unknown => JSON.parse(fs.readFileSync(file, 'utf8'));
 
   test('creates the file, with only the setting, and returns where it is', () => {
-    expect(writeSetting(sources, 'user', 'Logging.level', 'debug')).toBe(userFile);
+    expect(writeSetting(sources, 'user', 'Logging.level', 'debug')).toEqual([userFile]);
 
     expect(read(userFile)).toEqual({ Logging: { level: 'debug' } });
     expect(fs.existsSync(projectFile)).toBe(false);
@@ -364,7 +364,7 @@ describe('filesSetting and clearSetting', () => {
       files: configFiles({ userConfigDir: path.join(sandbox, 'user'), pdtConfigDir: path.join(sandbox, 'project') }),
       env: {},
     };
-    [userFile, projectFile] = sources.files.map(file => file.path) as [string, string];
+    [userFile, projectFile] = sources.files.filter(file => !file.secrets).map(file => file.path) as [string, string];
   });
 
   afterEach(() => {
@@ -383,13 +383,13 @@ describe('filesSetting and clearSetting', () => {
       write(userFile, { Logging: { level: 'debug' } });
       write(projectFile, { Logging: { level: 'error' } });
 
-      expect(filesSetting(sources, 'Logging.level')).toEqual(sources.files);
+      expect(filesSetting(sources, 'Logging.level')).toEqual([sources.files[0], sources.files[2]]);
     });
 
     test('counts a file that sets something in a group', () => {
       write(projectFile, { Logging: { level: 'error' } });
 
-      expect(filesSetting(sources, 'Logging')).toEqual([sources.files[1]]);
+      expect(filesSetting(sources, 'Logging')).toEqual([sources.files[2]]);
     });
 
     test('is nothing when no file sets it, or no file exists', () => {
@@ -456,17 +456,130 @@ describe('filesSetting and clearSetting', () => {
 });
 
 describe('configFiles', () => {
-  test('is the user file, then the project file', () => {
+  test("is the user's files, then the project's, each config.json before its secrets.conf", () => {
     expect(configFiles({ userConfigDir: '/home/me/.config/pdt', pdtConfigDir: '/work/module/.pdt' })).toEqual([
-      { path: path.join('/home/me/.config/pdt', 'config.json'), source: 'user' },
-      { path: path.join('/work/module/.pdt', 'config.json'), source: 'project' },
+      { path: path.join('/home/me/.config/pdt', 'config.json'), source: 'user', secrets: false },
+      { path: path.join('/home/me/.config/pdt', 'secrets.conf'), source: 'user', secrets: true },
+      { path: path.join('/work/module/.pdt', 'config.json'), source: 'project', secrets: false },
+      { path: path.join('/work/module/.pdt', 'secrets.conf'), source: 'project', secrets: true },
     ]);
   });
 
-  test('is only the user file outside a project', () => {
+  test("is only the user's files outside a project", () => {
     expect(configFiles({ userConfigDir: '/home/me/.config/pdt', pdtConfigDir: undefined })).toEqual([
-      { path: path.join('/home/me/.config/pdt', 'config.json'), source: 'user' },
+      { path: path.join('/home/me/.config/pdt', 'config.json'), source: 'user', secrets: false },
+      { path: path.join('/home/me/.config/pdt', 'secrets.conf'), source: 'user', secrets: true },
     ]);
+  });
+});
+
+describe('secrets', () => {
+  let sandbox: string;
+  let sources: ConfigSources;
+  let userConfig: string;
+  let userSecrets: string;
+  let projectConfig: string;
+  let projectSecrets: string;
+
+  beforeEach(() => {
+    sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'pdt-secrets-'));
+    sources = {
+      files: configFiles({ userConfigDir: path.join(sandbox, 'user'), pdtConfigDir: path.join(sandbox, 'project') }),
+      env: {},
+    };
+    [userConfig, userSecrets, projectConfig, projectSecrets] = sources.files.map(file => file.path) as [
+      string,
+      string,
+      string,
+      string,
+    ];
+  });
+
+  afterEach(() => {
+    fs.rmSync(sandbox, { recursive: true, force: true });
+  });
+
+  function write(file: string, content: unknown) {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, JSON.stringify(content));
+  }
+
+  const read = (file: string): unknown => JSON.parse(fs.readFileSync(file, 'utf8'));
+  const mod = { server: { ...vttSettings('14').server, admin_key: 'project-key' }, host: vttSettings('14').host };
+
+  test('are read from secrets.conf, each straight after its config.json', () => {
+    write(userConfig, { VTT: { mod: vttSettings('14') } });
+    write(userSecrets, { FOUNDRY: { password: 'user-password' }, VTT: { mod: { server: { admin_key: 'user-key' } } } });
+    write(projectSecrets, { VTT: { mod: { server: { admin_key: 'project-key' } } } });
+
+    const { config, sourceOf } = resolveConfig(sources);
+
+    expect(config.FOUNDRY).toEqual({ password: 'user-password' });
+    expect(config.VTT['mod']?.server.admin_key).toBe('project-key');
+    expect(sourceOf(['FOUNDRY', 'password'])).toBe('user-secrets');
+    expect(sourceOf(['VTT', 'mod', 'server', 'admin_key'])).toBe('project-secrets');
+    expect(sourceOf(['VTT', 'mod', 'server', 'version'])).toBe('user');
+  });
+
+  test.each([
+    ['a secret setting', { FOUNDRY: { license_key: 'k' } }, 'FOUNDRY.license_key'],
+    ['a group holding secrets', { VTT: { mod } }, 'VTT.mod.server.admin_key'],
+  ])('make a config.json that holds %s invalid, naming the keys', (_case, content, keys) => {
+    write(projectConfig, content);
+
+    expect(() => resolveConfig(sources)).toThrow(
+      new ConfigError(m['error.config.secretInConfig']({ file: projectConfig, keys, secrets: projectSecrets })),
+    );
+  });
+
+  test('are written to secrets.conf, readable only by its owner', () => {
+    expect(writeSetting(sources, 'user', 'FOUNDRY.password', 'hunter2')).toEqual([userSecrets]);
+
+    expect(read(userSecrets)).toEqual({ FOUNDRY: { password: 'hunter2' } });
+    expect(fs.statSync(userSecrets).mode & 0o777).toBe(0o600);
+    expect(fs.existsSync(userConfig)).toBe(false);
+  });
+
+  test('make a secrets.conf that others could read private when it is written', () => {
+    write(projectSecrets, {});
+    fs.chmodSync(projectSecrets, 0o644);
+
+    writeSetting(sources, 'project', 'FOUNDRY.username', 'me');
+
+    expect(fs.statSync(projectSecrets).mode & 0o777).toBe(0o600);
+  });
+
+  test('are split out of a group of settings, the rest going to config.json', () => {
+    expect(writeSetting(sources, 'project', 'VTT.mod', JSON.stringify(mod))).toEqual([projectConfig, projectSecrets]);
+
+    expect(read(projectConfig)).toEqual({ VTT: { mod: vttSettings('14') } });
+    expect(read(projectSecrets)).toEqual({ VTT: { mod: { server: { admin_key: 'project-key' } } } });
+    expect(loadConfig(sources).VTT['mod']).toEqual(mod);
+  });
+
+  test('are cleared, with the rest of a group, from both files', () => {
+    writeSetting(sources, 'project', 'VTT.mod', JSON.stringify(mod));
+
+    expect(clearSetting(sources, ['project'], 'VTT.mod')).toEqual([projectConfig, projectSecrets]);
+
+    expect(read(projectConfig)).toEqual({});
+    expect(read(projectSecrets)).toEqual({});
+  });
+
+  test('are cleared from secrets.conf alone, leaving config.json as it is', () => {
+    writeSetting(sources, 'project', 'VTT.mod', JSON.stringify(mod));
+    const before = fs.readFileSync(projectConfig, 'utf8');
+
+    expect(clearSetting(sources, ['project', 'project'], 'VTT.mod.server.admin_key')).toEqual([projectSecrets]);
+
+    expect(fs.readFileSync(projectConfig, 'utf8')).toBe(before);
+    expect(read(projectSecrets)).toEqual({});
+  });
+
+  test('are found by filesSetting in secrets.conf', () => {
+    write(userSecrets, { FOUNDRY: { password: 'p' } });
+
+    expect(filesSetting(sources, 'FOUNDRY')).toEqual([sources.files[1]]);
   });
 });
 

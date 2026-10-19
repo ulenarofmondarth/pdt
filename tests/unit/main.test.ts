@@ -433,9 +433,9 @@ describe('main', () => {
     test('writes settings to the configuration files it read', async () => {
       const given = await contextGiven();
 
-      const file = given.writeConfig('user', 'Logging.level', 'debug');
+      const file = path.join(context.paths.userConfigDir, 'config.json');
 
-      expect(file).toBe(path.join(context.paths.userConfigDir, 'config.json'));
+      expect(given.writeConfig('user', 'Logging.level', 'debug')).toEqual([file]);
       expect(JSON.parse(fs.readFileSync(file, 'utf8'))).toEqual({ Logging: { level: 'debug' } });
     });
 
@@ -445,8 +445,11 @@ describe('main', () => {
 
       const given = await contextGiven();
 
-      expect(given.configFiles).toEqual([{ path: file, source: 'user' }]);
-      expect(given.filesSetting('Logging.level')).toEqual([{ path: file, source: 'user' }]);
+      expect(given.configFiles).toEqual([
+        { path: file, source: 'user', secrets: false },
+        { path: path.join(context.paths.userConfigDir, 'secrets.conf'), source: 'user', secrets: true },
+      ]);
+      expect(given.filesSetting('Logging.level')).toEqual([{ path: file, source: 'user', secrets: false }]);
       expect(given.clearConfig(['user'], 'Logging.level')).toEqual([file]);
       expect(JSON.parse(fs.readFileSync(file, 'utf8'))).toEqual({ Logging: { filename: 'mine.log' } });
     });

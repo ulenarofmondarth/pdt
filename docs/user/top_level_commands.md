@@ -23,6 +23,8 @@ What happens depends on what is in the directory:
 
 A directory inside an existing {program}`pdt` project is refused unless `--force` is given.
 
+`init` adds the files in `.pdt` that belong to you on this machine to the project's `.gitignore`, creating it if there is none: your secrets (`.pdt/secrets.conf`, see {ref}`pdt_conf_secrets`), the project's run state and its log. Files the `.gitignore` already names, or a `.gitignore` that names the whole `.pdt` directory, are left alone.
+
 A project that is already initialised, one with a `.pdt/config.json`, is refused with an error (exit code 1). To set it up again from scratch, use {ref}`pdt_tlc_force_reset`. A `.pdt` directory without a `config.json`, such as one left by an `init` that could not read the module's id, is initialised as normal.
 
 (pdt_tlc_init_id)=
@@ -286,13 +288,27 @@ A group is shown in the format chosen with `--format`.
   Logging.level "debug" [user]
   ```
 
+  A value from a secrets file shows `[user-secrets]` or `[project-secrets]`.
+
+`--print-secrets`
+
+: Show secret settings as they are. Without it, each is shown as `*****`, in every format (see {ref}`pdt_conf_secrets`).
+
+  ```text
+  $ pdt config get FOUNDRY
+  FOUNDRY.username "*****"
+  FOUNDRY.password "*****"
+  $ pdt config get FOUNDRY.password --print-secrets
+  hunter2
+  ```
+
 (pdt_tlc_config_set)=
 
 ### config set
 
 {command}`config set <key> <value> [options]`
 
-Sets a value in a configuration file, creating the file if there is none. Inside a project the project's `.pdt/config.json` is written; outside one, your user configuration file.
+Sets a value in a configuration file, creating the file if there is none. Inside a project the project's `.pdt/config.json` is written; outside one, your user configuration file. A secret setting is written to the `secrets.conf` beside it instead, and a group holding secrets is split between the two (see {ref}`pdt_conf_secrets`); {{pdt}} says which files it wrote.
 
 **key**
 
@@ -322,7 +338,7 @@ Nothing is written if the key is not a setting, or if the configuration with the
 
 {command}`config clear <key> [options]`
 
-Removes a setting from the project's `.pdt/config.json`, so that it takes its value from the sources before it again (your user file, or the default). Groups left empty by the removal are removed too; other settings in the file are kept.
+Removes a setting from the project's `.pdt/config.json`, or from `.pdt/secrets.conf` for a secret (a group is removed from both), so that it takes its value from the sources before it again (your user file, or the default). Groups left empty by the removal are removed too; other settings in the file are kept.
 
 **key**
 

@@ -6,8 +6,9 @@ import { createCommandContext, type CommandContextMock } from '@tests/unit/mocks
 
 import type { ConfigFile } from '@util/load-config.js';
 
-const USER: ConfigFile = { path: '/home/me/.config/pdt/config.json', source: 'user' };
-const PROJECT: ConfigFile = { path: '/work/module/.pdt/config.json', source: 'project' };
+const USER: ConfigFile = { path: '/home/me/.config/pdt/config.json', source: 'user', secrets: false };
+const PROJECT: ConfigFile = { path: '/work/module/.pdt/config.json', source: 'project', secrets: false };
+const PROJECT_SECRETS: ConfigFile = { path: '/work/module/.pdt/secrets.conf', source: 'project', secrets: true };
 
 describe('config clear command', () => {
   let ctx: CommandContextMock;
@@ -15,7 +16,7 @@ describe('config clear command', () => {
   beforeEach(() => {
     ctx = createCommandContext();
     ctx.paths.pdtConfigDir = '/work/module/.pdt';
-    ctx.configFiles = [USER, PROJECT];
+    ctx.configFiles = [USER, PROJECT, PROJECT_SECRETS];
     ctx.clearConfig.mockImplementation(targets => targets.map(target => (target === 'user' ? USER : PROJECT).path));
   });
 
@@ -164,5 +165,34 @@ describe('config clear command', () => {
     await expect(run('clear')).resolves.toEqual(expect.any(String));
 
     expect(ctx.clearConfig).not.toHaveBeenCalled();
+  });
+
+  describe('a secret setting', () => {
+    test("warns, changing nothing, naming the project's secrets.conf when it does not set it", async () => {
+      ctx.filesSetting.mockReturnValue([]);
+
+      await run('clear FOUNDRY.password');
+
+      expect(ctx.clearConfig).not.toHaveBeenCalled();
+      expect(ctx.log.warn).toHaveBeenCalledExactlyOnceWith(
+        m['warn.configNotSet']({ key: 'FOUNDRY.password', file: PROJECT_SECRETS.path }),
+      );
+    });
+
+    test("removes it when the project's secrets.conf sets it", async () => {
+      ctx.filesSetting.mockReturnValue([PROJECT_SECRETS]);
+
+      await run('clear FOUNDRY.password');
+
+      expect(ctx.clearConfig).toHaveBeenCalledExactlyOnceWith(['project'], 'FOUNDRY.password');
+    });
+  });
+
+  test('clears a group split between config.json and secrets.conf once for the project with --all', async () => {
+    ctx.filesSetting.mockReturnValue([PROJECT, PROJECT_SECRETS]);
+
+    await run('clear VTT.mod --all');
+
+    expect(ctx.clearConfig).toHaveBeenCalledExactlyOnceWith(['project'], 'VTT.mod');
   });
 });
