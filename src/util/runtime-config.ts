@@ -94,9 +94,15 @@ function userConfigDir({ home, platform, env }: PathsContext): string {
 }
 
 function userDataDir({ home, platform, env }: PathsContext): string {
+  // The XDG Base Directory specification says a relative path is invalid and must be ignored.
+  const xdgDataHome = env.XDG_DATA_HOME;
   const base =
     env.APPDATA ||
-    (platform === 'darwin' ? path.join(home, 'Library', 'Preferences') : path.join(home, '.local', 'share'));
+    (platform === 'darwin'
+      ? path.join(home, 'Library', 'Preferences')
+      : xdgDataHome && path.isAbsolute(xdgDataHome)
+        ? xdgDataHome
+        : path.join(home, '.local', 'share'));
   return path.join(base, PDT.PROGRAM_NAME);
 }
 
