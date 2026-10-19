@@ -130,7 +130,14 @@ describe('project VTT', () => {
   describe('vttSettings', () => {
     test('are valid settings for Foundry VTT of the version, in Docker', () => {
       expect(vttSchema.parse(vttSettings('13.351'))).toEqual({
-        server: { type: 'foundry', hostname: 'localhost', version: '13.351', port: 'auto', ready: { timeout: 600 } },
+        server: {
+          type: 'foundry',
+          hostname: 'localhost',
+          version: '13.351',
+          port: 'auto',
+          ready: { timeout: 600 },
+          hot_reload: true,
+        },
         host: { type: 'docker', image: 'felddy/foundryvtt' },
       });
     });

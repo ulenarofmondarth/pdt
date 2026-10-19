@@ -33,6 +33,8 @@ const foundryServerSettings = z.object({
   port: z.union([z.literal('auto'), z.int().min(1).max(65535)]).default('auto'),
   /** How to know the server is ready; waited on for 600 seconds unless set. */
   ready: readiness.prefault({}),
+  /** Whether Foundry VTT reloads a module's styles, templates and translations as they change; on unless set. */
+  hot_reload: z.boolean().default(true),
   /** The password of the server's administrator. */
   admin_key: secret().optional(),
 });

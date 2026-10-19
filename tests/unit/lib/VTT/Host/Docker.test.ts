@@ -31,6 +31,7 @@ const SERVER: FoundryServerSettings = {
   hostname: 'h',
   port: 'auto',
   ready: { timeout: 600 },
+  hot_reload: false,
 };
 const IMAGE = 'felddy/foundryvtt:12';
 const CONTAINER_NAME = 'pdt-test';

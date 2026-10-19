@@ -12,6 +12,7 @@ const SETTINGS: FoundryServerSettings = {
   hostname: 'vtt.example',
   port: 8080,
   ready: { timeout: 600 },
+  hot_reload: false,
 };
 
 describe('FoundryVTTServer', () => {
@@ -59,6 +60,18 @@ describe('FoundryVTTServer', () => {
         FOUNDRY_LICENSE_KEY: 'ABCD',
         FOUNDRY_ADMIN_KEY: 'adm1n',
       });
+    });
+
+    test('turns hot reload on when the settings say so', () => {
+      const server = new FoundryVTTServer('unit-test-vtt', { ...SETTINGS, hot_reload: true }, createHostMock());
+
+      expect(server.environment()).toEqual({ FOUNDRY_HOT_RELOAD: 'true' });
+    });
+
+    test("leaves hot reload to the image's default, off, when the settings turn it off", () => {
+      const server = new FoundryVTTServer('unit-test-vtt', { ...SETTINGS, hot_reload: false }, createHostMock());
+
+      expect(server.environment()).not.toHaveProperty('FOUNDRY_HOT_RELOAD');
     });
 
     test('has only what is set', () => {
