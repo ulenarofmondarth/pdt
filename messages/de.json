@@ -53,6 +53,13 @@
       },
       "forceReset": {
         "description": "Das aktuelle Projekt von Grund auf neu einrichten: seinen Laufzeitstatus, seine Registrierung und seine Konfiguration entfernen und es dann initialisieren."
+      },
+      "prune": {
+        "description": "Nicht mehr vorhandene Projekte vergessen: jedes Projekt, dessen Verzeichnis kein .pdt-Verzeichnis mehr enthält, aus deinem Laufzeitstatus entfernen."
+      },
+      "move": {
+        "description": "Die Registrierung des aktuellen Projekts nach dem Verschieben aktualisieren oder es in ein neues Verzeichnis verschieben.",
+        "destination": "Wohin das Projekt verschoben wird. Das Ziel darf noch nicht existieren, sein übergeordnetes Verzeichnis muss existieren."
       }
     },
     "opt": {
@@ -76,6 +83,16 @@
     "forceReset": {
       "removed": "{file} entfernt",
       "unregistered": "Registrierung von Projekt {id} aus {file} entfernt"
+    },
+    "prune": {
+      "nothing": "Jedes in {file} registrierte Projekt ist noch vorhanden; nichts wurde entfernt.",
+      "removed": "Projekt {id} ({root}) aus {file} entfernt: Es ist kein PDT-Projekt mehr."
+    },
+    "move": {
+      "unchanged": "Projekt {id} ist bereits unter {root} registriert.",
+      "registered": "Projekt {id} unter {root} in {file} registriert",
+      "moved": "Projekt {id} von {from} nach {to} verschoben",
+      "changeDirectory": "Deine Shell ist noch am alten Ort. Um dort weiterzumachen, wo du warst: cd {dir}"
     }
   },
   "warn": {
@@ -135,11 +152,18 @@
     "alreadyInitialised": "{path} ist bereits ein PDT-Projekt: {file} existiert. Um es von Grund auf neu einzurichten, führe pdt force-reset im Projekt aus.",
     "projectRegistered": {
       "here": "Projekt {id} ist für dieses Verzeichnis bereits in {file} registriert. Führe pdt force-reset im Projekt aus oder entferne die Registrierung aus {file}.",
-      "elsewhere": "Ein anderes Projekt unter {root} ist in {file} bereits als {id} registriert. Jedes Projekt braucht eine eigene ID: ändere die ID in module.json."
+      "elsewhere": "Ein anderes Projekt unter {root} ist in {file} bereits als {id} registriert. Jedes Projekt braucht eine eigene ID: ändere die ID in module.json. Wenn es dieses Projekt nicht mehr gibt, führe pdt prune aus."
     },
     "runState": {
       "unreadable": "Die Laufzeitstatusdatei {file} konnte nicht gelesen werden: {reason}",
       "invalid": "Die Laufzeitstatusdatei {file} ist ungültig: {problems}"
+    },
+    "move": {
+      "noId": "Die Konfiguration dieses Projekts hat keine ID. Führe pdt force-reset aus, um das Projekt einzurichten.",
+      "stillAProject": "Projekt {id} ist in {file} unter {root} registriert, das noch ein PDT-Projekt ist. Wenn dieses Projekt eine Kopie ist, gib ihm in module.json eine eigene ID und führe pdt force-reset aus.",
+      "destinationExists": "{path} existiert bereits. Gib einen Pfad an, der noch nicht existiert.",
+      "noParent": "Das Verzeichnis, in das das Projekt verschoben werden soll, {path}, existiert nicht.",
+      "intoItself": "Das Projekt kann nicht in sich selbst verschoben werden: {path}"
     }
   },
   "fatal": {

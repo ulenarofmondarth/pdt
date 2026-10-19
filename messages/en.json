@@ -53,6 +53,13 @@
       },
       "forceReset": {
         "description": "Set up the current project again from scratch: remove its run state, its registration and its configuration, then initialise it."
+      },
+      "prune": {
+        "description": "Forget the projects that are gone: remove from your run state every project whose directory no longer holds a .pdt directory."
+      },
+      "move": {
+        "description": "Update the current project's registration after moving it, or move it to a new directory.",
+        "destination": "Where to move the project to. It must not exist yet; its parent directory must."
       }
     },
     "opt": {
@@ -76,6 +83,16 @@
     "forceReset": {
       "removed": "Removed {file}",
       "unregistered": "Removed the registration of project {id} from {file}"
+    },
+    "prune": {
+      "nothing": "Every project registered in {file} is still there; nothing was pruned.",
+      "removed": "Removed project {id} ({root}) from {file}: it is no longer a PDT project."
+    },
+    "move": {
+      "unchanged": "Project {id} is already registered at {root}.",
+      "registered": "Registered project {id} at {root} in {file}",
+      "moved": "Moved project {id} from {from} to {to}",
+      "changeDirectory": "Your shell is still in the old location. To carry on where you were: cd {dir}"
     }
   },
   "warn": {
@@ -135,11 +152,18 @@
     "alreadyInitialised": "{path} is already a PDT project: {file} exists. To set it up again from scratch, run pdt force-reset in the project.",
     "projectRegistered": {
       "here": "Project {id} is already registered for this directory in {file}. Run pdt force-reset in the project, or remove the registration from {file}.",
-      "elsewhere": "Another project, at {root}, is already registered as {id} in {file}. Each project needs its own id: change the id in module.json."
+      "elsewhere": "Another project, at {root}, is already registered as {id} in {file}. Each project needs its own id: change the id in module.json. If that project no longer exists, run pdt prune."
     },
     "runState": {
       "unreadable": "Could not read the run state file {file}: {reason}",
       "invalid": "The run state file {file} is invalid: {problems}"
+    },
+    "move": {
+      "noId": "This project's configuration has no id. Run pdt force-reset to set the project up.",
+      "stillAProject": "Project {id} is registered at {root} in {file}, which is still a PDT project. If this project is a copy, give it its own id in module.json and run pdt force-reset.",
+      "destinationExists": "{path} already exists. Give a path that does not exist yet.",
+      "noParent": "The directory to move the project into, {path}, does not exist.",
+      "intoItself": "Cannot move the project into itself: {path}"
     }
   },
   "fatal": {

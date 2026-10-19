@@ -65,6 +65,10 @@ describe('resolvePaths', () => {
   const HOME = path.join(path.sep, 'home', 'me');
   const elsewhere = { cwd: path.join(path.sep, 'srv'), home: HOME };
 
+  test('keep the directory pdt was started in', () => {
+    expect(resolvePaths({ ...elsewhere, platform: 'linux', env: {} }).cwd).toBe(path.join(path.sep, 'srv'));
+  });
+
   describe('user configuration directory', () => {
     test('is ~/.config/pdt by default', () => {
       const paths = resolvePaths({ ...elsewhere, platform: 'linux', env: {} });

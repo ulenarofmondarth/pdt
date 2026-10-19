@@ -53,6 +53,13 @@
       },
       "forceReset": {
         "description": "Reconfigurer entièrement le projet actuel : supprimer son état d'exécution, son enregistrement et sa configuration, puis l'initialiser."
+      },
+      "prune": {
+        "description": "Oublier les projets disparus : retirer de votre état d'exécution chaque projet dont le répertoire ne contient plus de répertoire .pdt."
+      },
+      "move": {
+        "description": "Mettre à jour l'enregistrement du projet actuel après l'avoir déplacé, ou le déplacer dans un nouveau répertoire.",
+        "destination": "Où déplacer le projet. La destination ne doit pas encore exister ; son répertoire parent, si."
       }
     },
     "opt": {
@@ -76,6 +83,16 @@
     "forceReset": {
       "removed": "{file} supprimé",
       "unregistered": "Enregistrement du projet {id} supprimé de {file}"
+    },
+    "prune": {
+      "nothing": "Chaque projet enregistré dans {file} est toujours là ; rien n'a été retiré.",
+      "removed": "Projet {id} ({root}) retiré de {file} : ce n'est plus un projet PDT."
+    },
+    "move": {
+      "unchanged": "Le projet {id} est déjà enregistré dans {root}.",
+      "registered": "Projet {id} enregistré dans {root} dans {file}",
+      "moved": "Projet {id} déplacé de {from} vers {to}",
+      "changeDirectory": "Votre shell est toujours dans l'ancien emplacement. Pour reprendre là où vous étiez : cd {dir}"
     }
   },
   "warn": {
@@ -135,11 +152,18 @@
     "alreadyInitialised": "{path} est déjà un projet PDT : {file} existe. Pour le reconfigurer entièrement, lancez pdt force-reset dans le projet.",
     "projectRegistered": {
       "here": "Le projet {id} est déjà enregistré pour ce répertoire dans {file}. Lancez pdt force-reset dans le projet, ou supprimez l'enregistrement de {file}.",
-      "elsewhere": "Un autre projet, dans {root}, est déjà enregistré sous {id} dans {file}. Chaque projet doit avoir son propre identifiant : changez l'identifiant dans module.json."
+      "elsewhere": "Un autre projet, dans {root}, est déjà enregistré sous {id} dans {file}. Chaque projet doit avoir son propre identifiant : changez l'identifiant dans module.json. Si ce projet n'existe plus, lancez pdt prune."
     },
     "runState": {
       "unreadable": "Impossible de lire le fichier d'état d'exécution {file} : {reason}",
       "invalid": "Le fichier d'état d'exécution {file} n'est pas valide : {problems}"
+    },
+    "move": {
+      "noId": "La configuration de ce projet n'a pas d'identifiant. Lancez pdt force-reset pour configurer le projet.",
+      "stillAProject": "Le projet {id} est enregistré dans {file} à {root}, qui est toujours un projet PDT. Si ce projet est une copie, donnez-lui son propre identifiant dans module.json et lancez pdt force-reset.",
+      "destinationExists": "{path} existe déjà. Indiquez un chemin qui n'existe pas encore.",
+      "noParent": "Le répertoire dans lequel déplacer le projet, {path}, n'existe pas.",
+      "intoItself": "Impossible de déplacer le projet dans lui-même : {path}"
     }
   },
   "fatal": {

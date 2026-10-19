@@ -3,6 +3,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import {
+  isPdtProject,
+  pruneProjects,
   readRunState,
   registeredProject,
   registerProject,
@@ -105,6 +107,50 @@ describe('run state', () => {
 
     test('writes nothing when the root is not registered', () => {
       expect(unregisterProject(file, '/a')).toEqual([]);
+      expect(fs.existsSync(file)).toBe(false);
+    });
+  });
+
+  describe('isPdtProject', () => {
+    test('is whether the directory holds a .pdt directory', () => {
+      const project = path.join(sandbox, 'project');
+      fs.mkdirSync(project);
+      expect(isPdtProject(project)).toBe(false);
+
+      fs.writeFileSync(path.join(project, '.pdt'), 'a file, not a directory');
+      expect(isPdtProject(project)).toBe(false);
+
+      fs.rmSync(path.join(project, '.pdt'));
+      fs.mkdirSync(path.join(project, '.pdt'));
+      expect(isPdtProject(project)).toBe(true);
+    });
+
+    test('is false for a directory that does not exist', () => {
+      expect(isPdtProject(path.join(sandbox, 'gone'))).toBe(false);
+    });
+  });
+
+  describe('pruneProjects', () => {
+    test('removes the projects whose root is no longer a pdt project, keeping the rest', () => {
+      const live = path.join(sandbox, 'live');
+      const bare = path.join(sandbox, 'bare');
+      fs.mkdirSync(path.join(live, '.pdt'), { recursive: true });
+      fs.mkdirSync(bare);
+      const gone = path.join(sandbox, 'gone');
+      writeRunState(file, {
+        PROJECTS: { live: { root: live }, bare: { root: bare }, gone: { root: gone } },
+        OTHER: 1,
+      });
+
+      expect(pruneProjects(file)).toEqual([
+        ['bare', { root: bare }],
+        ['gone', { root: gone }],
+      ]);
+      expect(readRunState(file)).toEqual({ PROJECTS: { live: { root: live } }, OTHER: 1 });
+    });
+
+    test('writes nothing when there is nothing to prune', () => {
+      expect(pruneProjects(file)).toEqual([]);
       expect(fs.existsSync(file)).toBe(false);
     });
   });

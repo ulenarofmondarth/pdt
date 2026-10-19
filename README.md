@@ -21,6 +21,8 @@
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pdt init`                   | Make a directory a PDT project, registered under its module's id, with a VTT configured for it. In an empty directory, first create a new Foundry VTT module there. |
 | `pdt force-reset`            | Set the current project up again from scratch: clear its run state and configuration, then initialise it.                                                           |
+| `pdt move [destination]`     | Move the current project, or register it where it was moved to.                                                                                                     |
+| `pdt prune`                  | Forget the projects whose directories are gone.                                                                                                                     |
 | `pdt config get\|set\|clear` | Show and change the configuration.                                                                                                                                  |
 | `pdt vtt start`              | Start the project's Foundry VTT in Docker.                                                                                                                          |
 | `pdt info`                   | Placeholder; will show a project's runtime configuration.                                                                                                           |
