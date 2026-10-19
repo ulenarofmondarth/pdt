@@ -30,7 +30,10 @@ export function createWhereCommand({ paths, log, out }: CommandContext): Command
 | `out` | Writes what the user asked for, or the progress of it, to standard output |
 | `prompter` | Asks the user questions; absent when nobody can be asked (no terminal) |
 | `createModule` | Creates a new Foundry VTT module project |
-| `createVtt` | Creates a VTT (its server, on its host) from its settings in the configuration |
+| `createVtt` | Creates a VTT (its server, on its host) from its settings in the configuration and the Foundry VTT account |
+| `isPortFree` | Whether a port on this machine is free |
+| `isUrlReachable` | Whether anything answers at a URL |
+| `owner` | The uid and gid pdt runs as, where there are such; absent on Windows |
 
 A command takes everything from its context: no imports of the logger, `process`, `console` or the file locations. Log messages go to standard error; `out` is for results.
 

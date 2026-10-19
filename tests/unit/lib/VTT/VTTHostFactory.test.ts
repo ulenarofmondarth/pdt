@@ -6,7 +6,7 @@ import { m } from '@i18n/messages.js';
 import type { HostSettings } from '@schema/config.js';
 
 // Creating a Docker client does not connect to anything.
-const DOCKER: HostSettings = { type: 'docker', image: 'felddy/foundryvtt' };
+const DOCKER: HostSettings = { type: 'docker', image: 'felddy/foundryvtt', timeout: 600 };
 
 describe('createHost', () => {
   test('creates a Docker host, with its settings, for the docker type', () => {

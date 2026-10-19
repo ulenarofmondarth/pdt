@@ -51,6 +51,7 @@ describe('vtt command', () => {
     beforeEach(() => {
       sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'pdt-vtt-'));
       ctx.paths.pdtConfigDir = path.join(sandbox, '.pdt');
+      ctx.paths.userDataDir = path.join(sandbox, 'data');
       ctx.config.VTT['my-module'] = vttSettings('13');
       host = createHostMock();
       ctx.createVtt.mockImplementation((name, settings) => new FoundryVTTServer(name, settings.server, host));

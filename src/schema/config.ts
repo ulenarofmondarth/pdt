@@ -4,6 +4,12 @@ import { z } from 'zod/v4';
 export const DEFAULT_DOCKER_IMAGE = 'felddy/foundryvtt';
 
 /**
+ * How long, in seconds, to wait for a server to answer once its host has started it, when the
+ * settings do not say. The first start of a Foundry VTT container downloads and installs Foundry VTT.
+ */
+export const DEFAULT_START_TIMEOUT = 600;
+
+/**
  * The settings whose values are secret. They are kept in a `secrets.conf`, never in a
  * `config.json`, and are shown masked unless asked for.
  */
@@ -41,12 +47,14 @@ const dockerHostSettings = z.object({
   image: z.string().default(DEFAULT_DOCKER_IMAGE),
   /** Tag of the image, for a host whose image is not tagged by a server's version. */
   version: z.string().optional(),
+  /** How long to wait, in seconds, for a server the host has started to answer. */
+  timeout: z.int().min(0).default(DEFAULT_START_TIMEOUT),
 });
 
 export const hostSchema = z.discriminatedUnion('type', [dockerHostSettings]);
 
 /** The Docker host that serves the documentation, and the ports it publishes. */
-const docsHostSettings = dockerHostSettings.extend({
+const docsHostSettings = dockerHostSettings.omit({ timeout: true }).extend({
   ports: z.array(
     z.object({
       internal: z.int32(),
@@ -70,11 +78,14 @@ export const vttSchema = z.object({
 export type VttSettings = z.output<typeof vttSchema>;
 
 /** The Foundry VTT account every project's servers use. */
-const foundryAccount = z.object({
+export const foundryAccount = z.object({
   username: secret().optional(),
   password: secret().optional(),
   license_key: secret().optional(),
 });
+
+/** The Foundry VTT account, to download and license Foundry VTT with. */
+export type FoundryAccount = z.output<typeof foundryAccount>;
 
 const npmDebugLevels = z.literal(['error', 'warn', 'info', 'http', 'verbose', 'debug', 'silly']);
 

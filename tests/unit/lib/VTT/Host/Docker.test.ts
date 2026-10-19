@@ -24,11 +24,20 @@ const HOST_CONFIG: DockerHostSettings = {
   type: 'docker',
   socketPath: '/var/run/docker.sock',
   image: 'felddy/foundryvtt',
+  timeout: 600,
 };
 const SERVER: FoundryServerSettings = { type: 'foundry', version: '12', hostname: 'h', port: 'auto' };
 const IMAGE = 'felddy/foundryvtt:12';
 const CONTAINER_NAME = 'pdt-test';
-const RUN = { name: CONTAINER_NAME, port: 30001 };
+const RUN = {
+  name: CONTAINER_NAME,
+  port: 30001,
+  environment: { FOUNDRY_PASSWORD: 'hunter2', FOUNDRY_UID: '1000' },
+  mounts: [
+    { source: '/home/me/.local/share/pdt/vtt/pdt-test', target: '/data' },
+    { source: '/work/my-module', target: '/data/Data/modules/my-module' },
+  ],
+};
 const HANDLE = { id: 'container-id' };
 
 describe('DockerHost', () => {
@@ -225,6 +234,29 @@ describe('DockerHost', () => {
         docker.createContainer.mock.invocationCallOrder[0]!,
       );
       expect(created.start).toHaveBeenCalledOnce();
+    });
+
+    test('starts the container with the environment it is given', async () => {
+      await hostWith().start(server, RUN);
+
+      expect(docker.createContainer).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ Env: ['FOUNDRY_PASSWORD=hunter2', 'FOUNDRY_UID=1000'] }),
+      );
+    });
+
+    test('bind mounts the directories it is given', async () => {
+      await hostWith().start(server, RUN);
+
+      expect(docker.createContainer).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          HostConfig: expect.objectContaining({
+            Mounts: [
+              { Type: 'bind', Source: '/home/me/.local/share/pdt/vtt/pdt-test', Target: '/data' },
+              { Type: 'bind', Source: '/work/my-module', Target: '/data/Data/modules/my-module' },
+            ],
+          }),
+        }),
+      );
     });
 
     test('refuses, touching nothing, when a container of the name is running', async () => {

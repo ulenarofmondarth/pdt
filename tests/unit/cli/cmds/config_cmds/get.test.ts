@@ -117,7 +117,7 @@ describe('config get command', () => {
       ctx.config.VTT = {
         mod: {
           server: { type: 'foundry', hostname: 'localhost', version: '14', port: 'auto', admin_key: 'k3y' },
-          host: { type: 'docker', image: 'felddy/foundryvtt' },
+          host: { type: 'docker', image: 'felddy/foundryvtt', timeout: 600 },
         },
       };
     });

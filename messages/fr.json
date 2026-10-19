@@ -66,7 +66,9 @@
       },
       "move": {
         "description": "Mettre à jour l'enregistrement du projet actuel après l'avoir déplacé, ou le déplacer dans un nouveau répertoire.",
-        "destination": "Où déplacer le projet. La destination ne doit pas encore exister ; son répertoire parent, si."
+        "destination": "Où déplacer le projet. La destination ne doit pas encore exister ; son répertoire parent, si.",
+        "stopAllContainers": "Arrêter tous les VTT du projet en cours d'exécution avant de le déplacer.",
+        "restartAllContainers": "Arrêter tous les VTT du projet en cours d'exécution avant de le déplacer, et les redémarrer ensuite."
       }
     },
     "opt": {
@@ -88,7 +90,8 @@
       "stoppedOnItsOwn": "Le VTT {vtt} s'est arrêté depuis que pdt l'a démarré ; nettoyage de ce qu'il en reste.",
       "stopping": "Arrêt du VTT {vtt}…",
       "stopped": "Le VTT {vtt} est arrêté.",
-      "notRunning": "Le VTT {vtt} n'est pas en cours d'exécution : pdt n'a aucune trace de l'avoir démarré dans ce projet."
+      "notRunning": "Le VTT {vtt} n'est pas en cours d'exécution : pdt n'a aucune trace de l'avoir démarré dans ce projet.",
+      "waiting": "Attente, jusqu'à {timeout} secondes, de la réponse du VTT {vtt} à {url}…"
     },
     "configSet": "{key} défini dans {file}",
     "configCleared": "{key} retiré de {file}",
@@ -127,7 +130,12 @@
         "noVersion": "il ne définit pas {variable}"
       }
     },
-    "noProjectId": "Le projet n'a pas d'identifiant : il n'est donc pas enregistré et n'a pas de VTT. Corrigez module.json, puis lancez pdt force-reset dans le projet."
+    "noProjectId": "Le projet n'a pas d'identifiant : il n'est donc pas enregistré et n'a pas de VTT. Corrigez module.json, puis lancez pdt force-reset dans le projet.",
+    "vtt": {
+      "noModuleMount": "Le projet n'a pas d'identifiant, il n'est donc pas fourni au VTT {vtt} comme module.",
+      "noAccount": "FOUNDRY.username et FOUNDRY.password ne sont pas tous deux définis, le VTT {vtt} ne peut donc utiliser qu'un Foundry VTT déjà installé. Définissez-les avec pdt config set --user.",
+      "notConfiguredToStop": "Le VTT {vtt} est enregistré comme démarré, mais n'est plus configuré, il ne peut donc pas être arrêté. Arrêtez-le vous-même : docker rm -f {container}"
+    }
   },
   "error": {
     "notInPdtProject": "Ce n'est pas un projet PDT.",
@@ -160,7 +168,9 @@
       "containerRunning": "Un conteneur nommé {container} est déjà en cours d'exécution, mais ce projet n'a aucune trace de l'avoir démarré. Arrêtez-le et supprimez-le (docker rm -f {container}), puis redémarrez le VTT.",
       "stopFailed": "Impossible d'arrêter et de supprimer le conteneur {container} : {reason}",
       "noFreePort": "Aucun port n'est libre à partir de {from}.",
-      "portInUse": "Le port {port}, défini par VTT.{vtt}.server.port, est occupé. Libérez-le, ou réglez le port sur auto."
+      "portInUse": "Le port {port}, défini par VTT.{vtt}.server.port, est occupé. Libérez-le, ou réglez le port sur auto.",
+      "stoppedWhileStarting": "Le VTT {vtt} s'est arrêté pendant son démarrage. Voyez pourquoi avec docker logs {container}.",
+      "notReachable": "Le VTT {vtt} n'a pas répondu à {url} en {timeout} secondes. Il tourne toujours : voyez ce qu'il fait avec docker logs {container}, arrêtez-le avec pdt vtt stop, ou laissez-lui plus de temps avec VTT.{vtt}.host.timeout."
     },
     "compendium": {
       "notRecognised": "{path} n'est pas une base de données de compendium reconnue.",
@@ -180,7 +190,9 @@
       "stillAProject": "Le projet {id} est enregistré dans {file} à {root}, qui est toujours un projet PDT. Si ce projet est une copie, donnez-lui son propre identifiant dans module.json et lancez pdt force-reset.",
       "destinationExists": "{path} existe déjà. Indiquez un chemin qui n'existe pas encore.",
       "noParent": "Le répertoire dans lequel déplacer le projet, {path}, n'existe pas.",
-      "intoItself": "Impossible de déplacer le projet dans lui-même : {path}"
+      "intoItself": "Impossible de déplacer le projet dans lui-même : {path}",
+      "stopOrRestart": "Donnez --stop-all-containers ou --restart-all-containers, pas les deux.",
+      "vttsRunning": "Des VTT de ce projet tournent : {vtts}. Ils perdraient le projet en le déplaçant. Arrêtez-les d'abord, ou donnez --stop-all-containers, ou --restart-all-containers pour les redémarrer une fois le projet déplacé."
     },
     "project": {
       "empty": "--project attend un identifiant de projet ou le chemin d'un projet.",

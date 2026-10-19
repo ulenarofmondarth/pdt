@@ -5,6 +5,7 @@ import { createHostMock } from '@tests/unit/mocks/vttHost.js';
 
 import type { FoundryServerSettings } from '@schema/config.js';
 
+const RUN = { name: 'pdt-x', port: 30001, environment: {}, mounts: [] };
 const SETTINGS: FoundryServerSettings = { type: 'foundry', version: '12', hostname: 'vtt.example', port: 8080 };
 
 describe('FoundryVTTServer', () => {
@@ -31,14 +32,50 @@ describe('FoundryVTTServer', () => {
     );
   });
 
+  test('keeps its data in /data, and finds modules in /data/Data/modules, as the felddy/foundryvtt image has it', () => {
+    const server = new FoundryVTTServer('unit-test-vtt', SETTINGS, createHostMock());
+
+    expect(server.dataPath).toBe('/data');
+    expect(server.modulePath('my-module')).toBe('/data/Data/modules/my-module');
+  });
+
+  describe('environment', () => {
+    test('has the account, licence key, administrator password and owner, in the variables the image reads', () => {
+      const server = new FoundryVTTServer('unit-test-vtt', { ...SETTINGS, admin_key: 'adm1n' }, createHostMock(), {
+        username: 'me',
+        password: 'hunter2',
+        license_key: 'ABCD',
+      });
+
+      expect(server.environment({ uid: 1000, gid: 100 })).toEqual({
+        FOUNDRY_USERNAME: 'me',
+        FOUNDRY_PASSWORD: 'hunter2',
+        FOUNDRY_LICENSE_KEY: 'ABCD',
+        FOUNDRY_ADMIN_KEY: 'adm1n',
+        FOUNDRY_UID: '1000',
+        FOUNDRY_GID: '100',
+      });
+    });
+
+    test('has only what is set', () => {
+      const server = new FoundryVTTServer('unit-test-vtt', SETTINGS, createHostMock(), { license_key: 'ABCD' });
+
+      expect(server.environment()).toEqual({ FOUNDRY_LICENSE_KEY: 'ABCD' });
+    });
+
+    test('is empty without an account', () => {
+      expect(new FoundryVTTServer('unit-test-vtt', SETTINGS, createHostMock()).environment()).toEqual({});
+    });
+  });
+
   describe('start', () => {
     test('asks its host to run it, as told, and gives back how to find it', async () => {
       const host = createHostMock();
       const server = new FoundryVTTServer('unit-test-vtt', SETTINGS, host);
 
-      await expect(server.start({ name: 'pdt-x', port: 30001 })).resolves.toEqual({ id: 'container-id' });
+      await expect(server.start(RUN)).resolves.toEqual({ id: 'container-id' });
 
-      expect(host.start).toHaveBeenCalledExactlyOnceWith(server, { name: 'pdt-x', port: 30001 });
+      expect(host.start).toHaveBeenCalledExactlyOnceWith(server, RUN);
     });
 
     // Regression: the host's start was not awaited, so its failure was an unhandled rejection.
@@ -48,7 +85,7 @@ describe('FoundryVTTServer', () => {
       host.start.mockRejectedValue(cause);
       const server = new FoundryVTTServer('unit-test-vtt', SETTINGS, host);
 
-      await expect(server.start({ name: 'pdt-x', port: 30001 })).rejects.toBe(cause);
+      await expect(server.start(RUN)).rejects.toBe(cause);
     });
   });
 });

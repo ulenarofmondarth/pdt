@@ -15,7 +15,13 @@ describe('createServer', () => {
     const server = createServer('unit-test-vtt', FOUNDRY, host);
 
     expect(server).toBeInstanceOf(FoundryVTTServer);
-    expect(server).toMatchObject({ name: 'unit-test-vtt', settings: FOUNDRY, host });
+    expect(server).toMatchObject({ name: 'unit-test-vtt', settings: FOUNDRY, host, account: {} });
+  });
+
+  test('gives a Foundry VTT server the account', () => {
+    expect(createServer('unit-test-vtt', FOUNDRY, createHostMock(), { password: 'p' })).toMatchObject({
+      account: { password: 'p' },
+    });
   });
 
   test('rejects an unknown VTT type, naming it', () => {

@@ -66,7 +66,9 @@
       },
       "move": {
         "description": "Actualizar el registro del proyecto actual después de moverlo, o moverlo a un directorio nuevo.",
-        "destination": "Adónde mover el proyecto. No debe existir todavía; su directorio padre sí."
+        "destination": "Adónde mover el proyecto. No debe existir todavía; su directorio padre sí.",
+        "stopAllContainers": "Detener todos los VTT del proyecto en ejecución antes de moverlo.",
+        "restartAllContainers": "Detener todos los VTT del proyecto en ejecución antes de moverlo, e iniciarlos de nuevo después."
       }
     },
     "opt": {
@@ -88,7 +90,8 @@
       "stoppedOnItsOwn": "El VTT {vtt} se ha detenido desde que pdt lo inició; limpiando lo que queda de él.",
       "stopping": "Deteniendo el VTT {vtt}…",
       "stopped": "El VTT {vtt} se ha detenido.",
-      "notRunning": "El VTT {vtt} no está en ejecución: pdt no tiene constancia de haberlo iniciado en este proyecto."
+      "notRunning": "El VTT {vtt} no está en ejecución: pdt no tiene constancia de haberlo iniciado en este proyecto.",
+      "waiting": "Esperando hasta {timeout} segundos a que el VTT {vtt} responda en {url}…"
     },
     "configSet": "{key} definido en {file}",
     "configCleared": "{key} quitado de {file}",
@@ -127,7 +130,12 @@
         "noVersion": "no define {variable}"
       }
     },
-    "noProjectId": "El proyecto no tiene id, así que no está registrado y no tiene VTT. Corrige module.json y después ejecuta pdt force-reset en el proyecto."
+    "noProjectId": "El proyecto no tiene id, así que no está registrado y no tiene VTT. Corrige module.json y después ejecuta pdt force-reset en el proyecto.",
+    "vtt": {
+      "noModuleMount": "El proyecto no tiene id, así que no se le da al VTT {vtt} como módulo.",
+      "noAccount": "FOUNDRY.username y FOUNDRY.password no están ambos definidos, así que el VTT {vtt} solo puede usar un Foundry VTT que ya haya instalado. Defínelos con pdt config set --user.",
+      "notConfiguredToStop": "El VTT {vtt} consta como iniciado, pero ya no está configurado, así que no se puede detener. Detenlo tú: docker rm -f {container}"
+    }
   },
   "error": {
     "notInPdtProject": "No es un proyecto PDT.",
@@ -160,7 +168,9 @@
       "containerRunning": "Ya hay un contenedor llamado {container} en ejecución, pero este proyecto no tiene constancia de haberlo iniciado. Detenlo y elimínalo (docker rm -f {container}) y vuelve a iniciar el VTT.",
       "stopFailed": "No se pudo detener y eliminar el contenedor {container}: {reason}",
       "noFreePort": "No hay ningún puerto libre a partir de {from}.",
-      "portInUse": "El puerto {port}, que fija VTT.{vtt}.server.port, está en uso. Libéralo o pon el puerto en auto."
+      "portInUse": "El puerto {port}, que fija VTT.{vtt}.server.port, está en uso. Libéralo o pon el puerto en auto.",
+      "stoppedWhileStarting": "El VTT {vtt} se detuvo mientras se iniciaba. Mira por qué con docker logs {container}.",
+      "notReachable": "El VTT {vtt} no respondió en {url} en {timeout} segundos. Sigue en ejecución: mira qué hace con docker logs {container}, detenlo con pdt vtt stop, o dale más tiempo con VTT.{vtt}.host.timeout."
     },
     "compendium": {
       "notRecognised": "{path} no es una base de datos de compendio reconocida.",
@@ -180,7 +190,9 @@
       "stillAProject": "El proyecto {id} está registrado en {file} en {root}, que sigue siendo un proyecto PDT. Si este proyecto es una copia, dale su propio id en module.json y ejecuta pdt force-reset.",
       "destinationExists": "{path} ya existe. Indica una ruta que todavía no exista.",
       "noParent": "El directorio al que mover el proyecto, {path}, no existe.",
-      "intoItself": "No se puede mover el proyecto dentro de sí mismo: {path}"
+      "intoItself": "No se puede mover el proyecto dentro de sí mismo: {path}",
+      "stopOrRestart": "Da --stop-all-containers o --restart-all-containers, no ambos.",
+      "vttsRunning": "Hay VTT de este proyecto en ejecución: {vtts}. Perderían el proyecto al moverlo. Detenlos antes, o da --stop-all-containers, o --restart-all-containers para iniciarlos de nuevo cuando se haya movido."
     },
     "project": {
       "empty": "--project necesita un id de proyecto o la ruta a un proyecto.",

@@ -7,8 +7,10 @@ import { createForceResetCommand } from '@/cli/cmds/force-reset.js';
 import PDT from '@/constants.js';
 import { vttSettings } from '@lib/projectVtt.js';
 import { readRunState, runStateFile, writeRunState } from '@util/run-state.js';
+import FoundryVTTServer from '@lib/VTT/Server/FoundryVTTServer.js';
 import { m } from '@i18n/messages.js';
 import { createCommandContext, type CommandContextMock } from '@tests/unit/mocks/context.js';
+import { createHostMock } from '@tests/unit/mocks/vttHost.js';
 
 describe('force-reset command', () => {
   let ctx: CommandContextMock;
@@ -131,5 +133,35 @@ describe('force-reset command', () => {
 
     await expect(parse('force-reset')).resolves.toBeDefined();
     await expect(parse('force-reset somewhere')).rejects.toThrow('somewhere');
+  });
+
+  describe('with VTTs it started', () => {
+    const RUNNING = { id: 'abc', name: 'pdt-old-id', port: 30000, url: 'http://localhost:30000', started: 'now' };
+    let host: ReturnType<typeof createHostMock>;
+
+    beforeEach(() => {
+      ctx.config.VTT['old-id'] = vttSettings('14.368.0');
+      fs.writeFileSync(projectRunState, JSON.stringify({ VTT: { 'old-id': RUNNING } }));
+      host = createHostMock();
+      ctx.createVtt.mockImplementation((name, settings) => new FoundryVTTServer(name, settings.server, host));
+    });
+
+    test('stops them first, so that none is left running unrecorded', async () => {
+      await forceReset();
+
+      expect(host.stop).toHaveBeenCalledExactlyOnceWith(RUNNING);
+      expect(ctx.out).toHaveBeenCalledWith(m['info.vtt.stopped']({ vtt: 'old-id' }));
+      expect(fs.existsSync(projectRunState)).toBe(false);
+    });
+
+    test('fails, changing nothing, when one cannot be stopped', async () => {
+      host.isAccessible.mockResolvedValue(false);
+
+      await expect(forceReset()).rejects.toThrow(m['error.vtt.hostUnreachable']({ vtt: 'old-id', type: 'docker' }));
+
+      expect(JSON.parse(fs.readFileSync(projectRunState, 'utf8'))).toEqual({ VTT: { 'old-id': RUNNING } });
+      expect(fs.existsSync(configFile)).toBe(true);
+      expect(readRunState(userRunState).PROJECTS).toHaveProperty('old-id');
+    });
   });
 });

@@ -6,8 +6,11 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { createMoveCommand, relocate } from '@/cli/cmds/move.js';
 import { UsageError } from '@/cli/usage-error.js';
 import { readRunState, runStateFile, writeRunState } from '@util/run-state.js';
+import { vttSettings } from '@lib/projectVtt.js';
+import FoundryVTTServer from '@lib/VTT/Server/FoundryVTTServer.js';
 import { m } from '@i18n/messages.js';
 import { createCommandContext, type CommandContextMock } from '@tests/unit/mocks/context.js';
+import { createHostMock, type VTTHostMock } from '@tests/unit/mocks/vttHost.js';
 
 describe('move command', () => {
   let ctx: CommandContextMock;
@@ -37,8 +40,16 @@ describe('move command', () => {
     fs.rmSync(sandbox, { recursive: true, force: true });
   });
 
-  function move(destination?: string) {
-    return createMoveCommand(ctx).handler({ _: ['move'], $0: 'pdt', destination });
+  function move(destination?: string, options: { stop?: boolean; restart?: boolean } = {}) {
+    return createMoveCommand(ctx).handler({
+      _: ['move'],
+      $0: 'pdt',
+      destination,
+      stopAllContainers: options.stop ?? false,
+      'stop-all-containers': options.stop ?? false,
+      restartAllContainers: options.restart ?? false,
+      'restart-all-containers': options.restart ?? false,
+    });
   }
 
   describe('without a destination, after the project has been moved', () => {
@@ -170,6 +181,83 @@ describe('move command', () => {
       await move('moved');
 
       expect(readRunState(file)).toEqual({ PROJECTS: { 'my-module': { root: path.join(sandbox, 'moved') } } });
+    });
+  });
+
+  describe('with VTTs it started', () => {
+    const RUNNING = { id: 'abc', name: 'pdt-my-module', port: 30000, url: 'http://localhost:30000', started: 'now' };
+    let host: VTTHostMock;
+    let projectRunState: string;
+
+    beforeEach(() => {
+      writeRunState(file, { PROJECTS: { 'my-module': { root: project } } });
+      ctx.config.VTT['my-module'] = vttSettings('14.368.0');
+      projectRunState = runStateFile(path.join(project, '.pdt'));
+      writeRunState(projectRunState, { VTT: { 'my-module': RUNNING } });
+      host = createHostMock();
+      host.isRunning.mockResolvedValue(true);
+      ctx.createVtt.mockImplementation((name, settings) => new FoundryVTTServer(name, settings.server, host));
+    });
+
+    test.each([[undefined], ['moved']])(
+      'refuses, moving and stopping nothing, while one is running (destination %s)',
+      async destination => {
+        await expect(move(destination)).rejects.toThrow(m['error.move.vttsRunning']({ vtts: 'my-module' }));
+
+        expect(host.stop).not.toHaveBeenCalled();
+        expect(fs.existsSync(path.join(project, '.pdt'))).toBe(true);
+        expect(readRunState(projectRunState)).toEqual({ VTT: { 'my-module': RUNNING } });
+      },
+    );
+
+    test('moves when what it started is no longer running', async () => {
+      host.isRunning.mockResolvedValue(false);
+
+      await move('moved');
+
+      expect(fs.existsSync(path.join(sandbox, 'moved', '.pdt'))).toBe(true);
+    });
+
+    test('stops them all, then moves, with --stop-all-containers', async () => {
+      await move('moved', { stop: true });
+
+      expect(host.stop).toHaveBeenCalledExactlyOnceWith(RUNNING);
+      expect(readRunState(runStateFile(path.join(sandbox, 'moved', '.pdt')))).toEqual({ VTT: {} });
+      expect(host.start).not.toHaveBeenCalled();
+    });
+
+    test('stops them all, moves, then starts them from where the project is, with --restart-all-containers', async () => {
+      const moved = path.join(sandbox, 'moved');
+
+      await move('moved', { restart: true });
+
+      expect(host.stop).toHaveBeenCalledExactlyOnceWith(RUNNING);
+      expect(host.start).toHaveBeenCalledOnce();
+      expect(host.start.mock.calls[0]![1].mounts).toContainEqual({
+        source: moved,
+        target: '/data/Data/modules/my-module',
+      });
+      expect(readRunState(runStateFile(path.join(moved, '.pdt'))).VTT?.['my-module']).toMatchObject({
+        id: 'container-id',
+      });
+    });
+
+    test('restarts them where the project is, with --restart-all-containers and no destination', async () => {
+      await move(undefined, { restart: true });
+
+      expect(host.stop).toHaveBeenCalledOnce();
+      expect(host.start.mock.calls[0]![1].mounts).toContainEqual({
+        source: project,
+        target: '/data/Data/modules/my-module',
+      });
+    });
+
+    test('refuses both --stop-all-containers and --restart-all-containers, as a usage error', async () => {
+      await expect(move('moved', { stop: true, restart: true })).rejects.toEqual(
+        new UsageError(m['error.move.stopOrRestart']()),
+      );
+
+      expect(host.stop).not.toHaveBeenCalled();
     });
   });
 

@@ -7,7 +7,7 @@ import type { VttSettings } from '@schema/config.js';
 
 const SETTINGS: VttSettings = {
   server: { type: 'foundry', version: '13', hostname: 'localhost', port: 'auto' },
-  host: { type: 'docker', image: 'felddy/foundryvtt', socketPath: '/nonexistent/docker.sock' },
+  host: { type: 'docker', image: 'felddy/foundryvtt', socketPath: '/nonexistent/docker.sock', timeout: 600 },
 };
 
 describe('createVtt', () => {
@@ -18,5 +18,9 @@ describe('createVtt', () => {
     expect(server).toMatchObject({ name: 'unit-test-vtt', settings: SETTINGS.server });
     expect(server.host).toBeInstanceOf(DockerHost);
     expect(server.host).toMatchObject({ settings: SETTINGS.host });
+  });
+
+  test('gives the server the Foundry VTT account', () => {
+    expect(createVtt('unit-test-vtt', SETTINGS, { username: 'me' })).toMatchObject({ account: { username: 'me' } });
   });
 });

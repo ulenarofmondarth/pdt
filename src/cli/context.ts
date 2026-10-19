@@ -1,5 +1,6 @@
 import type { createModule, Prompter } from '@lib/ModuleGenerator.js';
 import type { createVtt } from '@lib/VTT/createVtt.js';
+import type { Owner } from '@lib/VTT/VTTServer.js';
 import type { Config } from '@schema/config.js';
 import type { ConfigFile, ConfigSource } from '@util/load-config.js';
 import type { PdtPaths } from '@util/runtime-config.js';
@@ -59,4 +60,8 @@ export interface CommandContext {
   createVtt: typeof createVtt;
   /** Whether a port on the machine pdt runs on is free. */
   isPortFree(port: number): Promise<boolean>;
+  /** Whether anything answers at a URL. */
+  isUrlReachable(url: string): Promise<boolean>;
+  /** The user pdt runs as, to own the files a VTT writes; absent where users have no numeric ids. */
+  owner?: Owner;
 }

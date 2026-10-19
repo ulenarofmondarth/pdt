@@ -6,6 +6,18 @@ export interface RunOptions {
   name: string;
   /** The port, on the machine pdt runs on, to serve on. */
   port: number;
+  /** Variables to start the server with; their values may be secret. */
+  environment: Record<string, string>;
+  /** Directories of the machine pdt runs on to give the server, each at a path inside the host. */
+  mounts: readonly Mount[];
+}
+
+/** A directory given to a server. */
+export interface Mount {
+  /** The directory, on the machine pdt runs on. */
+  source: string;
+  /** Where the server sees it. */
+  target: string;
 }
 
 /** How a host finds a server it started again, to check on or stop it. */

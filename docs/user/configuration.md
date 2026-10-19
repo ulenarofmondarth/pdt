@@ -63,6 +63,19 @@ A `secrets.conf` holds JSON, like a `config.json`, and is read straight after it
 
 `pdt config get` shows a secret as `*****`; give `--print-secrets` to see it (see {ref}`pdt_tlc_config`). Secrets given to `pdt config set` or `--config` are masked in the log as well.
 
+(pdt_conf_vtt_host)=
+
+## A VTT's host
+
+Besides its `type`, a VTT's `host` (`VTT.<vtt>.host`) can set:
+
+| Setting | What it is |
+| --- | --- |
+| `image` | The Docker image to run, without a tag; `felddy/foundryvtt` unless set. The tag is the server's `version`. |
+| `repository` | The registry to pull the image from; Docker Hub unless set. |
+| `socketPath` | The Docker engine's socket; Docker's default unless set. |
+| `timeout` | How long `pdt vtt start` waits, in seconds, for the VTT to answer once its container has started; 600 unless set. |
+
 ## Environment variables
 
 | Variable | Setting |
@@ -85,6 +98,6 @@ The key is the setting's path, its parts separated by dots. The value is read as
 
 ## PDT runtime data
 
-{{pdt}} keeps data it manages itself apart from the configuration: a project's data, including its log file, is in the project's `.pdt` directory, and anything outside a project is in your user data directory (`~/.local/share/pdt` on Linux, `~/Library/Preferences/pdt` on macOS, `%APPDATA%\pdt` on Windows).
+{{pdt}} keeps data it manages itself apart from the configuration: a project's data, including its log file, is in the project's `.pdt` directory, and anything outside a project is in your user data directory (`~/.local/share/pdt` on Linux, or `$XDG_DATA_HOME/pdt` when `XDG_DATA_HOME` is set; `~/Library/Preferences/pdt` on macOS, `%APPDATA%\pdt` on Windows).
 
 Run state is the part of that data that {{pdt}} needs in order to work, rather than for your information. It is kept in `run.state.json`, in your user data directory for things that span projects and in the project's `.pdt` directory for the project. Your user run state registers each project by its id (see {ref}`pdt_tlc_init_id`). Don't edit it by hand: {ref}`pdt_tlc_force_reset` clears a project's run state, {ref}`pdt_tlc_move` updates a project's registration when it moves, and {ref}`pdt_tlc_prune` removes the registrations of projects that are gone.

@@ -8,7 +8,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { DEFAULT_DOCKER_IMAGE, type VttSettings } from '@schema/config.js';
+import { DEFAULT_DOCKER_IMAGE, DEFAULT_START_TIMEOUT, type VttSettings } from '@schema/config.js';
 import { m } from '@i18n/messages.js';
 
 /** The module's manifest, relative to the project. */
@@ -81,7 +81,7 @@ export function readFoundryVersion(dir: string): Found<string> {
 export function vttSettings(version: string): VttSettings {
   return {
     server: { type: 'foundry', hostname: 'localhost', version, port: 'auto' },
-    host: { type: 'docker', image: DEFAULT_DOCKER_IMAGE },
+    host: { type: 'docker', image: DEFAULT_DOCKER_IMAGE, timeout: DEFAULT_START_TIMEOUT },
   };
 }
 
