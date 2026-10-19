@@ -69,6 +69,28 @@ export function schemaAt(key: ConfigKey, schema: z.core.$ZodType = configSchema)
   return current;
 }
 
+/**
+ * Split a key that must name a setting, or a group of settings, the schema has.
+ *
+ * @throws {Error} When the key is empty, or the schema has no such setting
+ */
+export function settingKey(key: string): ConfigKey {
+  const keys = parseKey(key);
+  if (schemaAt(keys) === undefined) throw new Error(m['error.config.unknownKey']({ key }));
+  return keys;
+}
+
+/** `settings` without the value at `key`, and without any group the removal leaves empty. */
+export function withoutKey(settings: Settings, key: ConfigKey): Settings {
+  const [first, second, ...more] = key;
+  if (!Object.hasOwn(settings, first)) return settings;
+  const { [first]: inner, ...others } = settings;
+  if (second === undefined) return others;
+  if (!isSettings(inner)) return settings;
+  const remaining = withoutKey(inner, [second, ...more]);
+  return Object.keys(remaining).length === 0 ? others : { ...others, [first]: remaining };
+}
+
 /** The value at `key` in `settings`, or undefined when there is none. */
 export function valueAt(settings: unknown, key: ConfigKey): unknown {
   let current = settings;

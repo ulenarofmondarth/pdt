@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { leaves, parseKey, parseValue, schemaAt, valueAt } from '@util/config-keys.js';
+import { leaves, parseKey, parseValue, schemaAt, settingKey, valueAt, withoutKey } from '@util/config-keys.js';
 import { m } from '@i18n/messages.js';
 
 describe('parseKey', () => {
@@ -105,5 +105,54 @@ describe('parseValue', () => {
     expect(() => parseValue(parseKey('Logging.colour'), 'red')).toThrow(
       m['error.config.unknownKey']({ key: 'Logging.colour' }),
     );
+  });
+});
+
+describe('settingKey', () => {
+  test('splits a key the schema has', () => {
+    expect(settingKey('VTT.prj.host')).toEqual(['VTT', 'prj', 'host']);
+  });
+
+  test('refuses a key the schema does not have', () => {
+    expect(() => settingKey('Logging.colour')).toThrow(m['error.config.unknownKey']({ key: 'Logging.colour' }));
+  });
+
+  test('refuses a key that is not one', () => {
+    expect(() => settingKey('Logging.')).toThrow(m['error.config.badKey']({ key: 'Logging.' }));
+  });
+});
+
+describe('withoutKey', () => {
+  const settings = { Logging: { level: 'warn', filename: 'x.log' }, VTT: { prj: { server: { version: '13' } } } };
+
+  test('removes the value, keeping the rest of its group', () => {
+    expect(withoutKey(settings, ['Logging', 'level'])).toEqual({
+      Logging: { filename: 'x.log' },
+      VTT: settings.VTT,
+    });
+  });
+
+  test('removes a whole group', () => {
+    expect(withoutKey(settings, ['Logging'])).toEqual({ VTT: settings.VTT });
+  });
+
+  test('removes the groups the removal leaves empty', () => {
+    expect(withoutKey(settings, ['VTT', 'prj', 'server', 'version'])).toEqual({ Logging: settings.Logging });
+  });
+
+  test.each([
+    ['a name that is not there', ['Logging', 'colour']],
+    ['a group that is not there', ['DOCS', 'host']],
+    ['a name below a value', ['Logging', 'level', 'more']],
+  ] as const)('leaves the settings alone for %s', (_case, key) => {
+    expect(withoutKey(settings, key)).toEqual(settings);
+  });
+
+  test('does not change the settings it is given', () => {
+    const copy = structuredClone(settings);
+
+    withoutKey(settings, ['Logging', 'level']);
+
+    expect(settings).toEqual(copy);
   });
 });

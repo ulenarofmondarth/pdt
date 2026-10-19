@@ -104,7 +104,7 @@ Display the current project's runtime configuration.
 
 ## config
 
-{command}`config <get|set>`
+{command}`config <get|set|clear>`
 
 Shows and changes the configuration (see {doc}`configuration`). A setting is named by its key: the path to it, its parts separated by dots, such as `Logging.level` or `VTT.prj.server.version`. A key can also name a group of settings, such as `Logging` or `VTT.prj`.
 
@@ -205,6 +205,40 @@ Nothing is written if the key is not a setting, or if the configuration with the
 `--user`
 
 : Write your user configuration file, even inside a project.
+
+(pdt_tlc_config_clear)=
+
+### config clear
+
+{command}`config clear <key> [options]`
+
+Removes a setting from the project's `.pdt/config.json`, so that it takes its value from the sources before it again (your user file, or the default). Groups left empty by the removal are removed too; other settings in the file are kept.
+
+**key**
+
+: The setting, or group of settings, to remove.
+
+```shell
+pdt config clear VTT.prj.server.version          # from the project's file
+pdt config clear Logging.level --user            # from your user file
+pdt config clear Logging.level --all             # from every file that sets it
+```
+
+Only the one file is changed: unlike `set`, `clear` does not use your user file outside a project, but stops with an error; give `--user` there.
+
+If the file does not set the key, nothing is changed and {{pdt}} warns you. The warning names any other file that does set it, which `--all` would clear.
+
+{{pdt}} stops with an error, changing nothing, if the key is not a setting {{pdt}} has, or if the configuration without the setting would be invalid (for example, removing a required setting of a VTT your file defines).
+
+#### Options
+
+`--user`
+
+: Remove the setting from your user configuration file instead of the project's.
+
+`--all`
+
+: Remove the setting from every configuration file that sets it: your user file and, inside a project, the project's.
 
 (pdt_tlc_pack)=
 

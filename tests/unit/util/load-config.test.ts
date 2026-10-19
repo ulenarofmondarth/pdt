@@ -8,6 +8,8 @@ import {
   loadConfig,
   resolveConfig,
   writeSetting,
+  clearSetting,
+  filesSetting,
   type ConfigFile,
   type ConfigSources,
 } from '@util/load-config.js';
@@ -326,6 +328,109 @@ describe('writeSetting', () => {
     expect(() => writeSetting(userOnly, 'project', 'Logging.level', 'debug')).toThrow(
       m['error.config.noFile']({ target: 'project' }),
     );
+  });
+});
+
+describe('filesSetting and clearSetting', () => {
+  let sandbox: string;
+  let sources: ConfigSources;
+  let userFile: string;
+  let projectFile: string;
+
+  beforeEach(() => {
+    sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'pdt-config-'));
+    sources = {
+      files: configFiles({ userConfigDir: path.join(sandbox, 'user'), pdtConfigDir: path.join(sandbox, 'project') }),
+      env: {},
+    };
+    [userFile, projectFile] = sources.files.map(file => file.path) as [string, string];
+  });
+
+  afterEach(() => {
+    fs.rmSync(sandbox, { recursive: true, force: true });
+  });
+
+  function write(file: string, content: unknown) {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, JSON.stringify(content));
+  }
+
+  const read = (file: string): unknown => JSON.parse(fs.readFileSync(file, 'utf8'));
+
+  describe('filesSetting', () => {
+    test('is the files that set a value at the key, in order', () => {
+      write(userFile, { Logging: { level: 'debug' } });
+      write(projectFile, { Logging: { level: 'error' } });
+
+      expect(filesSetting(sources, 'Logging.level')).toEqual(sources.files);
+    });
+
+    test('counts a file that sets something in a group', () => {
+      write(projectFile, { Logging: { level: 'error' } });
+
+      expect(filesSetting(sources, 'Logging')).toEqual([sources.files[1]]);
+    });
+
+    test('is nothing when no file sets it, or no file exists', () => {
+      write(userFile, { Logging: { filename: 'x.log' } });
+
+      expect(filesSetting(sources, 'Logging.level')).toEqual([]);
+    });
+
+    test('refuses a key that is not a setting', () => {
+      expect(() => filesSetting(sources, 'Logging.colour')).toThrow(
+        m['error.config.unknownKey']({ key: 'Logging.colour' }),
+      );
+    });
+  });
+
+  describe('clearSetting', () => {
+    test('removes the value from the files given, keeping the rest, and returns them', () => {
+      write(userFile, { Logging: { level: 'debug', filename: 'x.log' } });
+      write(projectFile, { Logging: { level: 'error' } });
+
+      expect(clearSetting(sources, ['user'], 'Logging.level')).toEqual([userFile]);
+
+      expect(read(userFile)).toEqual({ Logging: { filename: 'x.log' } });
+      expect(read(projectFile)).toEqual({ Logging: { level: 'error' } });
+    });
+
+    test('removes the value from several files', () => {
+      write(userFile, { Logging: { level: 'debug' } });
+      write(projectFile, { Logging: { level: 'error' } });
+
+      expect(clearSetting(sources, ['user', 'project'], 'Logging.level')).toEqual([userFile, projectFile]);
+
+      expect(read(userFile)).toEqual({});
+      expect(read(projectFile)).toEqual({});
+    });
+
+    test('writes nothing when the change would make the configuration invalid', () => {
+      const staging = {
+        server: { type: 'foundry', hostname: 'h', version: '13' },
+        host: { type: 'docker', ports: [] },
+      };
+      write(userFile, { VTT: { staging } });
+
+      const error = captureError(() => clearSetting(sources, ['user'], 'VTT.staging.server.type'));
+
+      expect(error.message).toBe(m['error.config.invalid']());
+      expect(read(userFile)).toEqual({ VTT: { staging } });
+    });
+
+    test('refuses a key that is not a setting', () => {
+      expect(() => clearSetting(sources, ['user'], 'Logging.colour')).toThrow(
+        m['error.config.unknownKey']({ key: 'Logging.colour' }),
+      );
+    });
+
+    test('refuses a file that is not among the sources', () => {
+      const userOnly = { ...sources, files: sources.files.filter(file => file.source === 'user') };
+
+      expect(() => clearSetting(userOnly, ['project'], 'Logging.level')).toThrow(
+        m['error.config.noFile']({ target: 'project' }),
+      );
+    });
   });
 });
 

@@ -1,3 +1,4 @@
+import { createConfigClearCommand } from './config_cmds/clear.js';
 import { createConfigGetCommand } from './config_cmds/get.js';
 import { createConfigSetCommand } from './config_cmds/set.js';
 import { anyCommand } from '../command.js';
@@ -18,6 +19,7 @@ export function createConfigCommand(context: CommandContext): CommandModule {
       yargs
         .command(anyCommand(createConfigGetCommand(context)))
         .command(anyCommand(createConfigSetCommand(context)))
+        .command(anyCommand(createConfigClearCommand(context)))
         .demandCommand(1),
 
     /** Never reached: yargs runs a sub-command, or rejects the command line. */

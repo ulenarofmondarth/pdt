@@ -21,8 +21,8 @@ export function createLogMock() {
 /**
  * What a command gets to work with, for a test: the shipped default configuration, paths that are
  * outside any project and lead nowhere, and spies for everything a command does. There is no
- * prompter; give it one to test asking questions. Every value's source is the default, and
- * `writeConfig` writes nothing. `createVtt` makes nothing until a test says what
+ * prompter; give it one to test asking questions. Every value's source is the default,
+ * `writeConfig` and `clearConfig` write nothing, and no file sets anything. `createVtt` makes nothing until a test says what
  * it makes.
  *
  * Change any part of it before creating the command.
@@ -35,11 +35,16 @@ export function createCommandContext() {
     createVtt: ReturnType<typeof vi.fn<typeof createVtt>>;
     sourceOf: ReturnType<typeof vi.fn<CommandContext['sourceOf']>>;
     writeConfig: ReturnType<typeof vi.fn<CommandContext['writeConfig']>>;
+    filesSetting: ReturnType<typeof vi.fn<CommandContext['filesSetting']>>;
+    clearConfig: ReturnType<typeof vi.fn<CommandContext['clearConfig']>>;
   } = {
     paths: { userConfigDir: '/nonexistent/config', userDataDir: '/nonexistent/data', pdtConfigDir: undefined },
     config: configSchema.parse(defaults),
     sourceOf: vi.fn<CommandContext['sourceOf']>((): ConfigSource => 'default'),
     writeConfig: vi.fn<CommandContext['writeConfig']>(),
+    configFiles: [{ path: '/nonexistent/config/config.json', source: 'user' }],
+    filesSetting: vi.fn<CommandContext['filesSetting']>(() => []),
+    clearConfig: vi.fn<CommandContext['clearConfig']>(() => []),
     log: createLogMock(),
     out: vi.fn<CommandContext['out']>(),
     createModule: vi.fn<typeof createModule>(),

@@ -37,7 +37,7 @@ and a project's `.pdt/config.json` makes it quiet again in that project:
 ```
 :::
 
-Rather than editing the files by hand, you can use `pdt config set`, which checks the value before writing it (see {ref}`pdt_tlc_config`).
+Rather than editing the files by hand, you can use `pdt config set` and `pdt config clear`, which check the result before writing it (see {ref}`pdt_tlc_config`).
 
 {{pdt}} checks the combined configuration before doing anything else. If a file is not valid JSON, or a setting has a value it does not accept, {{pdt}} names the file or the setting and stops with exit code 127.
 

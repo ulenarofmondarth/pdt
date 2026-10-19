@@ -12,7 +12,16 @@ import fs from 'node:fs';
 import path from 'node:path';
 import defaults from '@/pdt-internal-config/default.json' with { type: 'json' };
 import { config as configSchema, type Config } from '@schema/config.js';
-import { isSettings, leaves, parseKey, parseValue, type ConfigKey } from '@util/config-keys.js';
+import {
+  isSettings,
+  leaves,
+  parseKey,
+  parseValue,
+  settingKey,
+  valueAt,
+  withoutKey,
+  type ConfigKey,
+} from '@util/config-keys.js';
 import { m } from '@i18n/messages.js';
 
 import type { PdtPaths } from '@util/runtime-config.js';
@@ -236,6 +245,53 @@ export function writeSetting(sources: ConfigSources, target: ConfigFile['source'
   fs.mkdirSync(path.dirname(file.path), { recursive: true });
   fs.writeFileSync(file.path, `${JSON.stringify(changed, null, 2)}\n`);
   return file.path;
+}
+
+/**
+ * The configuration files that set a value at `key`, in the order they are read.
+ *
+ * @throws {Error} When the key is not a setting
+ * @throws {ConfigError} When a file cannot be read
+ */
+export function filesSetting(sources: ConfigSources, key: string): ConfigFile[] {
+  const keys = settingKey(key);
+  return sources.files.filter(file => valueAt(readFile(file.path), keys) !== undefined);
+}
+
+/**
+ * Remove the value at `key` from configuration files, with any group the removal leaves empty.
+ *
+ * Nothing is written unless the whole configuration, with the change, is valid.
+ *
+ * @param sources - The configuration's sources; the files changed are among them
+ * @param targets - Which files to change
+ * @param key - The dot separated key of the setting, or group of settings
+ * @returns The files written
+ * @throws {Error} When the key is not a setting
+ * @throws {ConfigError} When a file cannot be read, or the change would make the configuration
+ *   invalid
+ */
+export function clearSetting(sources: ConfigSources, targets: readonly ConfigFile['source'][], key: string): string[] {
+  const keys = settingKey(key);
+  const changes = new Map(
+    targets.map(target => {
+      const file = sources.files.find(candidate => candidate.source === target);
+      if (file === undefined) throw new Error(m['error.config.noFile']({ target }));
+      return [target, { file, settings: withoutKey(readFile(file.path), keys) }] as const;
+    }),
+  );
+
+  resolve(
+    readLayers(sources).map(layer => {
+      const change = changes.get(layer.source as ConfigFile['source']);
+      return change === undefined ? layer : { source: layer.source, settings: change.settings };
+    }),
+  );
+
+  return [...changes.values()].map(({ file, settings }) => {
+    fs.writeFileSync(file.path, `${JSON.stringify(settings, null, 2)}\n`);
+    return file.path;
+  });
 }
 
 /**

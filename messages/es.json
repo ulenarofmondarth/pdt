@@ -43,6 +43,12 @@
           "key": "Clave del ajuste, separada por puntos, como Logging.level.",
           "value": "El valor. El texto que el ajuste acepta tal cual se queda como texto; lo demás se lee como JSON.",
           "user": "Definir el valor en el archivo de configuración del usuario, incluso dentro de un proyecto."
+        },
+        "clear": {
+          "description": "Quitar un ajuste del archivo de configuración del proyecto, o del usuario con --user.",
+          "key": "Clave del ajuste o grupo, separada por puntos, como Logging.level.",
+          "user": "Quitar el ajuste del archivo de configuración del usuario.",
+          "all": "Quitar el ajuste de todos los archivos de configuración que lo definen."
         }
       }
     },
@@ -60,13 +66,17 @@
       "started": "El VTT {vtt} se ha iniciado.",
       "alreadyRunning": "El VTT {vtt} ya está en marcha."
     },
-    "configSet": "{key} definido en {file}"
+    "configSet": "{key} definido en {file}",
+    "configCleared": "{key} quitado de {file}"
   },
   "warn": {
     "pdtParentExists": "Intento de crear un subproyecto PDT (use -f para forzarlo).\n  Proyecto principal en {path}",
     "alreadyExists": "{description} ya existe.",
     "moduleNotGenerated": "{path} no está vacío, por lo que no se genera ningún módulo allí. Opciones ignoradas: {options}",
-    "logFileUnavailable": "No se puede escribir el archivo de registro {file}, así que los mensajes solo van a la consola: {reason}"
+    "logFileUnavailable": "No se puede escribir el archivo de registro {file}, así que los mensajes solo van a la consola: {reason}",
+    "configNotSet": "{key} no está definido en {file}, así que no se ha quitado nada.",
+    "configSetElsewhere": "{key} no está definido en {file}, así que no se ha quitado nada. Está definido en {others}: usa --all para quitarlo de ahí.",
+    "configNotSetAnywhere": "{key} no está definido en ningún archivo de configuración, así que no se ha quitado nada."
   },
   "error": {
     "notInPdtProject": "No es un proyecto PDT.",
@@ -82,7 +92,8 @@
       "noFile": "Aquí no hay ningún archivo de configuración {target}.",
       "keyRequired": "Indica una clave de configuración, o --list-all para listar todos los ajustes.",
       "badOverride": "--config espera <clave>=<valor>, no «{value}».",
-      "keyAndListAll": "Indica una clave de configuración o --list-all, no ambos."
+      "keyAndListAll": "Indica una clave de configuración o --list-all, no ambos.",
+      "noProject": "No estás en un proyecto PDT, así que no hay archivo de configuración del proyecto. Usa --user para tu archivo de configuración de usuario."
     },
     "commandRequired": "Se requiere al menos un comando de nivel superior.",
     "vtt": {

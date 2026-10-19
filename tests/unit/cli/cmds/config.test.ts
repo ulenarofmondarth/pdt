@@ -43,6 +43,12 @@ describe('config command', () => {
     expect(ctx.writeConfig).toHaveBeenCalledOnce();
   });
 
+  test('routes clear to the clear sub-command', async () => {
+    await parse('config clear Logging.level --user');
+
+    expect(ctx.filesSetting).toHaveBeenCalledExactlyOnceWith('Logging.level');
+  });
+
   test('logs an error if its own handler is ever reached', async () => {
     const argv = { _: ['config'], $0: 'pdt' };
 

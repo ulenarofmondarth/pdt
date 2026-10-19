@@ -97,6 +97,70 @@ describe('config', () => {
     });
   });
 
+  describe('clear', () => {
+    let project: string;
+    let projectFile: string;
+
+    beforeEach(() => {
+      project = path.join(sandbox.work, 'module');
+      projectFile = path.join(project, PDT.PROJECT_RTD_DIR_NAME, 'config.json');
+      fs.mkdirSync(path.dirname(projectFile), { recursive: true });
+      sandbox.writeJson(userFile, { Logging: { level: 'debug', filename: 'mine.log' } });
+    });
+
+    const read = (file: string): unknown => JSON.parse(fs.readFileSync(file, 'utf8'));
+
+    test("removes a setting from the project's file", async () => {
+      sandbox.writeJson(projectFile, { Logging: { level: 'error' } });
+
+      const { code, stdout } = await sandbox.run(['config', 'clear', 'Logging.level'], { cwd: project });
+
+      expect(code).toBe(PDT.EXITCODE.OK);
+      expect(stdout).toContain(projectFile);
+      expect(read(projectFile)).toEqual({});
+      expect(read(userFile)).toEqual({ Logging: { level: 'debug', filename: 'mine.log' } });
+    });
+
+    test('warns, changing nothing, when only the user file sets it', async () => {
+      const { code, stdout, stderr } = await sandbox.run(['config', 'clear', 'Logging.level'], { cwd: project });
+
+      expect(code).toBe(PDT.EXITCODE.OK);
+      expect(stdout).toBe('');
+      expect(stderr).toContain('--all');
+      expect(read(userFile)).toEqual({ Logging: { level: 'debug', filename: 'mine.log' } });
+    });
+
+    test('removes a setting from the user file with --user', async () => {
+      await sandbox.run(['config', 'clear', 'Logging.level', '--user'], { cwd: project });
+
+      expect(read(userFile)).toEqual({ Logging: { filename: 'mine.log' } });
+    });
+
+    test('removes a setting from every file that sets it with --all', async () => {
+      sandbox.writeJson(projectFile, { Logging: { level: 'error' } });
+
+      await sandbox.run(['config', 'clear', 'Logging.level', '--all'], { cwd: project });
+
+      expect(read(projectFile)).toEqual({});
+      expect(read(userFile)).toEqual({ Logging: { filename: 'mine.log' } });
+    });
+
+    test('fails with the error code outside a project without --user', async () => {
+      const { code, stderr } = await sandbox.run(['config', 'clear', 'Logging.level']);
+
+      expect(code).toBe(PDT.EXITCODE.ERROR);
+      expect(stderr).toContain('--user');
+      expect(read(userFile)).toEqual({ Logging: { level: 'debug', filename: 'mine.log' } });
+    });
+
+    test('fails with the error code for a key that is not a setting', async () => {
+      const { code, stderr } = await sandbox.run(['config', 'clear', 'Logging.colour', '--user']);
+
+      expect(code).toBe(PDT.EXITCODE.ERROR);
+      expect(stderr).toContain('Logging.colour');
+    });
+  });
+
   test('fails with the invalid configuration code for a --config that is not <key>=<value>', async () => {
     const { code, stderr } = await sandbox.run(['info', '--config', 'Logging.level']);
 

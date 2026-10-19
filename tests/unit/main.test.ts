@@ -330,6 +330,18 @@ describe('main', () => {
       expect(JSON.parse(fs.readFileSync(file, 'utf8'))).toEqual({ Logging: { level: 'debug' } });
     });
 
+    test('clears settings from the configuration files it read', async () => {
+      writeUserConfig('{ "Logging": { "level": "debug", "filename": "mine.log" } }');
+      const file = path.join(context.paths.userConfigDir, 'config.json');
+
+      const given = await contextGiven();
+
+      expect(given.configFiles).toEqual([{ path: file, source: 'user' }]);
+      expect(given.filesSetting('Logging.level')).toEqual([{ path: file, source: 'user' }]);
+      expect(given.clearConfig(['user'], 'Logging.level')).toEqual([file]);
+      expect(JSON.parse(fs.readFileSync(file, 'utf8'))).toEqual({ Logging: { filename: 'mine.log' } });
+    });
+
     test('creates VTTs with the VTT factory', async () => {
       const given = await contextGiven();
 

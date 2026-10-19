@@ -43,6 +43,12 @@
           "key": "Clé du paramètre, séparée par des points, par exemple Logging.level.",
           "value": "La valeur. Un texte que le paramètre accepte tel quel reste du texte ; tout le reste est lu comme du JSON.",
           "user": "Définir la valeur dans le fichier de configuration de l'utilisateur, même dans un projet."
+        },
+        "clear": {
+          "description": "Retirer un paramètre du fichier de configuration du projet, ou de celui de l'utilisateur avec --user.",
+          "key": "Clé du paramètre ou du groupe, séparée par des points, par exemple Logging.level.",
+          "user": "Retirer plutôt le paramètre du fichier de configuration de l'utilisateur.",
+          "all": "Retirer le paramètre de chaque fichier de configuration qui le définit."
         }
       }
     },
@@ -60,13 +66,17 @@
       "started": "Le VTT {vtt} a démarré.",
       "alreadyRunning": "Le VTT {vtt} est déjà démarré."
     },
-    "configSet": "{key} défini dans {file}"
+    "configSet": "{key} défini dans {file}",
+    "configCleared": "{key} retiré de {file}"
   },
   "warn": {
     "pdtParentExists": "Tentative de création d'un sous-projet PDT (utiliser -f pour forcer).\n  Projet parent dans {path}",
     "alreadyExists": "{description} existe déjà.",
     "moduleNotGenerated": "{path} n'est pas vide ; aucun module n'y est donc généré. Options ignorées : {options}",
-    "logFileUnavailable": "Impossible d'écrire le fichier journal {file}, les messages ne vont donc qu'à la console : {reason}"
+    "logFileUnavailable": "Impossible d'écrire le fichier journal {file}, les messages ne vont donc qu'à la console : {reason}",
+    "configNotSet": "{key} n'est pas défini dans {file} : rien n'a été retiré.",
+    "configSetElsewhere": "{key} n'est pas défini dans {file} : rien n'a été retiré. Il est défini dans {others} : utilisez --all pour l'y retirer.",
+    "configNotSetAnywhere": "{key} n'est défini dans aucun fichier de configuration : rien n'a été retiré."
   },
   "error": {
     "notInPdtProject": "Ce n'est pas un projet PDT.",
@@ -82,7 +92,8 @@
       "noFile": "Il n'y a pas de fichier de configuration {target} ici.",
       "keyRequired": "Donnez une clé de configuration, ou --list-all pour lister tous les paramètres.",
       "badOverride": "--config attend <clé>=<valeur>, pas « {value} ».",
-      "keyAndListAll": "Donnez une clé de configuration ou --list-all, pas les deux."
+      "keyAndListAll": "Donnez une clé de configuration ou --list-all, pas les deux.",
+      "noProject": "Pas dans un projet PDT : il n'y a pas de fichier de configuration de projet. Utilisez --user pour votre fichier de configuration utilisateur."
     },
     "commandRequired": "Au moins une commande de premier niveau est requise.",
     "vtt": {

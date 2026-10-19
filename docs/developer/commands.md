@@ -23,6 +23,9 @@ export function createWhereCommand({ paths, log, out }: CommandContext): Command
 | `config` | The validated configuration, typed by the schema |
 | `sourceOf` | Where the value at a key of the configuration comes from: `default`, `user`, `project`, `environment` or `cli` |
 | `writeConfig` | Sets a value in the user or the project configuration file, after checking the whole configuration with it |
+| `configFiles` | The configuration files pdt reads, the user's first, each with its source; a file need not exist |
+| `filesSetting` | The configuration files that set a value at a key |
+| `clearConfig` | Removes the value at a key from configuration files, after checking the whole configuration without it |
 | `log` | `error`, `warn`, `info`, `debug`, and `setDirectory` to move the log file |
 | `out` | Writes what the user asked for, or the progress of it, to standard output |
 | `prompter` | Asks the user questions; absent when nobody can be asked (no terminal) |

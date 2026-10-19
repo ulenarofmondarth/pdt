@@ -17,6 +17,8 @@ import {
   configFiles,
   resolveConfig,
   writeSetting,
+  clearSetting,
+  filesSetting,
   type ConfigSources,
   type ResolvedConfig,
 } from '@util/load-config.js';
@@ -96,6 +98,9 @@ export async function main(
     config,
     sourceOf: resolved.sourceOf,
     writeConfig: (target, key, value) => writeSetting(sources, target, key, value),
+    configFiles: sources.files,
+    filesSetting: key => filesSetting(sources, key),
+    clearConfig: (targets, key) => clearSetting(sources, targets, key),
     log: {
       error: message => logger.error(message),
       warn: message => logger.warn(message),
