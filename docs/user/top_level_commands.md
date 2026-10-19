@@ -531,7 +531,7 @@ Anyone who can use the Docker engine can read a container's environment variable
 
 Once the container has started, {program}`pdt` waits until Foundry VTT answers at the VTT's address, for up to `VTT.<vtt>.server.ready.timeout` seconds (600 unless set; the first start downloads and installs Foundry VTT). If the container stops meanwhile, or the time runs out, {program}`pdt` stops with an error naming the container, whose `docker logs` say what happened. The VTT stays recorded, so `pdt vtt stop` clears it up, as does the next `start`.
 
-{program}`pdt` records the running VTT in the project's run state, `.pdt/run.state.json`: the container, its port and its address. `stop` and `restart` use that record, and so does `start`: a VTT that is running already is left alone, and its address shown. If the VTT has stopped since it was started, for example because Foundry VTT exited, {program}`pdt` removes what is left of it and starts it afresh.
+{program}`pdt` records the running VTT in the project's run state, `.pdt/run.state.json`: the container, its port, its address and the host it runs on. `stop`, `restart` and {ref}`pdt_tlc_status` find the VTT on that host, so changing the configuration, such as the Docker engine's `socketPath`, while a VTT runs does not lose it: it is stopped where it runs, and started again on the host configured now. `stop` and `restart` use that record, and so does `start`: a VTT that is running already is left alone, and its address shown. If the VTT has stopped since it was started, for example because Foundry VTT exited, {program}`pdt` removes what is left of it and starts it afresh.
 
 {program}`pdt` stops with an error, starting nothing, if:
 
