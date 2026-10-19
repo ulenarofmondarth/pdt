@@ -6,7 +6,7 @@
  */
 import PDT from '@/constants.js';
 import { createParser } from '@/cli/parsers.js';
-import { configOverrides } from '@/cli/overrides.js';
+import { configOverrides, projectOption } from '@/cli/overrides.js';
 import { UsageError } from '@/cli/usage-error.js';
 import { pdtCommands } from '@/cli/commands.js';
 import { createModule, type Prompter } from '@lib/ModuleGenerator.js';
@@ -23,6 +23,7 @@ import {
   type ResolvedConfig,
 } from '@util/load-config.js';
 import logger, { configureLogger, setLogDirectory } from '@util/logger.js';
+import { inProject, ProjectError, resolveProject } from '@util/runtime-config.js';
 
 import type { Arguments, CommandModule } from 'yargs';
 import type { CommandContext } from '@/cli/context.js';
@@ -73,6 +74,22 @@ function configure(
 }
 
 /**
+ * The context to run in: as if in the project given with `--project`, if it is, or as started. Or
+ * the exit code to stop with after reporting why the project cannot be used.
+ */
+function locate(args: readonly string[], context: MainContext): MainContext | number {
+  const given = projectOption(args);
+  if (given === undefined) return context;
+  try {
+    return { ...context, paths: inProject(context.paths, resolveProject(given, context.paths)) };
+  } catch (error) {
+    // The logger is not configured yet, so it cannot report this.
+    context.err(describeError(error));
+    return error instanceof ProjectError ? PDT.EXITCODE.USAGE : PDT.EXITCODE.ERROR;
+  }
+}
+
+/**
  * Run pdt.
  *
  * @param args - The command line, without node and the script
@@ -85,6 +102,10 @@ export async function main(
   context: MainContext,
   commands: CommandsFor = pdtCommands,
 ): Promise<number> {
+  const located = locate(args, context);
+  if (typeof located === 'number') return located;
+  context = located;
+
   const configured = configure(args, context);
   if (typeof configured === 'number') return configured;
   const { sources, resolved } = configured;

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { configOverrides } from '@/cli/overrides.js';
+import { configOverrides, projectOption } from '@/cli/overrides.js';
 import { ConfigError } from '@util/load-config.js';
 import { m } from '@i18n/messages.js';
 
@@ -46,5 +46,30 @@ describe('configOverrides', () => {
 
     expect(error).toBeInstanceOf(ConfigError);
     expect(error).toHaveProperty('message', m['error.config.badOverride']({ value: text }));
+  });
+});
+
+describe('projectOption', () => {
+  test('is nothing without --project', () => {
+    expect(projectOption(['vtt', 'start'])).toBeUndefined();
+  });
+
+  test.each([[['--project', 'my-module', 'vtt', 'start']], [['vtt', 'start', '--project=my-module']]])(
+    'is the value of --project, wherever it is: %j',
+    args => {
+      expect(projectOption(args)).toBe('my-module');
+    },
+  );
+
+  test('is the last, when it is given more than once', () => {
+    expect(projectOption(['--project', 'first', 'run', '--project', 'last'])).toBe('last');
+  });
+
+  test('is not taken from after --', () => {
+    expect(projectOption(['run', '--', '--project', 'my-module'])).toBeUndefined();
+  });
+
+  test('is nothing when --project ends the command line without a value', () => {
+    expect(projectOption(['run', '--project'])).toBeUndefined();
   });
 });

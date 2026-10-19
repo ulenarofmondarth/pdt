@@ -71,14 +71,14 @@ function assertUnregistered(runState: string, id: string, root: string) {
  * cannot be configured.
  */
 function configureProject(
-  { dir, pdtPath, id, runState }: { dir: string; pdtPath: string; id: string; runState: string },
+  { root, pdtPath, id, runState }: { root: string; pdtPath: string; id: string; runState: string },
   { log, out }: Pick<CommandContext, 'log' | 'out'>,
 ) {
   const file = path.join(pdtPath, CONFIG_FILENAME);
-  const vtt = projectVtt(dir, id);
+  const vtt = projectVtt(root, id);
   const config = 'settings' in vtt ? { id, VTT: { [id]: vtt.settings } } : { id };
   fs.writeFileSync(file, `${JSON.stringify(config, null, 2)}\n`);
-  registerProject(runState, id, path.resolve(dir));
+  registerProject(runState, id, root);
   out(m['info.projectRegistered']({ id, file: runState }));
 
   if ('settings' in vtt) {
@@ -104,7 +104,8 @@ export async function initProject(
   { paths, log, out, prompter, createModule }: CommandContext,
   { dir, force = false, yes = false, given = {} }: InitOptions,
 ) {
-  const root = path.resolve(dir);
+  // A relative directory is taken from where pdt is working, as `--project` may have set it.
+  const root = path.resolve(paths.cwd, dir);
   const pdtPath = path.join(root, PDT.PROJECT_RTD_DIR_NAME);
   const configFile = path.join(pdtPath, CONFIG_FILENAME);
   const parent = paths.pdtConfigDir;
@@ -117,10 +118,10 @@ export async function initProject(
     throw new Error(m['error.alreadyInitialised']({ path: root, file: configFile }));
   }
 
-  if (isEmpty(dir)) {
+  if (isEmpty(root)) {
     // Nothing to initialise yet, so create a new module there first.
     out(m['info.creatingModule']({ path: dir }));
-    await createModule(dir, {
+    await createModule(root, {
       given,
       // Ask for what was not given, unless told not to or there is nobody to ask.
       ...(!yes && prompter !== undefined ? { prompter } : {}),
@@ -129,7 +130,7 @@ export async function initProject(
   }
 
   // Read from the module project in the same way whether it was just generated or existed already.
-  const id = readModuleId(dir);
+  const id = readModuleId(root);
   const runState = runStateFile(paths.userDataDir);
   if ('value' in id) assertUnregistered(runState, id.value, root);
 
@@ -138,7 +139,7 @@ export async function initProject(
   log.setDirectory(pdtPath);
 
   if ('value' in id) {
-    configureProject({ dir, pdtPath, id: id.value, runState }, { log, out });
+    configureProject({ root, pdtPath, id: id.value, runState }, { log, out });
   } else {
     log.warn(id.problem);
     log.warn(m['warn.noProjectId']());
@@ -178,7 +179,7 @@ export function createInitCommand(context: CommandContext): CommandModule<object
     },
 
     async handler(argv) {
-      if (!isEmpty(argv.dir)) {
+      if (!isEmpty(path.resolve(context.paths.cwd, argv.dir))) {
         // A module is only generated into an empty directory, so these options do nothing here.
         const ignored = newModuleOptionsGiven(argv);
         if (ignored.length > 0) {

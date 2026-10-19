@@ -140,7 +140,9 @@ describe('init command', () => {
       });
 
       test('is registered with the absolute root when the directory is given relative', async () => {
-        await runInit(path.relative(process.cwd(), project));
+        ctx.paths.cwd = sandbox;
+
+        await runInit('project');
 
         expect(readRunState(userRunState).PROJECTS?.['my-module']).toEqual({ root: project });
       });

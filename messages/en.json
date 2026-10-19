@@ -65,6 +65,9 @@
     "opt": {
       "config": {
         "description": "Override a setting for this run only, as <key>=<value>. Can be given more than once."
+      },
+      "project": {
+        "description": "Run as if in a project: give its id, as registered by init, or the path to its root directory."
       }
     }
   },
@@ -164,6 +167,14 @@
       "destinationExists": "{path} already exists. Give a path that does not exist yet.",
       "noParent": "The directory to move the project into, {path}, does not exist.",
       "intoItself": "Cannot move the project into itself: {path}"
+    },
+    "project": {
+      "empty": "--project needs a project id or the path to a project.",
+      "asId": "project {id}",
+      "asPath": "{given}, which is not a registered project id",
+      "missing": "--project {as}: {root} does not exist. If the project has moved, run pdt move in it, or pdt prune.",
+      "notADirectory": "--project {as}: {root} is not a directory.",
+      "notAProject": "--project {as}: {root} is not a PDT project; it has no .pdt directory."
     }
   },
   "fatal": {
