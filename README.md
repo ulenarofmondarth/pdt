@@ -17,11 +17,13 @@
 
 ## What it does today
 
-| Command         | Purpose                                                                                                |
-| --------------- | ------------------------------------------------------------------------------------------------------ |
-| `pdt init`      | Mark a directory as a PDT project. In an empty directory, first create a new Foundry VTT module there. |
-| `pdt info`      | Placeholder; will show a project's runtime configuration.                                              |
-| `pdt vtt start` | Placeholder; will start a project-scoped Foundry VTT instance in Docker.                               |
+| Command                      | Purpose                                                                                                                                                             |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pdt init`                   | Make a directory a PDT project, registered under its module's id, with a VTT configured for it. In an empty directory, first create a new Foundry VTT module there. |
+| `pdt force-reset`            | Set the current project up again from scratch: clear its run state and configuration, then initialise it.                                                           |
+| `pdt config get\|set\|clear` | Show and change the configuration.                                                                                                                                  |
+| `pdt vtt start`              | Start the project's Foundry VTT in Docker.                                                                                                                          |
+| `pdt info`                   | Placeholder; will show a project's runtime configuration.                                                                                                           |
 
 Run `pdt --help` for the current list. The documentation also describes commands that are planned but not yet built.
 

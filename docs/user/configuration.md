@@ -39,6 +39,8 @@ and a project's `.pdt/config.json` makes it quiet again in that project:
 
 Rather than editing the files by hand, you can use `pdt config set` and `pdt config clear`, which check the result before writing it (see {ref}`pdt_tlc_config`).
 
+The built-in defaults configure no VTT: `pdt init` adds one for the project's module to the project's file (see {ref}`pdt_tlc_init_vtt`). It also records the project's id there, as the top-level setting `id` (see {ref}`pdt_tlc_init_id`).
+
 {{pdt}} checks the combined configuration before doing anything else. If a file is not valid JSON, or a setting has a value it does not accept, {{pdt}} names the file or the setting and stops with exit code 127.
 
 ## Environment variables
@@ -54,11 +56,15 @@ An environment variable overrides every configuration file. An empty variable is
 `--config <key>=<value>`, given anywhere on the command line, overrides a setting for that run only, over every file and environment variable. Give it once for each setting:
 
 ```shell
-pdt --config Logging.level=debug --config VTT.prj.server.version=13 vtt start
+pdt --config Logging.level=debug --config VTT.arcane-ledger.server.version=14.360.0 vtt start
 ```
 
 The key is the setting's path, its parts separated by dots. The value is read as `pdt config set` reads it (see {ref}`pdt_tlc_config_set`). A key that is not a setting, or a value the setting does not accept, stops {{pdt}} with exit code 127, like an invalid file.
 
+(pdt_conf_runtime_data)=
+
 ## PDT runtime data
 
 {{pdt}} keeps data it manages itself apart from the configuration: a project's data, including its log file, is in the project's `.pdt` directory, and anything outside a project is in your user data directory (`~/.local/share/pdt` on Linux, `~/Library/Preferences/pdt` on macOS, `%APPDATA%\pdt` on Windows).
+
+Run state is the part of that data that {{pdt}} needs in order to work, rather than for your information. It is kept in `run.state.json`, in your user data directory for things that span projects and in the project's `.pdt` directory for the project. Your user run state registers each project by its id (see {ref}`pdt_tlc_init_id`). Don't edit it by hand; {ref}`pdt_tlc_force_reset` clears a project's run state.

@@ -1,4 +1,5 @@
 import { createConfigCommand } from './cmds/config.js';
+import { createForceResetCommand } from './cmds/force-reset.js';
 import { createInfoCommand } from './cmds/info.js';
 import { createInitCommand } from './cmds/init.js';
 import { createVttCommand } from './cmds/vtt.js';
@@ -16,5 +17,6 @@ export function pdtCommands(context: CommandContext): readonly CommandModule[] {
     anyCommand(createInitCommand(context)),
     createInfoCommand(context),
     createConfigCommand(context),
+    createForceResetCommand(context),
   ];
 }

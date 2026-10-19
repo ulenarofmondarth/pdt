@@ -1,7 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import PDT from '@/constants.js';
-import { generatorOptions, pickGivenAnswers } from '@lib/ModuleGenerator.js';
+import { generatorOptions, pickGivenAnswers, type GivenAnswers } from '@lib/ModuleGenerator.js';
+import { projectVtt, readModuleId } from '@lib/projectVtt.js';
+import { CONFIG_FILENAME } from '@util/load-config.js';
+import { registeredProject, registerProject, runStateFile } from '@util/run-state.js';
 import { m } from '@i18n/messages.js';
 
 import type { ArgumentsCamelCase, CommandModule } from 'yargs';
@@ -33,16 +36,122 @@ function newModuleOptionsGiven(argv: ArgumentsCamelCase<InitArgs>): string[] {
   return argv.yes === true ? [...flags, '--yes'] : flags;
 }
 
+/** How to make a directory a pdt project. */
+export interface InitOptions {
+  /** The project's root directory. */
+  dir: string;
+  /** Make the project even inside another project. */
+  force?: boolean;
+  /** Do not ask the questions for a new module. */
+  yes?: boolean;
+  /** Answers for a new module, given as options. */
+  given?: GivenAnswers;
+}
+
 /**
- * `pdt init`: make a directory a pdt project, creating a new module in it first if it is empty.
+ * Fail unless the project `id` is free: no project is registered under it in the user's run state.
+ *
+ * @param runState - The user's run state file
+ * @param id - The project's id
+ * @param root - The project's root directory
  */
-export function createInitCommand({
-  paths,
-  log,
-  out,
-  prompter,
-  createModule,
-}: CommandContext): CommandModule<object, InitArgs> {
+function assertUnregistered(runState: string, id: string, root: string) {
+  const registered = registeredProject(runState, id);
+  if (registered === undefined) return;
+  throw new Error(
+    path.resolve(registered.root) === root
+      ? m['error.projectRegistered.here']({ id, file: runState })
+      : m['error.projectRegistered.elsewhere']({ id, root: registered.root, file: runState }),
+  );
+}
+
+/**
+ * Write the project's configuration: its id and, when the Foundry VTT version can be worked out, its
+ * VTT, named by the id. Then register the project in the user's run state. Warn about a VTT that
+ * cannot be configured.
+ */
+function configureProject(
+  { dir, pdtPath, id, runState }: { dir: string; pdtPath: string; id: string; runState: string },
+  { log, out }: Pick<CommandContext, 'log' | 'out'>,
+) {
+  const file = path.join(pdtPath, CONFIG_FILENAME);
+  const vtt = projectVtt(dir, id);
+  const config = 'settings' in vtt ? { id, VTT: { [id]: vtt.settings } } : { id };
+  fs.writeFileSync(file, `${JSON.stringify(config, null, 2)}\n`);
+  registerProject(runState, id, path.resolve(dir));
+  out(m['info.projectRegistered']({ id, file: runState }));
+
+  if ('settings' in vtt) {
+    out(m['info.vttConfigured']({ vtt: id, version: vtt.settings.server.version, file }));
+  } else {
+    log.warn(vtt.problem);
+    log.warn(m['warn.projectVtt.notConfigured']({ command: vtt.command }));
+  }
+}
+
+/**
+ * Make a directory a pdt project, creating a new module in it first if it is empty.
+ *
+ * The project's id is the module's id, read from its manifest once any new module has been
+ * generated, so that a new module and an existing one are read alike. The id must not already be
+ * registered in the user's run state. The project's configuration records the id and the VTT named
+ * by it, and the user's run state registers the project.
+ *
+ * @throws {Error} When the directory is a pdt project already, the module cannot be created, or the
+ *   project id is registered already
+ */
+export async function initProject(
+  { paths, log, out, prompter, createModule }: CommandContext,
+  { dir, force = false, yes = false, given = {} }: InitOptions,
+) {
+  const root = path.resolve(dir);
+  const pdtPath = path.join(root, PDT.PROJECT_RTD_DIR_NAME);
+  const configFile = path.join(pdtPath, CONFIG_FILENAME);
+  const parent = paths.pdtConfigDir;
+
+  if (parent !== undefined && parent !== pdtPath && !force) {
+    log.warn(m['warn.pdtParentExists']({ path: path.dirname(parent) }));
+    return;
+  }
+  if (fs.existsSync(configFile)) {
+    throw new Error(m['error.alreadyInitialised']({ path: root, file: configFile }));
+  }
+
+  if (isEmpty(dir)) {
+    // Nothing to initialise yet, so create a new module there first.
+    out(m['info.creatingModule']({ path: dir }));
+    await createModule(dir, {
+      given,
+      // Ask for what was not given, unless told not to or there is nobody to ask.
+      ...(!yes && prompter !== undefined ? { prompter } : {}),
+      onStep: step => out(`✔ ${step}`),
+    });
+  }
+
+  // Read from the module project in the same way whether it was just generated or existed already.
+  const id = readModuleId(dir);
+  const runState = runStateFile(paths.userDataDir);
+  if ('value' in id) assertUnregistered(runState, id.value, root);
+
+  fs.mkdirSync(pdtPath, { recursive: true });
+  // The log went to the user data directory until this project existed; log to the project from here on.
+  log.setDirectory(pdtPath);
+
+  if ('value' in id) {
+    configureProject({ dir, pdtPath, id: id.value, runState }, { log, out });
+  } else {
+    log.warn(id.problem);
+    log.warn(m['warn.noProjectId']());
+  }
+  log.info(m['info.pdtInitialised']({ path: dir }));
+}
+
+/**
+ * `pdt init`: make a directory a pdt project, creating a new module in it first if it is empty (see
+ * {@link initProject}).
+ */
+export function createInitCommand(context: CommandContext): CommandModule<object, InitArgs> {
+  const { log } = context;
   return {
     command: 'init [dir] [options]',
 
@@ -69,10 +178,6 @@ export function createInitCommand({
     },
 
     async handler(argv) {
-      const pdtPath = path.resolve(argv.dir, PDT.PROJECT_RTD_DIR_NAME);
-      const parent = paths.pdtConfigDir;
-      const attemptingSubPdt = parent !== undefined && parent !== pdtPath;
-
       if (!isEmpty(argv.dir)) {
         // A module is only generated into an empty directory, so these options do nothing here.
         const ignored = newModuleOptionsGiven(argv);
@@ -81,27 +186,12 @@ export function createInitCommand({
         }
       }
 
-      if (attemptingSubPdt && argv.force !== true) {
-        log.warn(m['warn.pdtParentExists']({ path: path.dirname(parent) }));
-      } else if (fs.existsSync(pdtPath)) {
-        log.warn(m['warn.alreadyExists']({ description: 'PDT data directory' }));
-      } else {
-        if (isEmpty(argv.dir)) {
-          // Nothing to initialise yet, so create a new module there first.
-          out(m['info.creatingModule']({ path: argv.dir }));
-          await createModule(argv.dir, {
-            given: pickGivenAnswers(argv),
-            // Ask for what was not given, unless told not to or there is nobody to ask.
-            ...(argv.yes !== true && prompter !== undefined ? { prompter } : {}),
-            onStep: step => out(`✔ ${step}`),
-          });
-        }
-
-        fs.mkdirSync(pdtPath);
-        // The log went to the user data directory until this project existed; log to the project from here on.
-        log.setDirectory(pdtPath);
-        log.info(m['info.pdtInitialised']({ path: argv.dir }));
-      }
+      await initProject(context, {
+        dir: argv.dir,
+        force: argv.force === true,
+        yes: argv.yes === true,
+        given: pickGivenAnswers(argv),
+      });
     },
   };
 }

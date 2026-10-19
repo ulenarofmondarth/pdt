@@ -40,16 +40,16 @@ Declare a command's arguments in its builder, and type its handler by them, with
 
 ```typescript
 interface StartArgs {
-  vtt: string;
+  vtt: string | undefined;
 }
 
 export function createVttStartCommand({ log }: CommandContext): CommandModule<object, StartArgs> {
   return {
     command: 'start [vtt] [options]',
     describe: m['ui.cmd.start.description'](),
-    builder: yargs => yargs.positional('vtt', { describe: '...', type: 'string', default: 'prj' }),
+    builder: yargs => yargs.positional('vtt', { describe: '...', type: 'string' }),
     handler(argv) {
-      // argv.vtt is a string
+      // argv.vtt is a string, or undefined when it was not given
     },
   };
 }

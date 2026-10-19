@@ -56,6 +56,11 @@ export type VttSettings = z.output<typeof vttSchema>;
 const npmDebugLevels = z.literal(['error', 'warn', 'info', 'http', 'verbose', 'debug', 'silly']);
 
 export const config = z.object({
+  /** The project's id, which names its VTT; set by `pdt init` from the module's id. */
+  id: z
+    .string()
+    .regex(/^[^.]+$/)
+    .optional(),
   Logging: z.object({
     filename: z.string(),
     level: npmDebugLevels,

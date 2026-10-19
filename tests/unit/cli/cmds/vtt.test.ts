@@ -5,6 +5,7 @@ import FoundryVTTServer from '@lib/VTT/Server/FoundryVTTServer.js';
 import { m } from '@i18n/messages.js';
 import { createCommandContext, type CommandContextMock } from '@tests/unit/mocks/context.js';
 import { createHostMock } from '@tests/unit/mocks/vttHost.js';
+import { vttSettings } from '@lib/projectVtt.js';
 
 describe('vtt command', () => {
   let ctx: CommandContextMock;
@@ -41,6 +42,7 @@ describe('vtt command', () => {
   });
 
   test('routes start to the start sub-command', async () => {
+    ctx.config.VTT['my-module'] = vttSettings('13');
     const host = createHostMock();
     ctx.createVtt.mockImplementation((name, settings) => new FoundryVTTServer(name, settings.server, host));
 

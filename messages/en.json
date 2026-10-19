@@ -4,7 +4,7 @@
     "cmd": {
       "arg": {
         "vtt": {
-          "description": "The VTT identity"
+          "description": "Name of the VTT, as configured under VTT. Defaults to the only VTT, when just one is configured."
         }
       },
       "vtt": {
@@ -50,6 +50,9 @@
           "user": "Remove the setting from the user configuration file instead.",
           "all": "Remove the setting from every configuration file that sets it."
         }
+      },
+      "forceReset": {
+        "description": "Set up the current project again from scratch: remove its run state, its registration and its configuration, then initialise it."
       }
     },
     "opt": {
@@ -67,16 +70,32 @@
       "alreadyRunning": "VTT {vtt} is already running."
     },
     "configSet": "Set {key} in {file}",
-    "configCleared": "Cleared {key} from {file}"
+    "configCleared": "Cleared {key} from {file}",
+    "vttConfigured": "Configured VTT {vtt} (Foundry VTT {version}) in {file}",
+    "projectRegistered": "Registered project {id} in {file}",
+    "forceReset": {
+      "removed": "Removed {file}",
+      "unregistered": "Removed the registration of project {id} from {file}"
+    }
   },
   "warn": {
     "pdtParentExists": "Attempt to create sub-PDT project (use -f to force).\n  Parent project at {path}",
-    "alreadyExists": "The {description} already exists.",
     "moduleNotGenerated": "{path} is not empty, so no module is generated there. Ignored: {options}",
     "logFileUnavailable": "Cannot write the log file {file}, so messages go to the console only: {reason}",
     "configNotSet": "{key} is not set in {file}, so nothing was cleared.",
     "configSetElsewhere": "{key} is not set in {file}, so nothing was cleared. It is set in {others}: use --all to clear it there.",
-    "configNotSetAnywhere": "{key} is not set in any configuration file, so nothing was cleared."
+    "configNotSetAnywhere": "{key} is not set in any configuration file, so nothing was cleared.",
+    "projectVtt": {
+      "noModuleId": "Could not read the module id from {file}: {reason}",
+      "noFoundryVersion": "Could not read the Foundry VTT version from {file}: {reason}",
+      "notConfigured": "No VTT is configured for this project. To add one, fill in what is missing and run: {command}",
+      "reason": {
+        "noId": "it has no \"id\"",
+        "idWithDot": "its id, {id}, contains a dot, which a configuration key cannot",
+        "noVersion": "it does not set {variable}"
+      }
+    },
+    "noProjectId": "The project has no id, so it is not registered and has no VTT. Fix module.json, then run pdt force-reset in the project."
   },
   "error": {
     "notInPdtProject": "Not a PDT project.",
@@ -105,11 +124,22 @@
       "stopUnsupported": "Stopping server {server} is not supported on a Docker host yet.",
       "restartUnsupported": "Restarting server {server} is not supported on a Docker host yet.",
       "unknownVtt": "There is no VTT named {vtt} in the configuration. Configured VTTs: {known}",
-      "hostUnreachable": "Cannot reach the {type} host for VTT {vtt}. Is it running, and can you use it?"
+      "hostUnreachable": "Cannot reach the {type} host for VTT {vtt}. Is it running, and can you use it?",
+      "noneConfigured": "No VTT is configured. Run pdt init in the project, or add one with pdt config set.",
+      "nameRequired": "Several VTTs are configured, so give the one to start: {known}"
     },
     "compendium": {
       "notRecognised": "{path} is not a recognised compendium database.",
       "exportUnsupported": "Exporting the compendium at {path} to {targets} is not supported yet."
+    },
+    "alreadyInitialised": "{path} is already a PDT project: {file} exists. To set it up again from scratch, run pdt force-reset in the project.",
+    "projectRegistered": {
+      "here": "Project {id} is already registered for this directory in {file}. Run pdt force-reset in the project, or remove the registration from {file}.",
+      "elsewhere": "Another project, at {root}, is already registered as {id} in {file}. Each project needs its own id: change the id in module.json."
+    },
+    "runState": {
+      "unreadable": "Could not read the run state file {file}: {reason}",
+      "invalid": "The run state file {file} is invalid: {problems}"
     }
   },
   "fatal": {

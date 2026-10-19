@@ -4,7 +4,7 @@
     "cmd": {
       "arg": {
         "vtt": {
-          "description": "Die Kennung des VTT"
+          "description": "Name des VTT, wie unter VTT konfiguriert. Standard ist das einzige VTT, wenn nur eines konfiguriert ist."
         }
       },
       "vtt": {
@@ -50,6 +50,9 @@
           "user": "Die Einstellung stattdessen aus der Benutzerkonfiguration entfernen.",
           "all": "Die Einstellung aus jeder Konfigurationsdatei entfernen, die sie setzt."
         }
+      },
+      "forceReset": {
+        "description": "Das aktuelle Projekt von Grund auf neu einrichten: seinen Laufzeitstatus, seine Registrierung und seine Konfiguration entfernen und es dann initialisieren."
       }
     },
     "opt": {
@@ -67,16 +70,32 @@
       "alreadyRunning": "VTT {vtt} läuft bereits."
     },
     "configSet": "{key} in {file} gesetzt",
-    "configCleared": "{key} aus {file} entfernt"
+    "configCleared": "{key} aus {file} entfernt",
+    "vttConfigured": "VTT {vtt} (Foundry VTT {version}) in {file} konfiguriert",
+    "projectRegistered": "Projekt {id} in {file} registriert",
+    "forceReset": {
+      "removed": "{file} entfernt",
+      "unregistered": "Registrierung von Projekt {id} aus {file} entfernt"
+    }
   },
   "warn": {
     "pdtParentExists": "Versuch, ein PDT-Unterprojekt anzulegen (mit -f erzwingen).\n  Übergeordnetes Projekt unter {path}",
-    "alreadyExists": "{description} existiert bereits.",
     "moduleNotGenerated": "{path} ist nicht leer, daher wird dort kein Modul angelegt. Ignoriert: {options}",
     "logFileUnavailable": "Die Protokolldatei {file} kann nicht geschrieben werden, daher erscheinen Meldungen nur in der Konsole: {reason}",
     "configNotSet": "{key} ist in {file} nicht gesetzt, daher wurde nichts entfernt.",
     "configSetElsewhere": "{key} ist in {file} nicht gesetzt, daher wurde nichts entfernt. Gesetzt ist es in {others}: mit --all wird es dort entfernt.",
-    "configNotSetAnywhere": "{key} ist in keiner Konfigurationsdatei gesetzt, daher wurde nichts entfernt."
+    "configNotSetAnywhere": "{key} ist in keiner Konfigurationsdatei gesetzt, daher wurde nichts entfernt.",
+    "projectVtt": {
+      "noModuleId": "Die Modul-ID konnte nicht aus {file} gelesen werden: {reason}",
+      "noFoundryVersion": "Die Foundry-VTT-Version konnte nicht aus {file} gelesen werden: {reason}",
+      "notConfigured": "Für dieses Projekt ist kein VTT konfiguriert. Um eines hinzuzufügen, ergänze das Fehlende und führe aus: {command}",
+      "reason": {
+        "noId": "die Datei hat keine „id“",
+        "idWithDot": "die ID {id} enthält einen Punkt, den ein Konfigurationsschlüssel nicht enthalten kann",
+        "noVersion": "die Datei setzt {variable} nicht"
+      }
+    },
+    "noProjectId": "Das Projekt hat keine ID, daher ist es nicht registriert und hat kein VTT. Korrigiere module.json und führe dann pdt force-reset im Projekt aus."
   },
   "error": {
     "notInPdtProject": "Kein PDT-Projekt.",
@@ -105,11 +124,22 @@
       "stopUnsupported": "Das Stoppen von Server {server} wird auf einem Docker-Host noch nicht unterstützt.",
       "restartUnsupported": "Der Neustart von Server {server} wird auf einem Docker-Host noch nicht unterstützt.",
       "unknownVtt": "In der Konfiguration gibt es kein VTT namens {vtt}. Konfigurierte VTTs: {known}",
-      "hostUnreachable": "Der {type}-Host für VTT {vtt} ist nicht erreichbar. Läuft er, und darfst du ihn verwenden?"
+      "hostUnreachable": "Der {type}-Host für VTT {vtt} ist nicht erreichbar. Läuft er, und darfst du ihn verwenden?",
+      "noneConfigured": "Es ist kein VTT konfiguriert. Führe pdt init im Projekt aus oder füge eines mit pdt config set hinzu.",
+      "nameRequired": "Mehrere VTTs sind konfiguriert, gib also an, welches gestartet werden soll: {known}"
     },
     "compendium": {
       "notRecognised": "{path} ist keine erkannte Kompendium-Datenbank.",
       "exportUnsupported": "Das Exportieren des Kompendiums unter {path} nach {targets} wird noch nicht unterstützt."
+    },
+    "alreadyInitialised": "{path} ist bereits ein PDT-Projekt: {file} existiert. Um es von Grund auf neu einzurichten, führe pdt force-reset im Projekt aus.",
+    "projectRegistered": {
+      "here": "Projekt {id} ist für dieses Verzeichnis bereits in {file} registriert. Führe pdt force-reset im Projekt aus oder entferne die Registrierung aus {file}.",
+      "elsewhere": "Ein anderes Projekt unter {root} ist in {file} bereits als {id} registriert. Jedes Projekt braucht eine eigene ID: ändere die ID in module.json."
+    },
+    "runState": {
+      "unreadable": "Die Laufzeitstatusdatei {file} konnte nicht gelesen werden: {reason}",
+      "invalid": "Die Laufzeitstatusdatei {file} ist ungültig: {problems}"
     }
   },
   "fatal": {

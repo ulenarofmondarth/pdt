@@ -44,7 +44,7 @@ describe('config', () => {
       const { code, stdout } = await sandbox.run(['config', 'get', '--list-all', '--format', 'yml']);
 
       expect(code).toBe(PDT.EXITCODE.OK);
-      expect(YAML.parse(stdout)).toMatchObject({ Logging: { level: 'warn' }, VTT: { prj: expect.any(Object) } });
+      expect(YAML.parse(stdout)).toMatchObject({ Logging: { level: 'warn' }, VTT: {} });
     });
 
     test('fails with the error code, writing nothing to standard output, for a key that is not a setting', async () => {
@@ -80,10 +80,10 @@ describe('config', () => {
       const project = path.join(sandbox.work, 'module');
       fs.mkdirSync(path.join(project, PDT.PROJECT_RTD_DIR_NAME), { recursive: true });
 
-      await sandbox.run(['config', 'set', 'VTT.prj.server.version', '13'], { cwd: project });
+      await sandbox.run(['config', 'set', 'Logging.level', 'error'], { cwd: project });
 
       expect(JSON.parse(fs.readFileSync(path.join(project, PDT.PROJECT_RTD_DIR_NAME, 'config.json'), 'utf8'))).toEqual({
-        VTT: { prj: { server: { version: '13' } } },
+        Logging: { level: 'error' },
       });
       expect(fs.existsSync(userFile)).toBe(false);
     });

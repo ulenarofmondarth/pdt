@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { config as configSchema, DEFAULT_DOCKER_IMAGE, hostSchema, serverSchema } from '@schema/config.js';
 import defaults from '@/pdt-internal-config/default.json' with { type: 'json' };
+import { vttSettings } from '@lib/projectVtt.js';
 
 const DOCKER_HOST = { type: 'docker', image: 'felddy/foundryvtt-docker', version: '12', ports: [] };
 
@@ -15,8 +16,26 @@ describe('config schema', () => {
   });
 
   // Regression: validating dropped the port the shipped defaults set, since the schema lacked it.
-  test('keeps the port of each shipped server', () => {
-    expect(configSchema.parse(defaults).VTT['prj']?.server.port).toBe(defaults.VTT.prj.server.port);
+  test('keeps the port of a server', () => {
+    const config = configSchema.parse({ ...defaults, VTT: { mod: vttSettings('13') } });
+
+    expect(config.VTT['mod']?.server.port).toBe('auto');
+  });
+
+  test('accepts the shipped defaults, which configure no VTT', () => {
+    expect(configSchema.parse(defaults).VTT).toEqual({});
+  });
+
+  test('has no project id by default, and keeps one it is given', () => {
+    expect(configSchema.parse(defaults)).not.toHaveProperty('id');
+    expect(configSchema.parse({ ...defaults, id: 'arcane-ledger' }).id).toBe('arcane-ledger');
+  });
+
+  test.each(['', 'arcane.ledger'])('rejects a project id that cannot be a configuration key: "%s"', id => {
+    const result = configSchema.safeParse({ ...defaults, id });
+
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.path).toEqual(['id']);
   });
 
   test.each(['Logging', 'VTT', 'DOCS'])('requires the %s section', section => {

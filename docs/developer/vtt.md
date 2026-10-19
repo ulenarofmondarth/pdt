@@ -8,10 +8,12 @@
 Both are built from the validated configuration. Each entry under `VTT` names a server and its host, and `createVtt` (`src/lib/VTT/createVtt.ts`) builds both:
 
 ```typescript
-const server = createVtt('prj', config.VTT['prj']);
+const server = createVtt('arcane-ledger', config.VTT['arcane-ledger']);
 
 await server.start();
 ```
+
+No VTT is built in: `pdt init` writes one into the project's configuration, named by the project id (the module's id; see `src/cli/cmds/init.ts`) and running the Foundry VTT version from `.foundryvtt/.env` (`src/lib/projectVtt.ts`; `vttSettings(version)` holds the settings it uses).
 
 Commands get `createVtt` from their context (see {doc}`commands`), so their tests give them VTTs on a stand-in host. `pdt vtt start` is built this way: it checks that the host can be reached, leaves a running VTT alone, and otherwise starts it.
 
@@ -23,11 +25,11 @@ The settings types (`FoundryServerSettings`, `DockerHostSettings`, ...) come fro
 
 ## The Docker host
 
-For a server named `prj` with version `13.351`, `DockerHost.start`:
+For a server named `arcane-ledger` with version `14.368.0`, `DockerHost.start`:
 
-1. works out the image, `[repository/]image:13.351` (the image is `felddy/foundryvtt` unless the settings name another), and refuses a server without a version, as an untagged pull would fetch every tag;
+1. works out the image, `[repository/]image:14.368.0` (the image is `felddy/foundryvtt` unless the settings name another), and refuses a server without a version, as an untagged pull would fetch every tag;
 2. pulls the image unless the engine already has it;
-3. starts the container named `prj`, creating it first if there is none, and leaves it alone if it is already running.
+3. starts the container named `arcane-ledger`, creating it first if there is none, and leaves it alone if it is already running.
 
 A failure at any step rejects with a message naming the image or the server and giving the engine's reason, with the engine's error as its `cause`.
 

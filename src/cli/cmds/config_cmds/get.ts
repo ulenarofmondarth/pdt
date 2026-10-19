@@ -49,7 +49,8 @@ export function createConfigGetCommand({ config, sourceOf, out }: CommandContext
 
       const keys = parseKey(key);
       const value = valueAt(config, keys);
-      if (value === undefined) {
+      // An empty group, such as VTT before any VTT is configured, sets nothing either.
+      if (value === undefined || (isSettings(value) && Object.keys(value).length === 0)) {
         throw new Error(
           schemaAt(keys) === undefined ? m['error.config.unknownKey']({ key }) : m['error.config.notSet']({ key }),
         );
