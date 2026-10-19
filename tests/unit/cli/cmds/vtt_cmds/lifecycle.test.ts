@@ -316,7 +316,7 @@ describe('the VTT lifecycle', () => {
     test('waits until the VTT answers at its address', async () => {
       ctx.isUrlReachable.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
       host.isRunning.mockResolvedValue(true);
-      ctx.config.VTT['my-module']!.host.timeout = 10;
+      ctx.config.VTT['my-module']!.server.ready.timeout = 10;
 
       await startVtt(ctx, undefined);
 
@@ -342,7 +342,7 @@ describe('the VTT lifecycle', () => {
     test('fails, keeping the record, when the VTT does not answer in time', async () => {
       ctx.isUrlReachable.mockResolvedValue(false);
       host.isRunning.mockResolvedValue(true);
-      ctx.config.VTT['my-module']!.host.timeout = 0;
+      ctx.config.VTT['my-module']!.server.ready.timeout = 0;
 
       await expect(startVtt(ctx, undefined)).rejects.toThrow(
         m['error.vtt.notReachable']({

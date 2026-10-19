@@ -6,7 +6,13 @@ import { m } from '@i18n/messages.js';
 
 import type { ServerSettings } from '@schema/config.js';
 
-const FOUNDRY: ServerSettings = { type: 'foundry', version: '13', hostname: 'localhost', port: 'auto' };
+const FOUNDRY: ServerSettings = {
+  type: 'foundry',
+  version: '13',
+  hostname: 'localhost',
+  port: 'auto',
+  ready: { timeout: 600 },
+};
 
 describe('createServer', () => {
   test('creates a Foundry VTT server, with its name, settings and host, for the foundry type', () => {

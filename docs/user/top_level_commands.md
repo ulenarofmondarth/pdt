@@ -63,7 +63,13 @@ For a module `arcane-ledger` created for Foundry VTT 14.368.0, `.pdt/config.json
   "id": "arcane-ledger",
   "VTT": {
     "arcane-ledger": {
-      "server": { "type": "foundry", "hostname": "localhost", "version": "14.368.0", "port": "auto" },
+      "server": {
+        "type": "foundry",
+        "hostname": "localhost",
+        "version": "14.368.0",
+        "port": "auto",
+        "ready": { "timeout": 600 }
+      },
       "host": { "type": "docker", "image": "felddy/foundryvtt" }
     }
   }
@@ -499,7 +505,7 @@ On a Docker host, {program}`pdt` pulls the image the first time (tagged with the
 Anyone who can use the Docker engine can read a container's environment variables with `docker inspect`, your Foundry VTT password among them.
 :::
 
-Once the container has started, {program}`pdt` waits until Foundry VTT answers at the VTT's address, for up to `VTT.<vtt>.host.timeout` seconds (600 unless set; the first start downloads and installs Foundry VTT). If the container stops meanwhile, or the time runs out, {program}`pdt` stops with an error naming the container, whose `docker logs` say what happened. The VTT stays recorded, so `pdt vtt stop` clears it up, as does the next `start`.
+Once the container has started, {program}`pdt` waits until Foundry VTT answers at the VTT's address, for up to `VTT.<vtt>.server.ready.timeout` seconds (600 unless set; the first start downloads and installs Foundry VTT). If the container stops meanwhile, or the time runs out, {program}`pdt` stops with an error naming the container, whose `docker logs` say what happened. The VTT stays recorded, so `pdt vtt stop` clears it up, as does the next `start`.
 
 {program}`pdt` records the running VTT in the project's run state, `.pdt/run.state.json`: the container, its port and its address. `stop` and `restart` use that record, and so does `start`: a VTT that is running already is left alone, and its address shown. If the VTT has stopped since it was started, for example because Foundry VTT exited, {program}`pdt` removes what is left of it and starts it afresh.
 

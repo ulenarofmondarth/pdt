@@ -122,6 +122,19 @@ describe('server schema', () => {
     expect(serverSchema.parse(FOUNDRY_SERVER).port).toBe('auto');
   });
 
+  test('waits 600 seconds for the server to be ready when it sets no time', () => {
+    expect(serverSchema.parse(FOUNDRY_SERVER).ready).toEqual({ timeout: 600 });
+    expect(serverSchema.parse({ ...FOUNDRY_SERVER, ready: {} }).ready).toEqual({ timeout: 600 });
+  });
+
+  test.each([0, 1, 3600])('accepts %s seconds to wait for the server to be ready', timeout => {
+    expect(serverSchema.parse({ ...FOUNDRY_SERVER, ready: { timeout } }).ready.timeout).toBe(timeout);
+  });
+
+  test.each([-1, 1.5, '600'])('rejects %s seconds to wait for the server to be ready', timeout => {
+    expect(serverSchema.safeParse({ ...FOUNDRY_SERVER, ready: { timeout } }).success).toBe(false);
+  });
+
   test.each(['hostname', 'version'])('requires %s', field => {
     const server: Record<string, unknown> = { ...FOUNDRY_SERVER };
     delete server[field];

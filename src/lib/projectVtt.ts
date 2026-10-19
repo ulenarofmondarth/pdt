@@ -80,8 +80,14 @@ export function readFoundryVersion(dir: string): Found<string> {
 /** The settings of a project's VTT: Foundry VTT `version`, in Docker. */
 export function vttSettings(version: string): VttSettings {
   return {
-    server: { type: 'foundry', hostname: 'localhost', version, port: 'auto' },
-    host: { type: 'docker', image: DEFAULT_DOCKER_IMAGE, timeout: DEFAULT_START_TIMEOUT },
+    server: {
+      type: 'foundry',
+      hostname: 'localhost',
+      version,
+      port: 'auto',
+      ready: { timeout: DEFAULT_START_TIMEOUT },
+    },
+    host: { type: 'docker', image: DEFAULT_DOCKER_IMAGE },
   };
 }
 

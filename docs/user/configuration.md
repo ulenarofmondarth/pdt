@@ -63,18 +63,27 @@ A `secrets.conf` holds JSON, like a `config.json`, and is read straight after it
 
 `pdt config get` shows a secret as `*****`; give `--print-secrets` to see it (see {ref}`pdt_tlc_config`). Secrets given to `pdt config set` or `--config` are masked in the log as well.
 
-(pdt_conf_vtt_host)=
+(pdt_conf_vtt)=
 
-## A VTT's host
+## A VTT's server and host
 
-Besides its `type`, a VTT's `host` (`VTT.<vtt>.host`) can set:
+Each VTT, `VTT.<vtt>`, has a `server`, the Foundry VTT it runs, and a `host`, where it runs. Besides its `type`, the `server` sets:
+
+| Setting | What it is |
+| --- | --- |
+| `version` | The Foundry VTT release to run. |
+| `hostname` | The name the VTT is reached at; `localhost` after `init`. |
+| `port` | The port to serve on: a number, or `auto` (the default) for the first free one from 30000. |
+| `ready.timeout` | How long `pdt vtt start` waits, in seconds, for the server to answer once its host has started it; 600 unless set. The first start downloads and installs Foundry VTT. |
+| `admin_key` | The server's administrator password; a secret (see {ref}`pdt_conf_secrets`). |
+
+Besides its `type`, the `host` can set:
 
 | Setting | What it is |
 | --- | --- |
 | `image` | The Docker image to run, without a tag; `felddy/foundryvtt` unless set. The tag is the server's `version`. |
 | `repository` | The registry to pull the image from; Docker Hub unless set. |
 | `socketPath` | The Docker engine's socket; Docker's default unless set. |
-| `timeout` | How long `pdt vtt start` waits, in seconds, for the VTT to answer once its container has started; 600 unless set. |
 
 ## Environment variables
 

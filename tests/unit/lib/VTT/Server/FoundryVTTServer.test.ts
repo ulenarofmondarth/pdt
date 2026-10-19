@@ -6,7 +6,13 @@ import { createHostMock } from '@tests/unit/mocks/vttHost.js';
 import type { FoundryServerSettings } from '@schema/config.js';
 
 const RUN = { name: 'pdt-x', port: 30001, environment: {}, mounts: [] };
-const SETTINGS: FoundryServerSettings = { type: 'foundry', version: '12', hostname: 'vtt.example', port: 8080 };
+const SETTINGS: FoundryServerSettings = {
+  type: 'foundry',
+  version: '12',
+  hostname: 'vtt.example',
+  port: 8080,
+  ready: { timeout: 600 },
+};
 
 describe('FoundryVTTServer', () => {
   test('is a VTTServer', () => {

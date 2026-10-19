@@ -170,7 +170,7 @@
       "noFreePort": "No hay ningún puerto libre a partir de {from}.",
       "portInUse": "El puerto {port}, que fija VTT.{vtt}.server.port, está en uso. Libéralo o pon el puerto en auto.",
       "stoppedWhileStarting": "El VTT {vtt} se detuvo mientras se iniciaba. Mira por qué con docker logs {container}.",
-      "notReachable": "El VTT {vtt} no respondió en {url} en {timeout} segundos. Sigue en ejecución: mira qué hace con docker logs {container}, detenlo con pdt vtt stop, o dale más tiempo con VTT.{vtt}.host.timeout."
+      "notReachable": "El VTT {vtt} no respondió en {url} en {timeout} segundos. Sigue en ejecución: mira qué hace con docker logs {container}, detenlo con pdt vtt stop, o dale más tiempo con VTT.{vtt}.server.ready.timeout."
     },
     "compendium": {
       "notRecognised": "{path} no es una base de datos de compendio reconocida.",

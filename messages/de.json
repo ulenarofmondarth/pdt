@@ -170,7 +170,7 @@
       "noFreePort": "Ab {from} ist kein Port frei.",
       "portInUse": "Port {port}, den VTT.{vtt}.server.port festlegt, ist belegt. Gib ihn frei oder setze den Port auf auto.",
       "stoppedWhileStarting": "VTT {vtt} wurde beim Starten beendet. Den Grund zeigt docker logs {container}.",
-      "notReachable": "VTT {vtt} hat unter {url} nicht innerhalb von {timeout} Sekunden geantwortet. Es läuft noch: was es tut, zeigt docker logs {container}; stoppe es mit pdt vtt stop, oder gib ihm mit VTT.{vtt}.host.timeout mehr Zeit."
+      "notReachable": "VTT {vtt} hat unter {url} nicht innerhalb von {timeout} Sekunden geantwortet. Es läuft noch: was es tut, zeigt docker logs {container}; stoppe es mit pdt vtt stop, oder gib ihm mit VTT.{vtt}.server.ready.timeout mehr Zeit."
     },
     "compendium": {
       "notRecognised": "{path} ist keine erkannte Kompendium-Datenbank.",

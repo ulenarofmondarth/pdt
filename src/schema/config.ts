@@ -18,6 +18,12 @@ export const secretSettings = z.registry<Record<string, never>>();
 /** A secret text setting. */
 const secret = () => z.string().register(secretSettings, {});
 
+/** How to know a server is ready, once its host has started it. */
+const readiness = z.object({
+  /** How long to wait, in seconds, for the server to answer. */
+  timeout: z.int().min(0).default(DEFAULT_START_TIMEOUT),
+});
+
 const foundryServerSettings = z.object({
   type: z.literal(['foundry']),
   hostname: z.string(),
@@ -25,6 +31,8 @@ const foundryServerSettings = z.object({
   version: z.string(),
   /** The port to serve on, on the machine pdt runs on: a number, or `auto` for the first free one from 30000. */
   port: z.union([z.literal('auto'), z.int().min(1).max(65535)]).default('auto'),
+  /** How to know the server is ready; waited on for 600 seconds unless set. */
+  ready: readiness.prefault({}),
   /** The password of the server's administrator. */
   admin_key: secret().optional(),
 });
@@ -47,14 +55,12 @@ const dockerHostSettings = z.object({
   image: z.string().default(DEFAULT_DOCKER_IMAGE),
   /** Tag of the image, for a host whose image is not tagged by a server's version. */
   version: z.string().optional(),
-  /** How long to wait, in seconds, for a server the host has started to answer. */
-  timeout: z.int().min(0).default(DEFAULT_START_TIMEOUT),
 });
 
 export const hostSchema = z.discriminatedUnion('type', [dockerHostSettings]);
 
 /** The Docker host that serves the documentation, and the ports it publishes. */
-const docsHostSettings = dockerHostSettings.omit({ timeout: true }).extend({
+const docsHostSettings = dockerHostSettings.extend({
   ports: z.array(
     z.object({
       internal: z.int32(),

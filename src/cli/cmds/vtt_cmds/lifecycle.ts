@@ -169,7 +169,7 @@ async function start(vtt: ProjectVtt, context: CommandContext) {
   // Recorded before waiting, so that a VTT that does not answer can still be stopped.
   recordRunningVtt(runState, name, { id, name: instance, port, url, started: new Date().toISOString() });
 
-  const timeout = settings.host.timeout;
+  const { timeout } = settings.server.ready;
   out(m['info.vtt.waiting']({ vtt: name, url, timeout }));
   const result = await waitUntilReachable({
     url,

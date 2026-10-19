@@ -170,7 +170,7 @@
       "noFreePort": "Aucun port n'est libre à partir de {from}.",
       "portInUse": "Le port {port}, défini par VTT.{vtt}.server.port, est occupé. Libérez-le, ou réglez le port sur auto.",
       "stoppedWhileStarting": "Le VTT {vtt} s'est arrêté pendant son démarrage. Voyez pourquoi avec docker logs {container}.",
-      "notReachable": "Le VTT {vtt} n'a pas répondu à {url} en {timeout} secondes. Il tourne toujours : voyez ce qu'il fait avec docker logs {container}, arrêtez-le avec pdt vtt stop, ou laissez-lui plus de temps avec VTT.{vtt}.host.timeout."
+      "notReachable": "Le VTT {vtt} n'a pas répondu à {url} en {timeout} secondes. Il tourne toujours : voyez ce qu'il fait avec docker logs {container}, arrêtez-le avec pdt vtt stop, ou laissez-lui plus de temps avec VTT.{vtt}.server.ready.timeout."
     },
     "compendium": {
       "notRecognised": "{path} n'est pas une base de données de compendium reconnue.",

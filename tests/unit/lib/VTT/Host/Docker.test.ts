@@ -24,9 +24,14 @@ const HOST_CONFIG: DockerHostSettings = {
   type: 'docker',
   socketPath: '/var/run/docker.sock',
   image: 'felddy/foundryvtt',
-  timeout: 600,
 };
-const SERVER: FoundryServerSettings = { type: 'foundry', version: '12', hostname: 'h', port: 'auto' };
+const SERVER: FoundryServerSettings = {
+  type: 'foundry',
+  version: '12',
+  hostname: 'h',
+  port: 'auto',
+  ready: { timeout: 600 },
+};
 const IMAGE = 'felddy/foundryvtt:12';
 const CONTAINER_NAME = 'pdt-test';
 const RUN = {
