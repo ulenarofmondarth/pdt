@@ -33,7 +33,12 @@
   },
   "info": {
     "pdtInitialised": "PDT für {path} initialisiert",
-    "creatingModule": "{path} ist leer. Dort wird ein neues Foundry-VTT-Modul angelegt."
+    "creatingModule": "{path} ist leer. Dort wird ein neues Foundry-VTT-Modul angelegt.",
+    "vtt": {
+      "starting": "VTT {vtt} (Version {version}) wird gestartet…",
+      "started": "VTT {vtt} wurde gestartet.",
+      "alreadyRunning": "VTT {vtt} läuft bereits."
+    }
   },
   "warn": {
     "pdtParentExists": "Versuch, ein PDT-Unterprojekt anzulegen (mit -f erzwingen).\n  Übergeordnetes Projekt unter {path}",
@@ -56,9 +61,11 @@
       "unknownHostType": "Unbekannter VTT-Hosttyp: {type}",
       "noVersion": "Server {server} hat keine Version, die auf einem Docker-Host laufen kann.",
       "pullFailed": "{image} konnte nicht geladen werden: {reason}",
-      "startFailed": "Server {server} konnte auf dem Docker-Host nicht gestartet werden.",
+      "startFailed": "Server {server} konnte auf dem Docker-Host nicht gestartet werden: {reason}",
       "stopUnsupported": "Das Stoppen von Server {server} wird auf einem Docker-Host noch nicht unterstützt.",
-      "restartUnsupported": "Der Neustart von Server {server} wird auf einem Docker-Host noch nicht unterstützt."
+      "restartUnsupported": "Der Neustart von Server {server} wird auf einem Docker-Host noch nicht unterstützt.",
+      "unknownVtt": "In der Konfiguration gibt es kein VTT namens {vtt}. Konfigurierte VTTs: {known}",
+      "hostUnreachable": "Der {type}-Host für VTT {vtt} ist nicht erreichbar. Läuft er, und darfst du ihn verwenden?"
     },
     "compendium": {
       "notRecognised": "{path} ist keine erkannte Kompendium-Datenbank.",

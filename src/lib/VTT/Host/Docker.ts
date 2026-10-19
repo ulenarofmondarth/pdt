@@ -85,7 +85,14 @@ export default class DockerHost extends VTTHost {
         AutoRemove: false,
       },
     } satisfies ContainerCreateOptions;
-    const failed = (cause: unknown) => new Error(m['error.vtt.startFailed']({ server: server.name }), { cause });
+    const failed = (cause: unknown) =>
+      new Error(
+        m['error.vtt.startFailed']({
+          server: server.name,
+          reason: cause instanceof Error ? cause.message : String(cause),
+        }),
+        { cause },
+      );
 
     let container: Container = this.docker.getContainer(serverOptions.name);
     try {

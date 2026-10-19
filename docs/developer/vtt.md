@@ -5,15 +5,15 @@
 - a **server** (`VTTServer`, in `src/lib/VTT`) is the VTT application: its name and settings, such as the Foundry VTT version to run;
 - a **host** (`VTTHost`) is where servers run, and does the starting and stopping. The only host so far is `DockerHost`, which runs each server in a Docker container.
 
-Both are built from the validated configuration. Each entry under `VTT` names a server and its host:
+Both are built from the validated configuration. Each entry under `VTT` names a server and its host, and `createVtt` (`src/lib/VTT/createVtt.ts`) builds both:
 
 ```typescript
-const vtt = config.VTT['prj'];
-const host = createHost(vtt.host);
-const server = createServer('prj', vtt.server, host);
+const server = createVtt('prj', config.VTT['prj']);
 
 await server.start();
 ```
+
+Commands get `createVtt` from their context (see {doc}`commands`), so their tests give them VTTs on a stand-in host. `pdt vtt start` is built this way: it checks that the host can be reached, leaves a running VTT alone, and otherwise starts it.
 
 The settings types (`FoundryServerSettings`, `DockerHostSettings`, ...) come from the zod schema in `src/schema/config.ts`, so a setting is declared once, and the configuration and the code cannot disagree about it.
 
@@ -29,7 +29,7 @@ For a server named `prj` with version `13.351`, `DockerHost.start`:
 2. pulls the image unless the engine already has it;
 3. starts the container named `prj`, creating it first if there is none, and leaves it alone if it is already running.
 
-A failure at any step rejects with a message naming the image or the server, and the engine's error as its `cause`.
+A failure at any step rejects with a message naming the image or the server and giving the engine's reason, with the engine's error as its `cause`.
 
 ## Testing
 

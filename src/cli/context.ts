@@ -1,4 +1,5 @@
 import type { createModule, Prompter } from '@lib/ModuleGenerator.js';
+import type { createVtt } from '@lib/VTT/createVtt.js';
 import type { Config } from '@schema/config.js';
 import type { PdtPaths } from '@util/runtime-config.js';
 
@@ -27,4 +28,6 @@ export interface CommandContext {
   prompter?: Prompter;
   /** Creates a new Foundry VTT module project. */
   createModule: typeof createModule;
+  /** Creates a VTT, from its settings in the configuration. */
+  createVtt: typeof createVtt;
 }

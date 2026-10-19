@@ -8,6 +8,7 @@ import PDT from '@/constants.js';
 import { createParser } from '@/cli/parsers.js';
 import { pdtCommands } from '@/cli/commands.js';
 import { createModule, type Prompter } from '@lib/ModuleGenerator.js';
+import { createVtt } from '@lib/VTT/createVtt.js';
 import { prettyData } from '@util/diagnostic.js';
 import { ConfigError, configFiles, loadConfig } from '@util/load-config.js';
 import logger, { configureLogger, setLogDirectory } from '@util/logger.js';
@@ -81,6 +82,7 @@ export async function main(
     out: context.out,
     ...(context.prompter === undefined ? {} : { prompter: context.prompter }),
     createModule,
+    createVtt,
   };
 
   // yargs reports a command line it cannot run through this callback, and still resolves. A command

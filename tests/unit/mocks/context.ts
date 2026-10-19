@@ -4,6 +4,7 @@ import { config as configSchema } from '@schema/config.js';
 
 import type { CommandContext, CommandLog } from '@/cli/context.js';
 import type { createModule, Prompter } from '@lib/ModuleGenerator.js';
+import type { createVtt } from '@lib/VTT/createVtt.js';
 
 /** A CommandLog that records every call. */
 export function createLogMock() {
@@ -19,7 +20,8 @@ export function createLogMock() {
 /**
  * What a command gets to work with, for a test: the shipped default configuration, paths that are
  * outside any project and lead nowhere, and spies for everything a command does. There is no
- * prompter; give it one to test asking questions.
+ * prompter; give it one to test asking questions. `createVtt` makes nothing until a test says what
+ * it makes.
  *
  * Change any part of it before creating the command.
  */
@@ -28,12 +30,14 @@ export function createCommandContext() {
     log: ReturnType<typeof createLogMock>;
     out: ReturnType<typeof vi.fn<CommandContext['out']>>;
     createModule: ReturnType<typeof vi.fn<typeof createModule>>;
+    createVtt: ReturnType<typeof vi.fn<typeof createVtt>>;
   } = {
     paths: { userConfigDir: '/nonexistent/config', userDataDir: '/nonexistent/data', pdtConfigDir: undefined },
     config: configSchema.parse(defaults),
     log: createLogMock(),
     out: vi.fn<CommandContext['out']>(),
     createModule: vi.fn<typeof createModule>(),
+    createVtt: vi.fn<typeof createVtt>(),
   };
   return context;
 }
