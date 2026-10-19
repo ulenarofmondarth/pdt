@@ -11,6 +11,7 @@ import {
   stopAllVtts,
   stopVtt,
   vttDataDir,
+  vttStatuses,
 } from '@/cli/cmds/vtt_cmds/lifecycle.js';
 import { vttSettings } from '@lib/projectVtt.js';
 import FoundryVTTServer from '@lib/VTT/Server/FoundryVTTServer.js';
@@ -119,7 +120,7 @@ describe('the VTT lifecycle', () => {
       );
     });
 
-    test("records it in the project's run state", async () => {
+    test("records it in the project's run state, with the host it was started on", async () => {
       const before = Date.now();
 
       await startVtt(ctx, undefined);
@@ -130,6 +131,7 @@ describe('the VTT lifecycle', () => {
         port: 30000,
         url: 'http://localhost:30000',
         started: expect.any(String),
+        host: ctx.config.VTT['my-module']!.host,
       });
       expect(Date.parse(recorded()!.started)).toBeGreaterThanOrEqual(before - 1000);
     });
@@ -446,6 +448,88 @@ describe('the VTT lifecycle', () => {
 
       expect(host.stop).not.toHaveBeenCalled();
       expect(recorded()).toEqual(RUNNING);
+    });
+  });
+
+  // Regression: pdt asked the host the configuration names now, so a VTT started on another Docker
+  // engine, before the socket was changed, could no longer be found, stopped or reported on.
+  describe('a VTT started on a host the configuration no longer names', () => {
+    let startedOn: VTTHostMock;
+    const OLD_HOST = { type: 'docker', image: 'felddy/foundryvtt', socketPath: '/old/docker.sock' } as const;
+    const ON_OLD_HOST = { ...RUNNING, host: OLD_HOST };
+
+    beforeEach(() => {
+      ctx.config.VTT['my-module']!.host.socketPath = '/new/docker.sock';
+      writeRunState(file, { VTT: { 'my-module': ON_OLD_HOST } });
+      startedOn = createHostMock();
+      startedOn.isRunning.mockResolvedValue(true);
+      ctx.createVtt.mockImplementation(
+        (name, settings, account) =>
+          new FoundryVTTServer(
+            name,
+            settings.server,
+            settings.host.socketPath === OLD_HOST.socketPath ? startedOn : host,
+            account,
+          ),
+      );
+    });
+
+    test('is stopped there', async () => {
+      await stopVtt(ctx, undefined);
+
+      expect(startedOn.stop).toHaveBeenCalledExactlyOnceWith(ON_OLD_HOST);
+      expect(host.stop).not.toHaveBeenCalled();
+      expect(recorded()).toBeUndefined();
+    });
+
+    test('is found running there by start, which leaves it alone', async () => {
+      await startVtt(ctx, undefined);
+
+      expect(startedOn.isRunning).toHaveBeenCalledExactlyOnceWith(ON_OLD_HOST);
+      expect(host.start).not.toHaveBeenCalled();
+    });
+
+    test('is cleared up there by start once it has exited, then started on the host configured now', async () => {
+      startedOn.isRunning.mockResolvedValue(false);
+
+      await startVtt(ctx, undefined);
+
+      expect(startedOn.stop).toHaveBeenCalledExactlyOnceWith(ON_OLD_HOST);
+      expect(host.start).toHaveBeenCalledOnce();
+      expect(recorded()?.host).toMatchObject({ socketPath: '/new/docker.sock' });
+    });
+
+    test('is stopped there, and started on the host configured now, by restart', async () => {
+      await restartVtt(ctx, undefined);
+
+      expect(startedOn.stop).toHaveBeenCalledOnce();
+      expect(host.start).toHaveBeenCalledOnce();
+    });
+
+    test('is found running there by runningProjectVtts and stopped there by stopAllVtts', async () => {
+      await expect(runningProjectVtts(ctx)).resolves.toEqual(['my-module']);
+      expect(host.isRunning).not.toHaveBeenCalled();
+
+      await stopAllVtts(ctx);
+
+      expect(startedOn.stop).toHaveBeenCalledOnce();
+      expect(host.stop).not.toHaveBeenCalled();
+    });
+
+    test('is reported on from there', async () => {
+      await expect(vttStatuses(ctx)).resolves.toEqual([
+        { vtt: 'my-module', state: 'running', url: RUNNING.url, container: RUNNING.name },
+      ]);
+      expect(host.isRunning).not.toHaveBeenCalled();
+    });
+
+    test('fails to stop, keeping the record, when that host cannot be reached', async () => {
+      startedOn.isAccessible.mockResolvedValue(false);
+
+      await expect(stopVtt(ctx, undefined)).rejects.toThrow(
+        m['error.vtt.hostUnreachable']({ vtt: 'my-module', type: 'docker' }),
+      );
+      expect(recorded()).toEqual(ON_OLD_HOST);
     });
   });
 

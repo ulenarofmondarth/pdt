@@ -13,13 +13,15 @@
  *
  * ```json
  * { "VTT": { "my-module": { "id": "<container id>", "name": "pdt-my-module", "port": 30000,
- *   "url": "http://localhost:30000", "started": "2026-10-19T17:00:00.000Z" } } }
+ *   "url": "http://localhost:30000", "started": "2026-10-19T17:00:00.000Z",
+ *   "host": { "type": "docker", "image": "felddy/foundryvtt" } } } }
  * ```
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod/v4';
 import PDT from '@/constants.js';
+import { hostSchema } from '@schema/config.js';
 import { m } from '@i18n/messages.js';
 
 /** Name of the run state file, in the user data directory and in each project's `.pdt` directory. */
@@ -41,6 +43,11 @@ const runningVttSchema = z.looseObject({
   url: z.string(),
   /** When pdt started the VTT, as an ISO 8601 time. */
   started: z.string(),
+  /**
+   * The host the VTT was started on, as its settings were then, so that it is found there even if
+   * the configuration has changed since. Absent from records made before pdt kept it.
+   */
+  host: hostSchema.optional(),
 });
 
 const runStateSchema = z.looseObject({

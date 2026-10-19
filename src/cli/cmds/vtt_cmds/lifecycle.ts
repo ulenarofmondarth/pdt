@@ -12,7 +12,14 @@ import path from 'node:path';
 import { leaves } from '@util/config-keys.js';
 import { FIRST_AUTO_PORT, findFreePort } from '@util/ports.js';
 import { waitUntilReachable } from '@util/reachable.js';
-import { forgetRunningVtt, readRunState, recordRunningVtt, runningVtt, runStateFile } from '@util/run-state.js';
+import {
+  forgetRunningVtt,
+  readRunState,
+  recordRunningVtt,
+  runningVtt,
+  runStateFile,
+  type RunningVtt,
+} from '@util/run-state.js';
 import { m } from '@i18n/messages.js';
 
 import type { CommandContext } from '../../context.js';
@@ -97,6 +104,17 @@ function chosenVtt(context: CommandContext, given: string | undefined): ProjectV
   return projectVtt(context, chooseVtt(context, given));
 }
 
+/**
+ * `vtt` as it was when `record` was made: on the host it was started on, which the configuration
+ * may name differently since, such as another Docker engine. A record made before pdt kept its host
+ * is taken to be on the host configured now.
+ */
+function asRecorded(vtt: ProjectVtt, record: RunningVtt, context: CommandContext): ProjectVtt {
+  if (record.host === undefined) return vtt;
+  const settings = { ...vtt.settings, host: record.host };
+  return { ...vtt, settings, server: context.createVtt(vtt.name, settings, context.config.FOUNDRY) };
+}
+
 /** @throws {Error} When the VTT's host cannot be reached */
 async function assertHostAccessible({ name, settings, server }: ProjectVtt) {
   if (!(await server.host.isAccessible())) {
@@ -142,13 +160,15 @@ async function start(vtt: ProjectVtt, context: CommandContext) {
   const { name, settings, server, runState, root } = vtt;
   const running = runningVtt(runState, name);
   if (running !== undefined) {
-    if (await server.host.isRunning(running)) {
+    const was = asRecorded(vtt, running, context);
+    await assertHostAccessible(was);
+    if (await was.server.host.isRunning(running)) {
       out(m['info.vtt.alreadyRunning']({ vtt: name, url: running.url }));
       return;
     }
     // It stopped without pdt, so clear up what is left of it.
     log.info(m['info.vtt.stoppedOnItsOwn']({ vtt: name }));
-    await server.host.stop(running);
+    await was.server.host.stop(running);
     forgetRunningVtt(runState, name);
   }
 
@@ -173,7 +193,14 @@ async function start(vtt: ProjectVtt, context: CommandContext) {
   });
   const url = server.urlAt(port);
   // Recorded before waiting, so that a VTT that does not answer can still be stopped.
-  recordRunningVtt(runState, name, { id, name: instance, port, url, started: new Date().toISOString() });
+  recordRunningVtt(runState, name, {
+    id,
+    name: instance,
+    port,
+    url,
+    started: new Date().toISOString(),
+    host: settings.host,
+  });
 
   const { timeout } = settings.server.ready;
   out(m['info.vtt.waiting']({ vtt: name, url, timeout }));
@@ -190,17 +217,24 @@ async function start(vtt: ProjectVtt, context: CommandContext) {
   out(m['info.vtt.started']({ vtt: name, url }));
 }
 
-/** Stop `vtt`, if the project's run state records it, and forget it. */
-async function stop({ name, server, runState }: ProjectVtt, { out }: CommandContext) {
+/**
+ * Stop `vtt`, if the project's run state records it, on the host it was started on, and forget it.
+ *
+ * @throws {Error} When that host cannot be reached, or cannot stop it
+ */
+async function stop(vtt: ProjectVtt, context: CommandContext) {
+  const { name, runState } = vtt;
   const running = runningVtt(runState, name);
   if (running === undefined) {
-    out(m['info.vtt.notRunning']({ vtt: name }));
+    context.out(m['info.vtt.notRunning']({ vtt: name }));
     return;
   }
-  out(m['info.vtt.stopping']({ vtt: name }));
-  await server.host.stop(running);
+  const was = asRecorded(vtt, running, context);
+  await assertHostAccessible(was);
+  context.out(m['info.vtt.stopping']({ vtt: name }));
+  await was.server.host.stop(running);
   forgetRunningVtt(runState, name);
-  out(m['info.vtt.stopped']({ vtt: name }));
+  context.out(m['info.vtt.stopped']({ vtt: name }));
 }
 
 /**
@@ -226,9 +260,7 @@ export async function startVtt(context: CommandContext, given: string | undefine
  *   the host cannot stop it
  */
 export async function stopVtt(context: CommandContext, given: string | undefined) {
-  const vtt = chosenVtt(context, given);
-  if (runningVtt(vtt.runState, vtt.name) !== undefined) await assertHostAccessible(vtt);
-  await stop(vtt, context);
+  await stop(chosenVtt(context, given), context);
 }
 
 /**
@@ -258,7 +290,7 @@ export async function runningProjectVtts(context: CommandContext): Promise<strin
       running.push(name);
       continue;
     }
-    const vtt = projectVtt(context, name);
+    const vtt = asRecorded(projectVtt(context, name), record, context);
     await assertHostAccessible(vtt);
     if (await vtt.server.host.isRunning(record)) running.push(name);
   }
@@ -279,9 +311,7 @@ export async function stopAllVtts(context: CommandContext) {
       forgetRunningVtt(runState, name);
       continue;
     }
-    const vtt = projectVtt(context, name);
-    await assertHostAccessible(vtt);
-    await stop(vtt, context);
+    await stop(projectVtt(context, name), context);
   }
 }
 
@@ -309,7 +339,7 @@ export async function vttStatuses(context: CommandContext): Promise<VttStatus[]>
       statuses.push({ vtt: name, state: 'stopped' });
       continue;
     }
-    const vtt = projectVtt(context, name);
+    const vtt = asRecorded(projectVtt(context, name), record, context);
     if (!(await vtt.server.host.isAccessible())) {
       const reason = m['error.vtt.hostUnreachable']({ vtt: name, type: vtt.settings.host.type });
       statuses.push({ vtt: name, state: 'unknown', reason });

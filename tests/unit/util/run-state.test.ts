@@ -196,6 +196,26 @@ describe('run state', () => {
       expect(fs.statSync(file).mtimeMs).toBe(before);
     });
 
+    test('keep the host they were started on', () => {
+      const host = { type: 'docker', image: 'felddy/foundryvtt', socketPath: '/old/docker.sock' } as const;
+
+      recordRunningVtt(file, 'mod', { ...RUNNING, host });
+
+      expect(runningVtt(file, 'mod')?.host).toEqual(host);
+    });
+
+    test('recorded before pdt kept their host are still read', () => {
+      writeRunState(file, { VTT: { mod: RUNNING } });
+
+      expect(runningVtt(file, 'mod')).toEqual(RUNNING);
+    });
+
+    test('make a run state invalid when their host is not one pdt knows', () => {
+      writeRunState(file, { VTT: { mod: { ...RUNNING, host: { type: 'podman' } } } } as never);
+
+      expect(() => readRunState(file)).toThrow(/VTT\.mod\.host/);
+    });
+
     test('make a run state invalid when their record is incomplete', () => {
       writeRunState(file, { VTT: { mod: { id: 'abc' } } } as never);
 
