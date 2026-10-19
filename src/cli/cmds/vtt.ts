@@ -1,4 +1,6 @@
+import { createVttRestartCommand } from './vtt_cmds/restart.js';
 import { createVttStartCommand } from './vtt_cmds/start.js';
+import { createVttStopCommand } from './vtt_cmds/stop.js';
 import { anyCommand } from '../command.js';
 import { m } from '@i18n/messages.js';
 
@@ -14,7 +16,12 @@ export function createVttCommand(context: CommandContext): CommandModule {
 
     describe: m['ui.cmd.vtt.description'](),
 
-    builder: yargs => yargs.command(anyCommand(createVttStartCommand(context))).demandCommand(1),
+    builder: yargs =>
+      yargs
+        .command(anyCommand(createVttStartCommand(context)))
+        .command(anyCommand(createVttStopCommand(context)))
+        .command(anyCommand(createVttRestartCommand(context)))
+        .demandCommand(1),
 
     /** Never reached: yargs runs a sub-command, or rejects the command line. */
     handler(argv) {

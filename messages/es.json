@@ -4,7 +4,7 @@
     "cmd": {
       "arg": {
         "vtt": {
-          "description": "Nombre del VTT, tal como está configurado en VTT. Por defecto, el único VTT, si solo hay uno."
+          "description": "Nombre del VTT, tal como está configurado en VTT. Por defecto, el primer VTT que configura el proyecto."
         }
       },
       "vtt": {
@@ -12,6 +12,12 @@
       },
       "start": {
         "description": "Iniciar un VTT en el proyecto actual"
+      },
+      "stop": {
+        "description": "Detener un VTT del proyecto actual"
+      },
+      "restart": {
+        "description": "Reiniciar un VTT del proyecto actual, con su configuración actual"
       },
       "init": {
         "description": "Inicializar un proyecto como proyecto PDT. En un directorio vacío, crear primero un nuevo módulo de Foundry VTT.",
@@ -76,9 +82,13 @@
     "pdtInitialised": "PDT inicializado para {path}",
     "creatingModule": "{path} está vacío. Se crea allí un nuevo módulo de Foundry VTT.",
     "vtt": {
-      "starting": "Iniciando el VTT {vtt} (versión {version})…",
-      "started": "El VTT {vtt} se ha iniciado.",
-      "alreadyRunning": "El VTT {vtt} ya está en marcha."
+      "starting": "Iniciando el VTT {vtt} (versión {version}) en el puerto {port}…",
+      "started": "El VTT {vtt} se ha iniciado: {url}",
+      "alreadyRunning": "El VTT {vtt} ya está en ejecución: {url}",
+      "stoppedOnItsOwn": "El VTT {vtt} se ha detenido desde que pdt lo inició; limpiando lo que queda de él.",
+      "stopping": "Deteniendo el VTT {vtt}…",
+      "stopped": "El VTT {vtt} se ha detenido.",
+      "notRunning": "El VTT {vtt} no está en ejecución: pdt no tiene constancia de haberlo iniciado en este proyecto."
     },
     "configSet": "{key} definido en {file}",
     "configCleared": "{key} quitado de {file}",
@@ -144,12 +154,13 @@
       "noVersion": "El servidor {server} no tiene una versión para ejecutar en un host Docker.",
       "pullFailed": "No se pudo descargar {image}: {reason}",
       "startFailed": "No se pudo iniciar el servidor {server} en el host Docker: {reason}",
-      "stopUnsupported": "Detener el servidor {server} aún no es compatible con un host Docker.",
-      "restartUnsupported": "Reiniciar el servidor {server} aún no es compatible con un host Docker.",
       "unknownVtt": "No hay ningún VTT llamado {vtt} en la configuración. VTT configurados: {known}",
       "hostUnreachable": "No se puede acceder al host {type} del VTT {vtt}. ¿Está en marcha y puedes usarlo?",
       "noneConfigured": "No hay ningún VTT configurado. Ejecuta pdt init en el proyecto, o añade uno con pdt config set.",
-      "nameRequired": "Hay varios VTT configurados, así que indica cuál iniciar: {known}"
+      "containerRunning": "Ya hay un contenedor llamado {container} en ejecución, pero este proyecto no tiene constancia de haberlo iniciado. Detenlo y elimínalo (docker rm -f {container}) y vuelve a iniciar el VTT.",
+      "stopFailed": "No se pudo detener y eliminar el contenedor {container}: {reason}",
+      "noFreePort": "No hay ningún puerto libre a partir de {from}.",
+      "portInUse": "El puerto {port}, que fija VTT.{vtt}.server.port, está en uso. Libéralo o pon el puerto en auto."
     },
     "compendium": {
       "notRecognised": "{path} no es una base de datos de compendio reconocida.",

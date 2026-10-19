@@ -11,6 +11,7 @@ import { UsageError } from '@/cli/usage-error.js';
 import { pdtCommands } from '@/cli/commands.js';
 import { createModule, type Prompter } from '@lib/ModuleGenerator.js';
 import { createVtt } from '@lib/VTT/createVtt.js';
+import { isPortFree } from '@util/ports.js';
 import { prettyData } from '@util/diagnostic.js';
 import {
   ConfigError,
@@ -133,6 +134,7 @@ export async function main(
     ...(context.prompter === undefined ? {} : { prompter: context.prompter }),
     createModule,
     createVtt,
+    isPortFree,
   };
 
   // yargs reports a command line it cannot run through this callback, and still resolves. A command

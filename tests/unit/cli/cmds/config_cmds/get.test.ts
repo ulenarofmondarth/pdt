@@ -116,8 +116,8 @@ describe('config get command', () => {
       ctx.config.FOUNDRY = { username: 'u53rname', password: 'hunter2' };
       ctx.config.VTT = {
         mod: {
-          server: { type: 'foundry', hostname: 'localhost', version: '14', admin_key: 'k3y' },
-          host: { type: 'docker', image: 'felddy/foundryvtt', ports: [] },
+          server: { type: 'foundry', hostname: 'localhost', version: '14', port: 'auto', admin_key: 'k3y' },
+          host: { type: 'docker', image: 'felddy/foundryvtt' },
         },
       };
     });
@@ -142,6 +142,7 @@ describe('config get command', () => {
           'VTT.mod.server.type "foundry"',
           'VTT.mod.server.hostname "localhost"',
           'VTT.mod.server.version "14"',
+          'VTT.mod.server.port "auto"',
           'VTT.mod.server.admin_key "*****"',
         ].join('\n'),
       );

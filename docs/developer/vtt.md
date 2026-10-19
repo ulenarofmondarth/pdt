@@ -10,28 +10,42 @@ Both are built from the validated configuration. Each entry under `VTT` names a 
 ```typescript
 const server = createVtt('arcane-ledger', config.VTT['arcane-ledger']);
 
-await server.start();
+const handle = await server.start({ name: 'pdt-arcane-ledger', port: 30002 });
+await server.host.isRunning(handle);
+await server.host.stop(handle);
 ```
 
 No VTT is built in: `pdt init` writes one into the project's configuration, named by the project id (the module's id; see `src/cli/cmds/init.ts`) and running the Foundry VTT version from `.foundryvtt/.env` (`src/lib/projectVtt.ts`; `vttSettings(version)` holds the settings it uses).
 
-Commands get `createVtt` from their context (see {doc}`commands`), so their tests give them VTTs on a stand-in host. `pdt vtt start` is built this way: it checks that the host can be reached, leaves a running VTT alone, and otherwise starts it.
+Commands get `createVtt` from their context (see {doc}`commands`), so their tests give them VTTs on a stand-in host. They get `isPortFree` the same way, so no test binds a real port.
 
 The settings types (`FoundryServerSettings`, `DockerHostSettings`, ...) come from the zod schema in `src/schema/config.ts`, so a setting is declared once, and the configuration and the code cannot disagree about it.
 
 ## Lifecycle
 
-`start()`, `stop()` and `restart()` on a server ask its host, passing the server, and return a promise that settles when the host has finished. A host that cannot do what it is asked rejects; nothing is reported as done that was not done. `DockerHost` cannot stop or restart a server yet, and says so.
+A host runs a server under a name and on a port it is given, and returns a `RunHandle`, `{ id }`, its own id for what runs it (a container's id). `isRunning(handle)` and `stop(handle)` find it by that handle. `stop` stops it and removes it, and what has stopped or is gone already is not an error. There is no restart on a host: restarting is stopping and starting, so that changed settings take effect. A host that cannot do what it is asked rejects; nothing is reported as done that was not done.
+
+`pdt vtt start`, `stop` and `restart` share `src/cli/cmds/vtt_cmds/lifecycle.ts`:
+
+- `chooseVtt` picks the VTT: the one given, else the first the project's files set (by `sourceOf`), else the first configured.
+- `startVtt` checks the host can be reached, then looks up the VTT in the project's run state (`runningVtt` in `@util/run-state.ts`). A recorded VTT that is running is left alone; one that is not is stopped (cleared up) and forgotten. It then works out the port (`findFreePort` in `@util/ports.ts` for `auto`, or checks the set port is free), names the instance (`instanceName`), starts the server, and records `{ id, name, port, url, started }` (`recordRunningVtt`).
+- `stopVtt` stops and forgets the recorded VTT, and asks nothing of the host when there is no record.
+- `restartVtt` stops, then starts.
+
+The record is written only once the host has started the VTT, and removed only once the host has stopped it, so a failure leaves the run state as it was.
 
 ## The Docker host
 
-For a server named `arcane-ledger` with version `14.368.0`, `DockerHost.start`:
+For a server with version `14.368.0`, run as `pdt-arcane-ledger` on port 30002, `DockerHost.start`:
 
 1. works out the image, `[repository/]image:14.368.0` (the image is `felddy/foundryvtt` unless the settings name another), and refuses a server without a version, as an untagged pull would fetch every tag;
 2. pulls the image unless the engine already has it;
-3. starts the container named `arcane-ledger`, creating it first if there is none, and leaves it alone if it is already running.
+3. refuses if a container named `pdt-arcane-ledger` is running, and removes one that has stopped;
+4. creates the container, publishing the server's `internalPort` (30000 for Foundry VTT) on port 30002, starts it, and returns its id.
 
-A failure at any step rejects with a message naming the image or the server and giving the engine's reason, with the engine's error as its `cause`.
+`DockerHost.stop` stops the container and removes it; a container that has stopped (304) or is gone (404) is not an error.
+
+A failure at any step rejects with a message naming the image, the server or the container and giving the engine's reason, with the engine's error as its `cause`.
 
 ## Testing
 

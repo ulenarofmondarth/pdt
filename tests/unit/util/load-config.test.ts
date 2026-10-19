@@ -176,11 +176,11 @@ describe('settings given on the command line', () => {
       env: {},
       overrides: [
         { key: 'VTT.mod', value: JSON.stringify(vttSettings('13')) },
-        { key: 'VTT.mod.host.ports', value: '[{"internal":30000,"external":8080}]' },
+        { key: 'VTT.mod.server.port', value: '8080' },
       ],
     });
 
-    expect(config.VTT['mod']?.host.ports).toEqual([{ internal: 30000, external: 8080 }]);
+    expect(config.VTT['mod']?.server.port).toBe(8080);
   });
 
   test.each([
@@ -265,13 +265,13 @@ describe('where values come from', () => {
   });
 
   test('is the source of a list as a whole', () => {
-    write('user', { VTT: { mod: vttSettings('13') } });
-    write('project', { VTT: { mod: { host: { ports: [{ internal: 1, external: 2 }] } } } });
+    write('user', { DOCS: { host: { image: 'docs' } } });
+    write('project', { DOCS: { host: { ports: [{ internal: 1, external: 2 }] } } });
 
     const resolved = resolveConfig(sources);
 
-    expect(resolved.sourceOf(['VTT', 'mod', 'host', 'ports'])).toBe('project');
-    expect(resolved.sourceOf(['VTT', 'mod', 'host', 'image'])).toBe('user');
+    expect(resolved.sourceOf(['DOCS', 'host', 'ports'])).toBe('project');
+    expect(resolved.sourceOf(['DOCS', 'host', 'image'])).toBe('user');
   });
 });
 
@@ -316,15 +316,12 @@ describe('writeSetting', () => {
 
   test('stores a value by the type of the setting', () => {
     writeSetting(sources, 'user', 'VTT.mod', JSON.stringify(vttSettings('13')));
-    writeSetting(sources, 'user', 'VTT.mod.host.ports', '[{"internal":30000,"external":8080}]');
+    writeSetting(sources, 'user', 'VTT.mod.server.port', '8080');
+    writeSetting(sources, 'user', 'DOCS.host.ports', '[{"internal":30000,"external":"auto"}]');
 
     expect(read(userFile)).toEqual({
-      VTT: {
-        mod: {
-          ...vttSettings('13'),
-          host: { ...vttSettings('13').host, ports: [{ internal: 30000, external: 8080 }] },
-        },
-      },
+      VTT: { mod: { ...vttSettings('13'), server: { ...vttSettings('13').server, port: 8080 } } },
+      DOCS: { host: { ports: [{ internal: 30000, external: 'auto' }] } },
     });
   });
 

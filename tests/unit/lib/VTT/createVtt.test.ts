@@ -6,8 +6,8 @@ import FoundryVTTServer from '@lib/VTT/Server/FoundryVTTServer.js';
 import type { VttSettings } from '@schema/config.js';
 
 const SETTINGS: VttSettings = {
-  server: { type: 'foundry', version: '13', hostname: 'localhost' },
-  host: { type: 'docker', image: 'felddy/foundryvtt', socketPath: '/nonexistent/docker.sock', ports: [] },
+  server: { type: 'foundry', version: '13', hostname: 'localhost', port: 'auto' },
+  host: { type: 'docker', image: 'felddy/foundryvtt', socketPath: '/nonexistent/docker.sock' },
 };
 
 describe('createVtt', () => {

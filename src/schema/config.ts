@@ -17,7 +17,8 @@ const foundryServerSettings = z.object({
   hostname: z.string(),
   /** The Foundry VTT release to run. */
   version: z.string(),
-  port: z.string().optional(),
+  /** The port to serve on, on the machine pdt runs on: a number, or `auto` for the first free one from 30000. */
+  port: z.union([z.literal('auto'), z.int().min(1).max(65535)]).default('auto'),
   /** The password of the server's administrator. */
   admin_key: secret().optional(),
 });
@@ -40,6 +41,12 @@ const dockerHostSettings = z.object({
   image: z.string().default(DEFAULT_DOCKER_IMAGE),
   /** Tag of the image, for a host whose image is not tagged by a server's version. */
   version: z.string().optional(),
+});
+
+export const hostSchema = z.discriminatedUnion('type', [dockerHostSettings]);
+
+/** The Docker host that serves the documentation, and the ports it publishes. */
+const docsHostSettings = dockerHostSettings.extend({
   ports: z.array(
     z.object({
       internal: z.int32(),
@@ -47,8 +54,6 @@ const dockerHostSettings = z.object({
     }),
   ),
 });
-
-export const hostSchema = z.discriminatedUnion('type', [dockerHostSettings]);
 
 /** A Docker host's settings. */
 export type DockerHostSettings = z.output<typeof dockerHostSettings>;
@@ -85,7 +90,7 @@ export const config = z.object({
   }),
   VTT: z.record(z.string(), vttSchema),
   FOUNDRY: foundryAccount.optional(),
-  DOCS: z.object({ host: hostSchema }),
+  DOCS: z.object({ host: docsHostSettings }),
 });
 
 export type Config = z.infer<typeof config>;

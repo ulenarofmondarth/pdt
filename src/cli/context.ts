@@ -57,4 +57,6 @@ export interface CommandContext {
   createModule: typeof createModule;
   /** Creates a VTT, from its settings in the configuration. */
   createVtt: typeof createVtt;
+  /** Whether a port on the machine pdt runs on is free. */
+  isPortFree(port: number): Promise<boolean>;
 }

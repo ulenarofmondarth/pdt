@@ -4,7 +4,7 @@
  * VTT Servers generally represent the application that runs your VTT. VTTServers run inside a {@link lib/VTT/VTTHost.VTTHost | VTTHost},
  * which does the starting and stopping.
  */
-import VTTHost from '@lib/VTT/VTTHost.js';
+import VTTHost, { type RunHandle, type RunOptions } from '@lib/VTT/VTTHost.js';
 
 export default abstract class VTTServer {
   /**
@@ -21,23 +21,14 @@ export default abstract class VTTServer {
    */
   abstract get version(): string;
 
+  /** The port the application serves on inside its host, such as in its container. */
+  abstract get internalPort(): number;
+
+  /** The address to reach the server at, when it serves on `port`. */
+  abstract urlAt(port: number): string;
+
   /** Start on the server's host, and wait until it has started. */
-  start(): Promise<void> {
-    return this.host.start(this);
-  }
-
-  /** Stop on the server's host, and wait until it has stopped. */
-  stop(): Promise<void> {
-    return this.host.stop(this);
-  }
-
-  /** Restart on the server's host, and wait until it has started again. */
-  restart(): Promise<void> {
-    return this.host.restart(this);
-  }
-
-  /** Whether the server is running on its host. */
-  isRunning(): Promise<boolean> {
-    return this.host.isRunning(this);
+  start(options: RunOptions): Promise<RunHandle> {
+    return this.host.start(this, options);
   }
 }

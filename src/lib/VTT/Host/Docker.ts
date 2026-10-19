@@ -1,12 +1,14 @@
 /**
  * A restricted Docker hosting, limited to a container from the felddy/foundryvtt image.
  *
- * Each server runs in a container named after the server, from the image tagged with the server's version.
+ * Each server runs in a container of the name it is given, from the image tagged with the server's
+ * version, with the server's port published on the port it is given. Stopping a server removes its
+ * container, so that each start creates one afresh from the settings.
  * The image and its registry can be configured.
  *
  * Root directory for data can be set. Each container will map a <root>/<instance name>/foundry-data directory to /data in the container
  */
-import VTTHost from '@lib/VTT/VTTHost.js';
+import VTTHost, { type RunHandle, type RunOptions } from '@lib/VTT/VTTHost.js';
 import Docker, { Container } from 'dockerode';
 import VTTServer from '../VTTServer.js';
 import { m } from '@i18n/messages.js';
@@ -56,35 +58,26 @@ export default class DockerHost extends VTTHost {
       .catch(() => false);
   }
 
-  async isRunning(server: VTTServer): Promise<boolean> {
+  async isRunning(handle: RunHandle): Promise<boolean> {
     return this.docker
-      .getContainer(server.name)
+      .getContainer(handle.id)
       .inspect()
       .then(info => info.State.Running)
       .catch(() => false);
   }
 
   /**
-   * Run `server` in its container, creating the container if there is none, and wait until it has
-   * started. A container that is already running is left alone.
+   * Run `server` in a new container named `name`, publishing its port on `port`, and wait until it
+   * has started. A stopped container of that name, left from an earlier run, is removed first; a
+   * running one is not touched.
    *
-   * @throws When the image cannot be pulled, or the container cannot be inspected, created or started
+   * @throws When the image cannot be pulled, a container of that name is running, or the container
+   *   cannot be created or started
    */
-  async start(server: VTTServer): Promise<void> {
+  async start(server: VTTServer, { name, port }: RunOptions): Promise<RunHandle> {
     const image = this.imageFor(server);
     await this._pullImageIfMissing(image);
 
-    const serverOptions = {
-      name: server.name,
-      Image: image,
-      AttachStdin: false,
-      AttachStdout: false,
-      AttachStderr: false,
-      Tty: false,
-      HostConfig: {
-        AutoRemove: false,
-      },
-    } satisfies ContainerCreateOptions;
     const failed = (cause: unknown) =>
       new Error(
         m['error.vtt.startFailed']({
@@ -94,36 +87,69 @@ export default class DockerHost extends VTTHost {
         { cause },
       );
 
-    let container: Container = this.docker.getContainer(serverOptions.name);
+    const existing = this.docker.getContainer(name);
+    // Whether a container of that name is running; undefined when there is none, as is wanted.
+    let running: boolean | undefined;
     try {
       // https://docs.docker.com/reference/api/engine/version/v1.37/#tag/Container/operation/ContainerInspect
-      const info = await container.inspect();
-      if (info.State.Running) return;
+      running = (await existing.inspect()).State.Running;
     } catch (error) {
       if ((error as { statusCode?: unknown }).statusCode !== 404) throw failed(error);
-      // There is no such container yet.
-      try {
-        container = await this.docker.createContainer(serverOptions);
-      } catch (error) {
-        throw failed(error);
-      }
     }
+    if (running === true) throw new Error(m['error.vtt.containerRunning']({ container: name }));
+    if (running === false) await existing.remove().catch((error: unknown) => Promise.reject(failed(error)));
 
+    const internal = `${server.internalPort}/tcp`;
+    const options = {
+      name,
+      Image: image,
+      AttachStdin: false,
+      AttachStdout: false,
+      AttachStderr: false,
+      Tty: false,
+      ExposedPorts: { [internal]: {} },
+      HostConfig: {
+        AutoRemove: false,
+        PortBindings: { [internal]: [{ HostPort: String(port) }] },
+      },
+    } satisfies ContainerCreateOptions;
+
+    let container: Container;
     try {
+      container = await this.docker.createContainer(options);
       await container.start();
     } catch (error) {
       throw failed(error);
     }
+    return { id: container.id };
   }
 
-  /** Not supported yet. */
-  async stop(server: VTTServer): Promise<void> {
-    throw new Error(m['error.vtt.stopUnsupported']({ server: server.name }));
-  }
-
-  /** Not supported yet. */
-  async restart(server: VTTServer): Promise<void> {
-    throw new Error(m['error.vtt.restartUnsupported']({ server: server.name }));
+  /**
+   * Stop the container `handle` names, and remove it. A container that has stopped, or is gone, is
+   * not an error.
+   *
+   * @throws When the container cannot be stopped or removed
+   */
+  async stop(handle: RunHandle): Promise<void> {
+    const container = this.docker.getContainer(handle.id);
+    const settled =
+      (...codes: number[]) =>
+      (error: unknown) => {
+        if (!codes.includes((error as { statusCode?: unknown }).statusCode as number)) throw error;
+      };
+    try {
+      // 304: it has stopped already; 404: it is gone.
+      await container.stop().catch(settled(304, 404));
+      await container.remove().catch(settled(404));
+    } catch (error) {
+      throw new Error(
+        m['error.vtt.stopFailed']({
+          container: handle.id,
+          reason: error instanceof Error ? error.message : String(error),
+        }),
+        { cause: error },
+      );
+    }
   }
 
   /**

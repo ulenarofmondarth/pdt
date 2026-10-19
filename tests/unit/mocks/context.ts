@@ -33,6 +33,7 @@ export function createCommandContext() {
     out: ReturnType<typeof vi.fn<CommandContext['out']>>;
     createModule: ReturnType<typeof vi.fn<typeof createModule>>;
     createVtt: ReturnType<typeof vi.fn<typeof createVtt>>;
+    isPortFree: ReturnType<typeof vi.fn<CommandContext['isPortFree']>>;
     sourceOf: ReturnType<typeof vi.fn<CommandContext['sourceOf']>>;
     writeConfig: ReturnType<typeof vi.fn<CommandContext['writeConfig']>>;
     filesSetting: ReturnType<typeof vi.fn<CommandContext['filesSetting']>>;
@@ -57,6 +58,7 @@ export function createCommandContext() {
     out: vi.fn<CommandContext['out']>(),
     createModule: vi.fn<typeof createModule>(),
     createVtt: vi.fn<typeof createVtt>(),
+    isPortFree: vi.fn<CommandContext['isPortFree']>(() => Promise.resolve(true)),
   };
   return context;
 }

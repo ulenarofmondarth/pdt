@@ -1,10 +1,13 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import yargs from 'yargs';
-import { beforeEach, describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import { createVttCommand } from '@/cli/cmds/vtt.js';
 import FoundryVTTServer from '@lib/VTT/Server/FoundryVTTServer.js';
 import { m } from '@i18n/messages.js';
 import { createCommandContext, type CommandContextMock } from '@tests/unit/mocks/context.js';
-import { createHostMock } from '@tests/unit/mocks/vttHost.js';
+import { createHostMock, type VTTHostMock } from '@tests/unit/mocks/vttHost.js';
 import { vttSettings } from '@lib/projectVtt.js';
 
 describe('vtt command', () => {
@@ -41,15 +44,40 @@ describe('vtt command', () => {
     expect(ctx.log.error).not.toHaveBeenCalled();
   });
 
-  test('routes start to the start sub-command', async () => {
-    ctx.config.VTT['my-module'] = vttSettings('13');
-    const host = createHostMock();
-    ctx.createVtt.mockImplementation((name, settings) => new FoundryVTTServer(name, settings.server, host));
+  describe('sub-commands', () => {
+    let sandbox: string;
+    let host: VTTHostMock;
 
-    await parse('vtt start');
+    beforeEach(() => {
+      sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'pdt-vtt-'));
+      ctx.paths.pdtConfigDir = path.join(sandbox, '.pdt');
+      ctx.config.VTT['my-module'] = vttSettings('13');
+      host = createHostMock();
+      ctx.createVtt.mockImplementation((name, settings) => new FoundryVTTServer(name, settings.server, host));
+    });
 
-    expect(host.start).toHaveBeenCalledOnce();
-    expect(ctx.log.error).not.toHaveBeenCalled();
+    afterEach(() => {
+      fs.rmSync(sandbox, { recursive: true, force: true });
+    });
+
+    test('routes start to the start sub-command', async () => {
+      await parse('vtt start');
+
+      expect(host.start).toHaveBeenCalledOnce();
+      expect(ctx.log.error).not.toHaveBeenCalled();
+    });
+
+    test('routes stop to the stop sub-command', async () => {
+      await parse('vtt stop');
+
+      expect(ctx.out).toHaveBeenCalledExactlyOnceWith(m['info.vtt.notRunning']({ vtt: 'my-module' }));
+    });
+
+    test('routes restart to the restart sub-command', async () => {
+      await parse('vtt restart my-module');
+
+      expect(host.start).toHaveBeenCalledOnce();
+    });
   });
 
   test('logs an error if its own handler is ever reached', async () => {

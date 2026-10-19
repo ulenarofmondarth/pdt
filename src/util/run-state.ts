@@ -8,6 +8,13 @@
  * ```json
  * { "PROJECTS": { "my-module": { "root": "/path/to/project/root" } } }
  * ```
+ *
+ * A project's run state records each of its VTTs that pdt started, under `VTT`, by the VTT's name:
+ *
+ * ```json
+ * { "VTT": { "my-module": { "id": "<container id>", "name": "pdt-my-module", "port": 30000,
+ *   "url": "http://localhost:30000", "started": "2026-10-19T17:00:00.000Z" } } }
+ * ```
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -23,8 +30,22 @@ const projectSchema = z.looseObject({
   root: z.string(),
 });
 
+const runningVttSchema = z.looseObject({
+  /** The host's id for what runs the VTT, such as a container's id. */
+  id: z.string(),
+  /** What runs the VTT is called on its host, such as a container's name. */
+  name: z.string(),
+  /** The port the VTT serves on, on the machine pdt runs on. */
+  port: z.int(),
+  /** Where to reach the VTT. */
+  url: z.string(),
+  /** When pdt started the VTT, as an ISO 8601 time. */
+  started: z.string(),
+});
+
 const runStateSchema = z.looseObject({
   PROJECTS: z.record(z.string(), projectSchema).optional(),
+  VTT: z.record(z.string(), runningVttSchema).optional(),
 });
 
 /** A run state; anything it holds other than what pdt reads is kept as it is. */
@@ -32,6 +53,9 @@ export type RunState = z.output<typeof runStateSchema>;
 
 /** A project, as the user's run state registers it. */
 export type RegisteredProject = z.output<typeof projectSchema>;
+
+/** A VTT pdt started, as the project's run state records it. */
+export type RunningVtt = z.output<typeof runningVttSchema>;
 
 /** The run state file in `dir`. */
 export function runStateFile(dir: string): string {
@@ -131,4 +155,35 @@ export function isPdtProject(root: string): boolean {
  */
 export function pruneProjects(file: string): [string, RegisteredProject][] {
   return removeProjects(file, project => !isPdtProject(project.root));
+}
+
+/**
+ * The VTT `name` as the project's run state `file` records it, if it does.
+ *
+ * @throws {Error} When the file cannot be read, or is not a valid run state
+ */
+export function runningVtt(file: string, name: string): RunningVtt | undefined {
+  const vtts = readRunState(file).VTT ?? {};
+  return Object.hasOwn(vtts, name) ? vtts[name] : undefined;
+}
+
+/**
+ * Record in the project's run state `file` that the VTT `name` runs as `running`.
+ *
+ * @throws {Error} When the file cannot be read, or is not a valid run state
+ */
+export function recordRunningVtt(file: string, name: string, running: RunningVtt) {
+  const state = readRunState(file);
+  writeRunState(file, { ...state, VTT: { ...state.VTT, [name]: running } });
+}
+
+/**
+ * Remove the VTT `name` from the project's run state `file`, writing it only if it was there.
+ *
+ * @throws {Error} When the file cannot be read, or is not a valid run state
+ */
+export function forgetRunningVtt(file: string, name: string) {
+  const state = readRunState(file);
+  if (state.VTT === undefined || !Object.hasOwn(state.VTT, name)) return;
+  writeRunState(file, { ...state, VTT: Object.fromEntries(Object.entries(state.VTT).filter(([key]) => key !== name)) });
 }

@@ -21,7 +21,7 @@ Your user configuration file is `config.json` in your user configuration directo
 | Linux, macOS | `~/.config/pdt/config.json`, or `$XDG_CONFIG_HOME/pdt/config.json` when `XDG_CONFIG_HOME` is set |
 | Windows | `%APPDATA%\pdt\config.json` |
 
-Settings are merged section by section: a file that sets only `Logging.level` keeps the default `Logging.filename`. A list, such as a host's `ports`, is replaced as a whole.
+Settings are merged section by section: a file that sets only `Logging.level` keeps the default `Logging.filename`. A list is replaced as a whole.
 
 :::{admonition} Example
 `~/.config/pdt/config.json` makes {{pdt}} more talkative everywhere:

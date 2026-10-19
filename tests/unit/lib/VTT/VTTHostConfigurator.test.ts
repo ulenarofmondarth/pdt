@@ -6,7 +6,11 @@ import { createHostMock } from '@tests/unit/mocks/vttHost.js';
 describe('createVTTConfiguration', () => {
   test('returns a configuration object for a host and a server', () => {
     const host = createHostMock();
-    const server = new FoundryVTTServer('unit-test-vtt', { type: 'foundry', version: '12', hostname: 'h' }, host);
+    const server = new FoundryVTTServer(
+      'unit-test-vtt',
+      { type: 'foundry', version: '12', hostname: 'h', port: 'auto' },
+      host,
+    );
 
     expect(createVTTConfiguration(host, server)).toBeTypeOf('object');
   });
