@@ -29,12 +29,12 @@ describe('command line parser', () => {
   });
 
   test('rejects an option it does not know', async () => {
-    const { err } = await parse('info --bogus');
+    const { err } = await parse('status --bogus');
 
     expect(err?.message).toContain('bogus');
   });
 
-  test.each(['init', 'info', 'vtt', 'config'])('offers the %s command in its help', async command => {
+  test.each(['init', 'status', 'vtt', 'config'])('offers the %s command in its help', async command => {
     const { err, output } = await parse('--help');
 
     expect(err).toBeFalsy();
@@ -48,9 +48,9 @@ describe('command line parser', () => {
   });
 
   test.each([
-    ['before the command', '--config Logging.level=debug info'],
-    ['after the command', 'info --config Logging.level=debug'],
-    ['more than once', 'info --config Logging.level=debug --config=Logging.filename=x.log'],
+    ['before the command', '--config Logging.level=debug status'],
+    ['after the command', 'status --config Logging.level=debug'],
+    ['more than once', 'status --config Logging.level=debug --config=Logging.filename=x.log'],
   ])('accepts --config %s', async (_case, commandLine) => {
     const { err } = await parse(commandLine);
 
@@ -58,7 +58,7 @@ describe('command line parser', () => {
   });
 
   test('requires a value for --config', async () => {
-    const { err } = await parse('info --config');
+    const { err } = await parse('status --config');
 
     expect(err?.message).toContain('config');
   });

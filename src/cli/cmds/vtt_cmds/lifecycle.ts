@@ -284,3 +284,44 @@ export async function stopAllVtts(context: CommandContext) {
     await stop(vtt, context);
   }
 }
+
+/** What a VTT of a project is doing, as far as pdt can tell. */
+export type VttStatus =
+  | { vtt: string; state: 'running'; url: string; container: string }
+  | { vtt: string; state: 'stopped' }
+  | { vtt: string; state: 'exited'; container: string }
+  | { vtt: string; state: 'unknown'; reason: string };
+
+/**
+ * The state of each VTT of the project: those configured, in order, then any the run state records
+ * that are no longer configured. A VTT pdt has no record of starting is stopped, without asking its
+ * host. One it has is running, or exited when it has stopped since pdt started it, as its host says,
+ * or unknown when the host cannot be reached.
+ *
+ * @throws {Error} When not in a project, or the project's run state cannot be read
+ */
+export async function vttStatuses(context: CommandContext): Promise<VttStatus[]> {
+  const recorded = readRunState(runStateFile(projectData(context))).VTT ?? {};
+  const statuses: VttStatus[] = [];
+  for (const name of Object.keys(context.config.VTT)) {
+    const record = Object.hasOwn(recorded, name) ? recorded[name] : undefined;
+    if (record === undefined) {
+      statuses.push({ vtt: name, state: 'stopped' });
+      continue;
+    }
+    const vtt = projectVtt(context, name);
+    if (!(await vtt.server.host.isAccessible())) {
+      const reason = m['error.vtt.hostUnreachable']({ vtt: name, type: vtt.settings.host.type });
+      statuses.push({ vtt: name, state: 'unknown', reason });
+    } else if (await vtt.server.host.isRunning(record)) {
+      statuses.push({ vtt: name, state: 'running', url: record.url, container: record.name });
+    } else {
+      statuses.push({ vtt: name, state: 'exited', container: record.name });
+    }
+  }
+  for (const [name, record] of Object.entries(recorded)) {
+    if (Object.hasOwn(context.config.VTT, name)) continue;
+    statuses.push({ vtt: name, state: 'unknown', reason: m['info.status.notConfigured']({ container: record.name }) });
+  }
+  return statuses;
+}

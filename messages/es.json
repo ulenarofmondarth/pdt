@@ -32,8 +32,8 @@
         },
         "newModuleGroup": "Opciones del nuevo módulo (solo en un directorio vacío):"
       },
-      "info": {
-        "description": "Mostrar la información de ejecución de un proyecto PDT existente."
+      "status": {
+        "description": "Mostrar el estado de ejecución de pdt: los VTT del proyecto actual, o fuera de un proyecto los de cada proyecto registrado, y si cada uno está en ejecución."
       },
       "config": {
         "description": "Mostrar o cambiar la configuración.",
@@ -111,7 +111,19 @@
       "moved": "Proyecto {id} movido de {from} a {to}",
       "changeDirectory": "Tu shell sigue en la ubicación anterior. Para continuar donde estabas: cd {dir}"
     },
-    "gitignored": "Se añadió {entries} a {file}, para que no se confirmen."
+    "gitignored": "Se añadió {entries} a {file}, para que no se confirmen.",
+    "status": {
+      "project": "Proyecto {project} ({root})",
+      "running": "{vtt}: en ejecución en {url} (contenedor {container})",
+      "stopped": "{vtt}: detenido",
+      "exited": "{vtt}: se detuvo después de que pdt lo iniciara. Mira por qué con docker logs {container}; pdt vtt start lo vuelve a iniciar.",
+      "unknown": "{vtt}: desconocido, {reason}",
+      "noVtts": "No hay ningún VTT configurado.",
+      "missing": "Proyecto {project} ({root}): ya no existe. Ejecuta pdt prune para olvidarlo.",
+      "unusable": "Proyecto {project} ({root}): no se puede leer. {reason}",
+      "noProjects": "No hay proyectos registrados en {file}.",
+      "notConfigured": "consta como iniciado pero ya no está configurado, así que no se puede consultar. Su contenedor es {container}."
+    }
   },
   "warn": {
     "pdtParentExists": "Intento de crear un subproyecto PDT (use -f para forzarlo).\n  Proyecto principal en {path}",

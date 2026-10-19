@@ -57,7 +57,7 @@ The user's run state registers each project under `PROJECTS`, by the project's i
 
 The user run state is kept in the user data directory rather than in a `.pdt` directory in the home directory: pdt finds a project by looking for a `.pdt` directory upwards from where it runs, up to the home directory, so a `~/.pdt` would make every directory under home look like one project.
 
-The {ref}`pdt_tlc_info` command displays this runtime configuration.
+The {ref}`pdt_tlc_status` command reports this runtime state: in a project, its VTTs (`vttStatuses` in `src/cli/cmds/vtt_cmds/lifecycle.ts`); outside one, those of every registered project, each read with `projectConfig` from the command context.
 
 ```{mermaid}
 :align: center

@@ -32,8 +32,8 @@
         },
         "newModuleGroup": "New module options (empty directory only):"
       },
-      "info": {
-        "description": "Show runtime information for an existing PDT project."
+      "status": {
+        "description": "Show pdt's runtime state: the VTTs of the current project, or outside a project of every registered project, and whether each is running."
       },
       "config": {
         "description": "Show or change the configuration.",
@@ -111,7 +111,19 @@
       "moved": "Moved project {id} from {from} to {to}",
       "changeDirectory": "Your shell is still in the old location. To carry on where you were: cd {dir}"
     },
-    "gitignored": "Added {entries} to {file}, so that they are not committed."
+    "gitignored": "Added {entries} to {file}, so that they are not committed.",
+    "status": {
+      "project": "Project {project} ({root})",
+      "running": "{vtt}: running at {url} (container {container})",
+      "stopped": "{vtt}: stopped",
+      "exited": "{vtt}: exited since pdt started it. See why with docker logs {container}; pdt vtt start starts it afresh.",
+      "unknown": "{vtt}: unknown, {reason}",
+      "noVtts": "No VTT is configured.",
+      "missing": "Project {project} ({root}): gone. Run pdt prune to forget it.",
+      "unusable": "Project {project} ({root}): cannot be read. {reason}",
+      "noProjects": "No projects are registered in {file}.",
+      "notConfigured": "recorded as started but no longer configured, so it cannot be asked about. Its container is {container}."
+    }
   },
   "warn": {
     "pdtParentExists": "Attempt to create sub-PDT project (use -f to force).\n  Parent project at {path}",

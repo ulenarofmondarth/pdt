@@ -23,6 +23,13 @@ export interface CommandContext {
   paths: PdtPaths;
   /** The validated configuration. */
   config: Config;
+  /**
+   * The configuration as it is in the project whose `.pdt` directory is `pdtConfigDir`, read as for
+   * a run in that project: from the same user files, environment and command line settings.
+   *
+   * @throws {ConfigError} When that configuration cannot be used
+   */
+  projectConfig(pdtConfigDir: string): Config;
   /** Where the value at a key of the configuration comes from. */
   sourceOf(key: readonly string[]): ConfigSource;
   /**
