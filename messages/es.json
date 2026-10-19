@@ -65,6 +65,9 @@
     "opt": {
       "config": {
         "description": "Sustituir un ajuste solo para esta ejecución, como <clave>=<valor>. Se puede repetir."
+      },
+      "project": {
+        "description": "Ejecutar como si se estuviera en un proyecto: indica su id, tal como lo registró init, o la ruta a su directorio raíz."
       }
     }
   },
@@ -164,6 +167,15 @@
       "destinationExists": "{path} ya existe. Indica una ruta que todavía no exista.",
       "noParent": "El directorio al que mover el proyecto, {path}, no existe.",
       "intoItself": "No se puede mover el proyecto dentro de sí mismo: {path}"
+    },
+    "project": {
+      "empty": "--project necesita un id de proyecto o la ruta a un proyecto.",
+      "repeated": "--project se dio {count} veces; dalo solo una vez.",
+      "asId": "proyecto {id}",
+      "asPath": "{given}, que no es un id de proyecto registrado",
+      "missing": "--project {as}: {root} no existe. Si el proyecto se movió, ejecuta pdt move en él, o pdt prune.",
+      "notADirectory": "--project {as}: {root} no es un directorio.",
+      "notAProject": "--project {as}: {root} no es un proyecto PDT; no tiene directorio .pdt."
     }
   },
   "fatal": {

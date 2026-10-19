@@ -65,6 +65,9 @@
     "opt": {
       "config": {
         "description": "Eine Einstellung nur für diesen Aufruf überschreiben, als <Schlüssel>=<Wert>. Mehrfach möglich."
+      },
+      "project": {
+        "description": "Wie in einem Projekt ausführen: seine von init registrierte ID oder den Pfad zu seinem Wurzelverzeichnis angeben."
       }
     }
   },
@@ -164,6 +167,15 @@
       "destinationExists": "{path} existiert bereits. Gib einen Pfad an, der noch nicht existiert.",
       "noParent": "Das Verzeichnis, in das das Projekt verschoben werden soll, {path}, existiert nicht.",
       "intoItself": "Das Projekt kann nicht in sich selbst verschoben werden: {path}"
+    },
+    "project": {
+      "empty": "--project braucht eine Projekt-ID oder den Pfad zu einem Projekt.",
+      "repeated": "--project wurde {count}-mal angegeben; gib es nur einmal an.",
+      "asId": "Projekt {id}",
+      "asPath": "{given}, keine registrierte Projekt-ID",
+      "missing": "--project {as}: {root} existiert nicht. Wenn das Projekt verschoben wurde, führe darin pdt move aus, oder pdt prune.",
+      "notADirectory": "--project {as}: {root} ist kein Verzeichnis.",
+      "notAProject": "--project {as}: {root} ist kein PDT-Projekt; es hat kein .pdt-Verzeichnis."
     }
   },
   "fatal": {

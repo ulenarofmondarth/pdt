@@ -65,6 +65,9 @@
     "opt": {
       "config": {
         "description": "Remplacer un paramètre pour cette exécution seulement, sous la forme <clé>=<valeur>. Peut être répété."
+      },
+      "project": {
+        "description": "Exécuter comme dans un projet : indiquez son identifiant, tel qu'enregistré par init, ou le chemin de son répertoire racine."
       }
     }
   },
@@ -164,6 +167,15 @@
       "destinationExists": "{path} existe déjà. Indiquez un chemin qui n'existe pas encore.",
       "noParent": "Le répertoire dans lequel déplacer le projet, {path}, n'existe pas.",
       "intoItself": "Impossible de déplacer le projet dans lui-même : {path}"
+    },
+    "project": {
+      "empty": "--project attend un identifiant de projet ou le chemin d'un projet.",
+      "repeated": "--project a été donné {count} fois ; donnez-le une seule fois.",
+      "asId": "projet {id}",
+      "asPath": "{given}, qui n'est pas un identifiant de projet enregistré",
+      "missing": "--project {as} : {root} n'existe pas. Si le projet a été déplacé, lancez pdt move dans celui-ci, ou pdt prune.",
+      "notADirectory": "--project {as} : {root} n'est pas un répertoire.",
+      "notAProject": "--project {as} : {root} n'est pas un projet PDT ; il n'a pas de répertoire .pdt."
     }
   },
   "fatal": {

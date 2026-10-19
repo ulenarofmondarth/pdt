@@ -1,6 +1,6 @@
 import yargs, { type Argv, type CommandModule } from 'yargs';
 import PDT from '@/constants.js';
-import { CONFIG_OPTION } from '@/cli/overrides.js';
+import { CONFIG_OPTION, PROJECT_OPTION } from '@/cli/overrides.js';
 import { m } from '@i18n/messages.js';
 
 /**
@@ -22,6 +22,13 @@ export function createParser(commands: readonly CommandModule[]): Argv {
       requiresArg: true,
       global: true,
       describe: m['ui.opt.config.description'](),
+    })
+    // Read by main() before parsing too (see projectOption).
+    .option(PROJECT_OPTION, {
+      type: 'string',
+      requiresArg: true,
+      global: true,
+      describe: m['ui.opt.project.description'](),
     })
     .help()
     .demandCommand(1, m['error.commandRequired']());

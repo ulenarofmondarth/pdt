@@ -3,7 +3,16 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import PDT from '@/constants.js';
-import { findConfig, resolvePaths, searchBoundary } from '@util/runtime-config.js';
+import {
+  findConfig,
+  inProject,
+  ProjectError,
+  resolvePaths,
+  resolveProject,
+  searchBoundary,
+} from '@util/runtime-config.js';
+import { runStateFile, writeRunState } from '@util/run-state.js';
+import { m } from '@i18n/messages.js';
 import { RTCError } from '@util/runtime-config.js';
 
 describe('searchBoundary', () => {
@@ -189,5 +198,94 @@ describe('RTCError', () => {
 
     expect(error).toBeInstanceOf(Error);
     expect(error).toMatchObject({ name: 'RTCError', message: 'runtime configuration is broken', cause });
+  });
+});
+
+describe('resolveProject', () => {
+  let sandbox: string;
+  let paths: { cwd: string; userDataDir: string };
+  let root: string;
+
+  beforeEach(() => {
+    sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'pdt-resolve-project-'));
+    root = path.join(sandbox, 'projects', 'arcane-ledger');
+    fs.mkdirSync(path.join(root, '.pdt'), { recursive: true });
+    paths = { cwd: sandbox, userDataDir: path.join(sandbox, 'data') };
+  });
+
+  afterEach(() => {
+    fs.rmSync(sandbox, { recursive: true, force: true });
+  });
+
+  function register(projects: Record<string, string>) {
+    writeRunState(runStateFile(paths.userDataDir), {
+      PROJECTS: Object.fromEntries(Object.entries(projects).map(([id, at]) => [id, { root: at }])),
+    });
+  }
+
+  test("is a registered project's root, given its id", () => {
+    register({ 'arcane-ledger': root });
+
+    expect(resolveProject('arcane-ledger', paths)).toBe(root);
+  });
+
+  test('takes an id over a path with the same name', () => {
+    fs.mkdirSync(path.join(sandbox, 'ledger', '.pdt'), { recursive: true });
+    register({ ledger: root });
+
+    expect(resolveProject('ledger', paths)).toBe(root);
+  });
+
+  test('is the path given, from where pdt was started, when it is not a registered id', () => {
+    expect(resolveProject(path.join('projects', 'arcane-ledger'), paths)).toBe(root);
+    expect(resolveProject(root, paths)).toBe(root);
+  });
+
+  test('fails, as a project error, for a registered project that has gone', () => {
+    const gone = path.join(sandbox, 'gone');
+    register({ gone: gone });
+
+    expect(() => resolveProject('gone', paths)).toThrow(
+      new ProjectError(m['error.project.missing']({ root: gone, as: m['error.project.asId']({ id: 'gone' }) })),
+    );
+  });
+
+  test('fails, as a project error, for a path that is a file', () => {
+    fs.writeFileSync(path.join(sandbox, 'file'), '');
+
+    expect(() => resolveProject('file', paths)).toThrow(ProjectError);
+  });
+
+  test('fails, as a project error, for a directory without a .pdt directory', () => {
+    expect(() => resolveProject('projects', paths)).toThrow(
+      m['error.project.notAProject']({
+        root: path.join(sandbox, 'projects'),
+        as: m['error.project.asPath']({ given: 'projects' }),
+      }),
+    );
+  });
+
+  test('fails, as a project error, for an empty value', () => {
+    expect(() => resolveProject('', paths)).toThrow(new ProjectError(m['error.project.empty']()));
+  });
+
+  test('fails, but not as a project error, when the run state cannot be read', () => {
+    fs.mkdirSync(paths.userDataDir);
+    fs.writeFileSync(runStateFile(paths.userDataDir), 'not json');
+
+    expect(() => resolveProject('arcane-ledger', paths)).toThrow(expect.not.objectContaining({ name: 'ProjectError' }));
+  });
+});
+
+describe('inProject', () => {
+  test("works in the project's root, with its .pdt directory as the project's", () => {
+    const paths = { cwd: '/elsewhere', userConfigDir: '/c', userDataDir: '/d', pdtConfigDir: undefined };
+
+    expect(inProject(paths, '/work/ledger')).toEqual({
+      cwd: '/work/ledger',
+      userConfigDir: '/c',
+      userDataDir: '/d',
+      pdtConfigDir: path.join('/work/ledger', '.pdt'),
+    });
   });
 });

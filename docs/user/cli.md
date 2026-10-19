@@ -18,8 +18,28 @@ These options can be given with any command:
 | Option | What it does |
 | --- | --- |
 | `--config <key>=<value>` | Overrides a setting for this run only; give it once for each setting (see {doc}`configuration`) |
+| `--project <id or path>` | Runs the command as if in that project (below) |
 | `--help` | Shows the help for {{pdt}}, or for the command it follows |
 | `--version` | Shows the version of {{pdt}} |
+
+(pdt_cli_project)=
+
+## Working on another project
+
+`--project` runs any command as if you had changed to a project's root directory first:
+
+```shell
+pdt --project arcane-ledger vtt start
+pdt config get VTT --project ~/work/arcane-ledger
+```
+
+The value is looked up as a project id in your user run state (see {ref}`pdt_tlc_init_id`). If no project is registered with that id, it is taken as the path to the project's root directory, relative to the current directory. As a project id can't contain a dot, write a path in the current directory that has the same name as a project id as `./name`.
+
+The project's `.pdt/config.json` is read in place of any project you are in. Relative paths given to the command, such as `init`'s directory or `move`'s destination, are then taken from the project's root.
+
+Give `--project` at most once; given more than once, {{pdt}} runs nothing and stops with exit code 2.
+
+If the directory doesn't exist, is not a directory, or has no `.pdt` directory, {{pdt}} runs nothing and stops with exit code 2. If the project was registered by id and has since moved, run {ref}`pdt_tlc_move` in it or {ref}`pdt_tlc_prune`.
 
 ## Output
 

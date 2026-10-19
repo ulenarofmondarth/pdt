@@ -8,7 +8,7 @@ The configuration is built up in this order, later sources overriding earlier on
 
 1. The defaults built into {{pdt}}.
 2. Your user configuration file.
-3. The project's configuration file, `.pdt/config.json` in the project root, when {{pdt}} runs inside a project.
+3. The project's configuration file, `.pdt/config.json` in the project root, when {{pdt}} runs inside a project or is given one with `--project` (see {ref}`pdt_cli_project`).
 4. Environment variables (below).
 5. Settings given on the command line with `--config` (below).
 

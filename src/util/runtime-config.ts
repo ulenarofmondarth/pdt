@@ -1,6 +1,17 @@
 import PDT from '@/constants.js';
 import path from 'node:path';
+import fs from 'node:fs';
 import { findUpSync } from 'find-up';
+import { isPdtProject, registeredProject, runStateFile } from '@util/run-state.js';
+import { m } from '@i18n/messages.js';
+
+/** The project given with `--project` cannot be used. */
+export class ProjectError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ProjectError';
+  }
+}
 
 export class RTCError extends Error {
   constructor(message: string, options?: ErrorOptions) {
@@ -102,4 +113,38 @@ export function resolvePaths(context: PathsContext): PdtPaths {
     userDataDir: userDataDir(context),
     pdtConfigDir: findConfig(context.cwd, context.home),
   };
+}
+
+/**
+ * The root directory of the project given with `--project`: the root registered for it, if it is a
+ * project id in the user's run state, otherwise the path it names, taken from `cwd`.
+ *
+ * @param given - A project id, or the path to a project's root directory
+ * @param paths - Where pdt was started, and the user data directory that holds the run state
+ * @throws {ProjectError} When the directory does not exist, is not a directory, or holds no `.pdt`
+ * @throws {Error} When the user's run state cannot be read
+ */
+export function resolveProject(given: string, { cwd, userDataDir }: Pick<PdtPaths, 'cwd' | 'userDataDir'>): string {
+  if (given === '') throw new ProjectError(m['error.project.empty']());
+  const registered = registeredProject(runStateFile(userDataDir), given);
+  const root = registered === undefined ? path.resolve(cwd, given) : path.resolve(registered.root);
+  const as = registered === undefined ? m['error.project.asPath']({ given }) : m['error.project.asId']({ id: given });
+
+  let isDirectory: boolean;
+  try {
+    isDirectory = fs.statSync(root).isDirectory();
+  } catch {
+    throw new ProjectError(m['error.project.missing']({ root, as }));
+  }
+  if (!isDirectory) throw new ProjectError(m['error.project.notADirectory']({ root, as }));
+  if (!isPdtProject(root)) throw new ProjectError(m['error.project.notAProject']({ root, as }));
+  return root;
+}
+
+/**
+ * The directories pdt uses when it runs as if in the project at `root`: it works in the project's
+ * root, and the project's `.pdt` directory is the project's.
+ */
+export function inProject(paths: PdtPaths, root: string): PdtPaths {
+  return { ...paths, cwd: root, pdtConfigDir: path.join(root, PDT.PROJECT_RTD_DIR_NAME) };
 }

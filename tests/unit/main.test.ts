@@ -226,6 +226,113 @@ describe('main', () => {
     });
   });
 
+  describe('--project', () => {
+    let root: string;
+    let given: CommandContext | undefined;
+
+    beforeEach(() => {
+      root = path.join(sandbox, 'module');
+      fs.mkdirSync(path.join(root, PDT.PROJECT_RTD_DIR_NAME), { recursive: true });
+      fs.writeFileSync(path.join(root, PDT.PROJECT_RTD_DIR_NAME, 'config.json'), '{ "Logging": { "level": "error" } }');
+      fs.mkdirSync(context.paths.userDataDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(context.paths.userDataDir, 'run.state.json'),
+        JSON.stringify({ PROJECTS: { 'my-module': { root } } }),
+      );
+      given = undefined;
+    });
+
+    /** Run `args` with a command that records the context it was given. */
+    function runWith(args: string[]) {
+      return main(args, context, ctx => {
+        given = ctx;
+        return [command('run')];
+      });
+    }
+
+    test.each([
+      ['a registered project id', ['run', '--project', 'my-module']],
+      ['a path, from where pdt was started', ['--project=module', 'run']],
+      ['an absolute path', () => ['run', '--project', root]],
+    ])('runs as if in the project given by %s', async (_case, args) => {
+      const list = typeof args === 'function' ? args() : args;
+
+      await expect(runWith(list)).resolves.toBe(PDT.EXITCODE.OK);
+
+      expect(given?.paths).toEqual({ ...context.paths, cwd: root, pdtConfigDir: path.join(root, '.pdt') });
+      expect(configureLogger).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ level: 'error' }));
+      expect(setLogDirectory).toHaveBeenCalledExactlyOnceWith(path.join(root, '.pdt'));
+    });
+
+    test('replaces the project pdt was started in', async () => {
+      context.paths.pdtConfigDir = path.join(sandbox, 'other', '.pdt');
+
+      await runWith(['run', '--project', 'my-module']);
+
+      expect(given?.paths.pdtConfigDir).toBe(path.join(root, '.pdt'));
+    });
+
+    test.each([
+      [
+        'a path that does not exist',
+        'nosuch',
+        () =>
+          m['error.project.missing']({
+            root: path.join(sandbox, 'nosuch'),
+            as: m['error.project.asPath']({ given: 'nosuch' }),
+          }),
+      ],
+      [
+        'a file',
+        'file',
+        () =>
+          m['error.project.notADirectory']({
+            root: path.join(sandbox, 'file'),
+            as: m['error.project.asPath']({ given: 'file' }),
+          }),
+      ],
+      [
+        'a directory that is not a project',
+        'plain',
+        () =>
+          m['error.project.notAProject']({
+            root: path.join(sandbox, 'plain'),
+            as: m['error.project.asPath']({ given: 'plain' }),
+          }),
+      ],
+    ])('fails with the usage code, running nothing, for %s', async (_case, value, message) => {
+      fs.writeFileSync(path.join(sandbox, 'file'), '');
+      fs.mkdirSync(path.join(sandbox, 'plain'));
+
+      await expect(runWith(['run', '--project', value])).resolves.toBe(PDT.EXITCODE.USAGE);
+
+      expect(given).toBeUndefined();
+      expect(err).toEqual([message()]);
+    });
+
+    test('fails with the usage code, running nothing, when it is given more than once', async () => {
+      await expect(runWith(['--project', 'my-module', 'run', '--project', 'module'])).resolves.toBe(PDT.EXITCODE.USAGE);
+
+      expect(given).toBeUndefined();
+      expect(err).toEqual([m['error.project.repeated']({ count: 2 })]);
+    });
+
+    test('fails with the error code, running nothing, when the run state cannot be read', async () => {
+      fs.writeFileSync(path.join(context.paths.userDataDir, 'run.state.json'), 'not json');
+
+      await expect(runWith(['run', '--project', 'my-module'])).resolves.toBe(PDT.EXITCODE.ERROR);
+
+      expect(given).toBeUndefined();
+      expect(err.join('\n')).toContain('run.state.json');
+    });
+
+    test('is in the help', async () => {
+      await main(['--help'], context, () => [command('run')]);
+
+      expect(out.join('\n')).toContain('--project');
+    });
+  });
+
   describe('log file', () => {
     test('is in the user data directory outside a project', async () => {
       await main(['run'], context, () => [command('run')]);

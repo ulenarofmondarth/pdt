@@ -75,4 +75,54 @@ describe('moving and pruning projects', () => {
     expect(code).toBe(PDT.EXITCODE.ERROR);
     expect(stderr).toContain('Not a PDT project');
   });
+
+  describe('--project', () => {
+    test('runs a command in the project given by its id, from outside it', async () => {
+      const { code, stdout } = await sandbox.run(['config', 'get', 'id', '--project', 'my-module'], {
+        cwd: sandbox.home,
+      });
+
+      expect(code).toBe(PDT.EXITCODE.OK);
+      expect(stdout).toBe('my-module\n');
+    });
+
+    test('runs a command in the project given by its path, relative to the current directory', async () => {
+      const { code, stdout } = await sandbox.run(['--project', 'my-module', 'config', 'set', 'Logging.level', 'info']);
+
+      expect(code).toBe(PDT.EXITCODE.OK);
+      expect(stdout).toContain(path.join(project, PDT.PROJECT_RTD_DIR_NAME, 'config.json'));
+    });
+
+    test('takes over from the project pdt is run in', async () => {
+      const other = path.join(sandbox.work, 'other-module');
+      await sandbox.run(['init', other, ...NEW_MODULE, ...OFFLINE]);
+
+      const { stdout } = await sandbox.run(['config', 'get', 'id', '--project', 'my-module'], { cwd: other });
+
+      expect(stdout).toBe('my-module\n');
+    });
+
+    test('fails with the usage code, running nothing, for a directory that is not a project', async () => {
+      const { code, stdout, stderr } = await sandbox.run(['config', 'get', 'id', '--project', sandbox.home]);
+
+      expect(code).toBe(PDT.EXITCODE.USAGE);
+      expect(stdout).toBe('');
+      expect(stderr).toContain('no .pdt directory');
+    });
+
+    test('fails with the usage code, running nothing, when --project is given more than once', async () => {
+      const { code, stdout, stderr } = await sandbox.run(['config', 'get', 'id', '--project', 'a', '--project', 'b']);
+
+      expect(code).toBe(PDT.EXITCODE.USAGE);
+      expect(stdout).toBe('');
+      expect(stderr).toContain('2 times');
+    });
+
+    test('fails with the usage code for a path that does not exist', async () => {
+      const { code, stderr } = await sandbox.run(['info', '--project', 'nosuch']);
+
+      expect(code).toBe(PDT.EXITCODE.USAGE);
+      expect(stderr).toContain('does not exist');
+    });
+  });
 });
