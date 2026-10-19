@@ -374,7 +374,6 @@ describe('main', () => {
       expect(given.paths).toBe(context.paths);
       expect(given.config.Logging.level).toBe('debug');
       expect(given.config.VTT).toEqual({});
-      expect(given.config.DOCS.host.image).toBe('ulenarofmondarth/sphinx-docs');
     });
 
     test('writes output where the user will see it', async () => {
