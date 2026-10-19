@@ -24,18 +24,23 @@ function asPath(line: string): string {
  * @returns The lines added, such as `.pdt/secrets.conf`
  */
 export function ignoreProjectFiles(root: string, names: readonly string[]): string[] {
-  const file = path.join(root, GITIGNORE);
-  const text = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
-  const ignored = new Set(text.split(/\r?\n/).map(asPath));
-  if (ignored.has(PDT.PROJECT_RTD_DIR_NAME)) return [];
+  // Read and append through one descriptor, so that what is added follows what was read.
+  const fd = fs.openSync(path.join(root, GITIGNORE), 'a+');
+  try {
+    const text = fs.readFileSync(fd, 'utf8');
+    const ignored = new Set(text.split(/\r?\n/).map(asPath));
+    if (ignored.has(PDT.PROJECT_RTD_DIR_NAME)) return [];
 
-  const added = names
-    .map(name => `${PDT.PROJECT_RTD_DIR_NAME}/${name}`)
-    .filter(entry => !ignored.has(entry))
-    .filter((entry, index, all) => all.indexOf(entry) === index);
-  if (added.length === 0) return added;
+    const added = names
+      .map(name => `${PDT.PROJECT_RTD_DIR_NAME}/${name}`)
+      .filter(entry => !ignored.has(entry))
+      .filter((entry, index, all) => all.indexOf(entry) === index);
+    if (added.length === 0) return added;
 
-  const separator = text === '' || text.endsWith('\n') ? '' : '\n';
-  fs.writeFileSync(file, `${text}${separator}${added.join('\n')}\n`);
-  return added;
+    const separator = text === '' || text.endsWith('\n') ? '' : '\n';
+    fs.writeSync(fd, `${separator}${added.join('\n')}\n`);
+    return added;
+  } finally {
+    fs.closeSync(fd);
+  }
 }

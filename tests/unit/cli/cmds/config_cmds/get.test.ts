@@ -113,7 +113,7 @@ describe('config get command', () => {
 
   describe('secrets', () => {
     beforeEach(() => {
-      ctx.config.FOUNDRY = { username: 'me', password: 'hunter2' };
+      ctx.config.FOUNDRY = { username: 'u53rname', password: 'hunter2' };
       ctx.config.VTT = {
         mod: {
           server: { type: 'foundry', hostname: 'localhost', version: '14', admin_key: 'k3y' },
@@ -151,7 +151,7 @@ describe('config get command', () => {
       await run(`get --list-all --format ${format}`);
 
       const text = ctx.out.mock.calls.flat().join('\n');
-      expect(text).not.toMatch(/hunter2|k3y|"me"|: me$/m);
+      for (const secret of ['u53rname', 'hunter2', 'k3y']) expect(text).not.toContain(secret);
       expect(text).toContain('*****');
     });
 
