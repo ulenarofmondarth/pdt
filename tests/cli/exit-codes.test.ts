@@ -1,7 +1,9 @@
+import { execFile } from 'node:child_process';
 import fs from 'node:fs';
+import { promisify } from 'node:util';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import PDT from '../../src/constants.js';
-import { Sandbox } from './pdt.js';
+import { CLI, Sandbox } from './pdt.js';
 
 describe('exit codes and output', () => {
   let sandbox: Sandbox;
@@ -22,6 +24,13 @@ describe('exit codes and output', () => {
       stdout: `${version}\n`,
       stderr: '',
     });
+  });
+
+  // Regression: a rebuild in watch mode left the entry point without its executable bit.
+  test.skipIf(process.platform === 'win32')('runs as a program of its own, through its #! line', async () => {
+    const { version } = JSON.parse(fs.readFileSync('package.json', 'utf8')) as { version: string };
+
+    await expect(promisify(execFile)(CLI, ['--version'])).resolves.toMatchObject({ stdout: `${version}\n` });
   });
 
   test('--help prints the usage on standard output and succeeds', async () => {

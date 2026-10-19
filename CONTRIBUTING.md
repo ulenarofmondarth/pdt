@@ -16,6 +16,16 @@ pnpm install
 
 `pnpm install` also installs the git hooks described below. The project only accepts pnpm; npm and yarn installs are rejected.
 
+To run your working copy as `pdt` in your own shell, for manual checks:
+
+```shell
+pnpm build
+pnpm dev:link       # the global pdt command now runs this working copy's dist/
+pnpm build:watch    # optional, in another terminal: rebuild on every change
+```
+
+`pnpm dev:unlink` removes the link. See [Running your development version](https://ulenarofmondarth.github.io/pdt/developer/development-workflow.html#running-development-version) for the details and caveats.
+
 ## Workflow
 
 1. Fork the repository and create a short-lived branch from `dev`, named for the change: `feat/...`, `fix/...`, `docs/...`.
