@@ -110,6 +110,14 @@ describe('moving and pruning projects', () => {
       expect(stderr).toContain('no .pdt directory');
     });
 
+    test('fails with the usage code, running nothing, when --project is given more than once', async () => {
+      const { code, stdout, stderr } = await sandbox.run(['config', 'get', 'id', '--project', 'a', '--project', 'b']);
+
+      expect(code).toBe(PDT.EXITCODE.USAGE);
+      expect(stdout).toBe('');
+      expect(stderr).toContain('2 times');
+    });
+
     test('fails with the usage code for a path that does not exist', async () => {
       const { code, stderr } = await sandbox.run(['info', '--project', 'nosuch']);
 

@@ -78,9 +78,9 @@ function configure(
  * the exit code to stop with after reporting why the project cannot be used.
  */
 function locate(args: readonly string[], context: MainContext): MainContext | number {
-  const given = projectOption(args);
-  if (given === undefined) return context;
   try {
+    const given = projectOption(args);
+    if (given === undefined) return context;
     return { ...context, paths: inProject(context.paths, resolveProject(given, context.paths)) };
   } catch (error) {
     // The logger is not configured yet, so it cannot report this.

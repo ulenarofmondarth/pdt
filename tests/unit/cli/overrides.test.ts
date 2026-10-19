@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { configOverrides, projectOption } from '@/cli/overrides.js';
 import { ConfigError } from '@util/load-config.js';
+import { ProjectError } from '@util/runtime-config.js';
 import { m } from '@i18n/messages.js';
 
 describe('configOverrides', () => {
@@ -61,9 +62,12 @@ describe('projectOption', () => {
     },
   );
 
-  test('is the last, when it is given more than once', () => {
-    expect(projectOption(['--project', 'first', 'run', '--project', 'last'])).toBe('last');
-  });
+  test.each([[['--project', 'first', 'run', '--project', 'second']], [['--project=same', '--project', 'same']]])(
+    'fails when it is given more than once: %j',
+    args => {
+      expect(() => projectOption(args)).toThrow(new ProjectError(m['error.project.repeated']({ count: 2 })));
+    },
+  );
 
   test('is not taken from after --', () => {
     expect(projectOption(['run', '--', '--project', 'my-module'])).toBeUndefined();

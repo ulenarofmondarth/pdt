@@ -170,6 +170,7 @@
     },
     "project": {
       "empty": "--project braucht eine Projekt-ID oder den Pfad zu einem Projekt.",
+      "repeated": "--project wurde {count}-mal angegeben; gib es nur einmal an.",
       "asId": "Projekt {id}",
       "asPath": "{given}, keine registrierte Projekt-ID",
       "missing": "--project {as}: {root} existiert nicht. Wenn das Projekt verschoben wurde, führe darin pdt move aus, oder pdt prune.",

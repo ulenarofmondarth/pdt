@@ -37,6 +37,8 @@ The value is looked up as a project id in your user run state (see {ref}`pdt_tlc
 
 The project's `.pdt/config.json` is read in place of any project you are in. Relative paths given to the command, such as `init`'s directory or `move`'s destination, are then taken from the project's root.
 
+Give `--project` at most once; given more than once, {{pdt}} runs nothing and stops with exit code 2.
+
 If the directory doesn't exist, is not a directory, or has no `.pdt` directory, {{pdt}} runs nothing and stops with exit code 2. If the project was registered by id and has since moved, run {ref}`pdt_tlc_move` in it or {ref}`pdt_tlc_prune`.
 
 ## Output

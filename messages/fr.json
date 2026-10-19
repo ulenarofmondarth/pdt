@@ -170,6 +170,7 @@
     },
     "project": {
       "empty": "--project attend un identifiant de projet ou le chemin d'un projet.",
+      "repeated": "--project a été donné {count} fois ; donnez-le une seule fois.",
       "asId": "projet {id}",
       "asPath": "{given}, qui n'est pas un identifiant de projet enregistré",
       "missing": "--project {as} : {root} n'existe pas. Si le projet a été déplacé, lancez pdt move dans celui-ci, ou pdt prune.",

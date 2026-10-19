@@ -170,6 +170,7 @@
     },
     "project": {
       "empty": "--project necesita un id de proyecto o la ruta a un proyecto.",
+      "repeated": "--project se dio {count} veces; dalo solo una vez.",
       "asId": "proyecto {id}",
       "asPath": "{given}, que no es un id de proyecto registrado",
       "missing": "--project {as}: {root} no existe. Si el proyecto se movió, ejecuta pdt move en él, o pdt prune.",

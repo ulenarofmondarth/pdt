@@ -1,4 +1,5 @@
 import { ConfigError, type ConfigOverride } from '@util/load-config.js';
+import { ProjectError } from '@util/runtime-config.js';
 import { m } from '@i18n/messages.js';
 
 /** The global option that overrides a setting for one run. */
@@ -53,14 +54,17 @@ export function configOverrides(args: readonly string[]): ConfigOverride[] {
 }
 
 /**
- * The project given with `--project <id or path>` on a command line; the last, if it is given more
- * than once.
+ * The project given with `--project <id or path>` on a command line.
  *
  * It decides which project's configuration is read, so it is needed before yargs parses the
  * command line.
  *
  * @param args - The command line, without node and the script
+ * @throws {ProjectError} When `--project` is given more than once
  */
 export function projectOption(args: readonly string[]): string | undefined {
-  return optionValues(args, PROJECT_OPTION).at(-1);
+  const values = optionValues(args, PROJECT_OPTION);
+  // pdt runs in one project, so which of several was meant cannot be guessed.
+  if (values.length > 1) throw new ProjectError(m['error.project.repeated']({ count: values.length }));
+  return values[0];
 }

@@ -310,6 +310,13 @@ describe('main', () => {
       expect(err).toEqual([message()]);
     });
 
+    test('fails with the usage code, running nothing, when it is given more than once', async () => {
+      await expect(runWith(['--project', 'my-module', 'run', '--project', 'module'])).resolves.toBe(PDT.EXITCODE.USAGE);
+
+      expect(given).toBeUndefined();
+      expect(err).toEqual([m['error.project.repeated']({ count: 2 })]);
+    });
+
     test('fails with the error code, running nothing, when the run state cannot be read', async () => {
       fs.writeFileSync(path.join(context.paths.userDataDir, 'run.state.json'), 'not json');
 
