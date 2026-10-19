@@ -50,6 +50,9 @@
           "user": "Quitar el ajuste del archivo de configuración del usuario.",
           "all": "Quitar el ajuste de todos los archivos de configuración que lo definen."
         }
+      },
+      "forceReset": {
+        "description": "Volver a configurar desde cero el proyecto actual: eliminar su estado de ejecución, su registro y su configuración, y después inicializarlo."
       }
     },
     "opt": {
@@ -68,11 +71,15 @@
     },
     "configSet": "{key} definido en {file}",
     "configCleared": "{key} quitado de {file}",
-    "vttConfigured": "VTT {vtt} (Foundry VTT {version}) configurado en {file}"
+    "vttConfigured": "VTT {vtt} (Foundry VTT {version}) configurado en {file}",
+    "projectRegistered": "Proyecto {id} registrado en {file}",
+    "forceReset": {
+      "removed": "Se eliminó {file}",
+      "unregistered": "Se eliminó el registro del proyecto {id} de {file}"
+    }
   },
   "warn": {
     "pdtParentExists": "Intento de crear un subproyecto PDT (use -f para forzarlo).\n  Proyecto principal en {path}",
-    "alreadyExists": "{description} ya existe.",
     "moduleNotGenerated": "{path} no está vacío, por lo que no se genera ningún módulo allí. Opciones ignoradas: {options}",
     "logFileUnavailable": "No se puede escribir el archivo de registro {file}, así que los mensajes solo van a la consola: {reason}",
     "configNotSet": "{key} no está definido en {file}, así que no se ha quitado nada.",
@@ -87,7 +94,8 @@
         "idWithDot": "su id, {id}, contiene un punto, que una clave de configuración no puede contener",
         "noVersion": "no define {variable}"
       }
-    }
+    },
+    "noProjectId": "El proyecto no tiene id, así que no está registrado y no tiene VTT. Corrige module.json y después ejecuta pdt force-reset en el proyecto."
   },
   "error": {
     "notInPdtProject": "No es un proyecto PDT.",
@@ -123,6 +131,15 @@
     "compendium": {
       "notRecognised": "{path} no es una base de datos de compendio reconocida.",
       "exportUnsupported": "Exportar el compendio en {path} a {targets} aún no es compatible."
+    },
+    "alreadyInitialised": "{path} ya es un proyecto PDT: existe {file}. Para volver a configurarlo desde cero, ejecuta pdt force-reset en el proyecto.",
+    "projectRegistered": {
+      "here": "El proyecto {id} ya está registrado para este directorio en {file}. Ejecuta pdt force-reset en el proyecto o elimina el registro de {file}.",
+      "elsewhere": "Otro proyecto, en {root}, ya está registrado como {id} en {file}. Cada proyecto necesita su propio id: cambia el id en module.json."
+    },
+    "runState": {
+      "unreadable": "No se pudo leer el archivo de estado de ejecución {file}: {reason}",
+      "invalid": "El archivo de estado de ejecución {file} no es válido: {problems}"
     }
   },
   "fatal": {

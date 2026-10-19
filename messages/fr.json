@@ -50,6 +50,9 @@
           "user": "Retirer plutôt le paramètre du fichier de configuration de l'utilisateur.",
           "all": "Retirer le paramètre de chaque fichier de configuration qui le définit."
         }
+      },
+      "forceReset": {
+        "description": "Reconfigurer entièrement le projet actuel : supprimer son état d'exécution, son enregistrement et sa configuration, puis l'initialiser."
       }
     },
     "opt": {
@@ -68,11 +71,15 @@
     },
     "configSet": "{key} défini dans {file}",
     "configCleared": "{key} retiré de {file}",
-    "vttConfigured": "VTT {vtt} (Foundry VTT {version}) configuré dans {file}"
+    "vttConfigured": "VTT {vtt} (Foundry VTT {version}) configuré dans {file}",
+    "projectRegistered": "Projet {id} enregistré dans {file}",
+    "forceReset": {
+      "removed": "{file} supprimé",
+      "unregistered": "Enregistrement du projet {id} supprimé de {file}"
+    }
   },
   "warn": {
     "pdtParentExists": "Tentative de création d'un sous-projet PDT (utiliser -f pour forcer).\n  Projet parent dans {path}",
-    "alreadyExists": "{description} existe déjà.",
     "moduleNotGenerated": "{path} n'est pas vide ; aucun module n'y est donc généré. Options ignorées : {options}",
     "logFileUnavailable": "Impossible d'écrire le fichier journal {file}, les messages ne vont donc qu'à la console : {reason}",
     "configNotSet": "{key} n'est pas défini dans {file} : rien n'a été retiré.",
@@ -87,7 +94,8 @@
         "idWithDot": "son identifiant, {id}, contient un point, ce qu'une clé de configuration ne peut pas contenir",
         "noVersion": "il ne définit pas {variable}"
       }
-    }
+    },
+    "noProjectId": "Le projet n'a pas d'identifiant : il n'est donc pas enregistré et n'a pas de VTT. Corrigez module.json, puis lancez pdt force-reset dans le projet."
   },
   "error": {
     "notInPdtProject": "Ce n'est pas un projet PDT.",
@@ -123,6 +131,15 @@
     "compendium": {
       "notRecognised": "{path} n'est pas une base de données de compendium reconnue.",
       "exportUnsupported": "L'exportation du compendium situé à {path} vers {targets} n'est pas encore prise en charge."
+    },
+    "alreadyInitialised": "{path} est déjà un projet PDT : {file} existe. Pour le reconfigurer entièrement, lancez pdt force-reset dans le projet.",
+    "projectRegistered": {
+      "here": "Le projet {id} est déjà enregistré pour ce répertoire dans {file}. Lancez pdt force-reset dans le projet, ou supprimez l'enregistrement de {file}.",
+      "elsewhere": "Un autre projet, dans {root}, est déjà enregistré sous {id} dans {file}. Chaque projet doit avoir son propre identifiant : changez l'identifiant dans module.json."
+    },
+    "runState": {
+      "unreadable": "Impossible de lire le fichier d'état d'exécution {file} : {reason}",
+      "invalid": "Le fichier d'état d'exécution {file} n'est pas valide : {problems}"
     }
   },
   "fatal": {

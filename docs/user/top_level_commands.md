@@ -23,13 +23,34 @@ What happens depends on what is in the directory:
 
 A directory inside an existing {program}`pdt` project is refused unless `--force` is given.
 
+A project that is already initialised, one with a `.pdt/config.json`, is refused with an error (exit code 1). To set it up again from scratch, use {ref}`pdt_tlc_force_reset`. A `.pdt` directory without a `config.json`, such as one left by an `init` that could not read the module's id, is initialised as normal.
+
+(pdt_tlc_init_id)=
+
+### The project id
+
+Once any new module has been created, `init` reads the module's `id` from `module.json` in the project root. That is the project's id:
+
+- It must not already be registered (see below). If another project is registered with the same id, `init` stops with an error (exit code 1) before creating the `.pdt` directory, naming the other project's root. A module `init` has just generated is left in place.
+- `init` records it as `id` in the project's `.pdt/config.json`.
+- `init` registers the project in your user run state, under `PROJECTS`, with the project's root directory.
+- It names the project's VTT (below).
+
+Your user run state is `run.state.json` in your user data directory (see {ref}`pdt_conf_runtime_data`). For a project `arcane-ledger` it holds:
+
+```json
+{ "PROJECTS": { "arcane-ledger": { "root": "/home/me/projects/arcane-ledger" } } }
+```
+
+If `init` cannot read the id, because `module.json` is missing, is not JSON, has no `id`, or has an `id` with a dot in it, it warns. It then writes no configuration and registers nothing, though the `.pdt` directory is still created. Fix `module.json`, then run {ref}`pdt_tlc_force_reset`.
+
 (pdt_tlc_init_vtt)=
 
 ### The project's VTT
 
 `init` then configures a VTT for the module in the project's `.pdt/config.json`, the same way for a module it has just created and for one that existed already:
 
-- the VTT is named after the module's `id`, from `module.json` in the project root;
+- the VTT is named by the project id;
 - it runs the Foundry VTT version from `VERSION` in `.foundryvtt/.env`, which is the version the module was created for;
 - it runs in Docker, from the `felddy/foundryvtt` image, publishing Foundry VTT's port 30000.
 
@@ -37,6 +58,7 @@ For a module `arcane-ledger` created for Foundry VTT 14.368.0, `.pdt/config.json
 
 ```json
 {
+  "id": "arcane-ledger",
   "VTT": {
     "arcane-ledger": {
       "server": { "type": "foundry", "hostname": "localhost", "version": "14.368.0", "port": "auto" },
@@ -46,7 +68,7 @@ For a module `arcane-ledger` created for Foundry VTT 14.368.0, `.pdt/config.json
 }
 ```
 
-If either file is missing or does not say what is needed, `init` configures no VTT. It warns about each problem and prints the `pdt config set` command that would add the VTT, with placeholders for what it could not find. The project is still initialised.
+If `.foundryvtt/.env` is missing or does not set `VERSION`, `init` configures no VTT. It warns, and prints the `pdt config set` command that would add the VTT, with a placeholder for the version. The project is still initialised and registered.
 
 ### Options
 
@@ -118,6 +140,29 @@ The generated project's own `CONTRIBUTING.md` and `docs/developers/setup.md` des
 ### Why initialise
 
 This ensures various data are created to ensure projects do not collide (e.g. you can run multiple Foundry VTT servers with different configurations without them interfering with one another, {program}`pdt` will also ensure your {program}`vite` development server connects to the correct backend Foundry server).
+
+(pdt_tlc_force_reset)=
+
+## force-reset
+
+{command}`force-reset`
+
+Sets up the current project again from scratch. It takes no arguments and only works inside a {program}`pdt` project; outside one it fails with exit code 1.
+
+It does the following, in order:
+
+1. It removes the project's run state, `.pdt/run.state.json`.
+2. It removes every registration of the project's root from your user run state (see {ref}`pdt_tlc_init_id`).
+3. It removes the project's configuration, `.pdt/config.json`.
+4. It runs {ref}`pdt_tlc_init` in the project's root. `init` reads the project id and the Foundry VTT version afresh.
+
+Anything else in the `.pdt` directory, such as the log, is kept. Settings you added to the project's configuration are lost, so note any you want to set again.
+
+Use it after changing the module's `id`, after fixing a `module.json` that `init` could not read, or when the project's configuration has gone wrong.
+
+:::{note}
+{program}`pdt` checks the configuration before running any command, so `force-reset` cannot run while the project's `.pdt/config.json` is invalid. Fix or delete the file first.
+:::
 
 (pdt_tlc_info)=
 

@@ -13,7 +13,7 @@ const server = createVtt('arcane-ledger', config.VTT['arcane-ledger']);
 await server.start();
 ```
 
-No VTT is built in: `pdt init` writes one into the project's configuration, named after the module's id and running the Foundry VTT version from `.foundryvtt/.env` (`src/lib/projectVtt.ts`; `vttSettings(version)` holds the settings it uses).
+No VTT is built in: `pdt init` writes one into the project's configuration, named by the project id (the module's id; see `src/cli/cmds/init.ts`) and running the Foundry VTT version from `.foundryvtt/.env` (`src/lib/projectVtt.ts`; `vttSettings(version)` holds the settings it uses).
 
 Commands get `createVtt` from their context (see {doc}`commands`), so their tests give them VTTs on a stand-in host. `pdt vtt start` is built this way: it checks that the host can be reached, leaves a running VTT alone, and otherwise starts it.
 

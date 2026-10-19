@@ -50,6 +50,9 @@
           "user": "Remove the setting from the user configuration file instead.",
           "all": "Remove the setting from every configuration file that sets it."
         }
+      },
+      "forceReset": {
+        "description": "Set up the current project again from scratch: remove its run state, its registration and its configuration, then initialise it."
       }
     },
     "opt": {
@@ -68,11 +71,15 @@
     },
     "configSet": "Set {key} in {file}",
     "configCleared": "Cleared {key} from {file}",
-    "vttConfigured": "Configured VTT {vtt} (Foundry VTT {version}) in {file}"
+    "vttConfigured": "Configured VTT {vtt} (Foundry VTT {version}) in {file}",
+    "projectRegistered": "Registered project {id} in {file}",
+    "forceReset": {
+      "removed": "Removed {file}",
+      "unregistered": "Removed the registration of project {id} from {file}"
+    }
   },
   "warn": {
     "pdtParentExists": "Attempt to create sub-PDT project (use -f to force).\n  Parent project at {path}",
-    "alreadyExists": "The {description} already exists.",
     "moduleNotGenerated": "{path} is not empty, so no module is generated there. Ignored: {options}",
     "logFileUnavailable": "Cannot write the log file {file}, so messages go to the console only: {reason}",
     "configNotSet": "{key} is not set in {file}, so nothing was cleared.",
@@ -87,7 +94,8 @@
         "idWithDot": "its id, {id}, contains a dot, which a configuration key cannot",
         "noVersion": "it does not set {variable}"
       }
-    }
+    },
+    "noProjectId": "The project has no id, so it is not registered and has no VTT. Fix module.json, then run pdt force-reset in the project."
   },
   "error": {
     "notInPdtProject": "Not a PDT project.",
@@ -123,6 +131,15 @@
     "compendium": {
       "notRecognised": "{path} is not a recognised compendium database.",
       "exportUnsupported": "Exporting the compendium at {path} to {targets} is not supported yet."
+    },
+    "alreadyInitialised": "{path} is already a PDT project: {file} exists. To set it up again from scratch, run pdt force-reset in the project.",
+    "projectRegistered": {
+      "here": "Project {id} is already registered for this directory in {file}. Run pdt force-reset in the project, or remove the registration from {file}.",
+      "elsewhere": "Another project, at {root}, is already registered as {id} in {file}. Each project needs its own id: change the id in module.json."
+    },
+    "runState": {
+      "unreadable": "Could not read the run state file {file}: {reason}",
+      "invalid": "The run state file {file} is invalid: {problems}"
     }
   },
   "fatal": {

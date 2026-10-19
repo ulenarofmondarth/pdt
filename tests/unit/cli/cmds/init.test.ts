@@ -9,6 +9,7 @@ import { m } from '@i18n/messages.js';
 import { createCommandContext, UNASKED_PROMPTER, type CommandContextMock } from '@tests/unit/mocks/context.js';
 import { vttSettings } from '@lib/projectVtt.js';
 import { vttSchema } from '@schema/config.js';
+import { readRunState, runStateFile, writeRunState } from '@util/run-state.js';
 
 let ctx: CommandContextMock;
 
@@ -27,6 +28,7 @@ describe('init command', () => {
   let sandbox: string;
   let project: string;
   let projectData: string;
+  let userRunState: string;
 
   beforeEach(() => {
     sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'pdt-init-'));
@@ -37,6 +39,8 @@ describe('init command', () => {
     fs.writeFileSync(path.join(project, 'package.json'), '{}');
     writeModuleProject(project);
     ctx = createCommandContext();
+    ctx.paths.userDataDir = path.join(sandbox, 'user-data');
+    userRunState = runStateFile(ctx.paths.userDataDir);
     ctx.prompter = UNASKED_PROMPTER;
     ctx.createModule.mockResolvedValue({ destination: project, files: [] });
   });
@@ -118,61 +122,119 @@ describe('init command', () => {
       expect(ctx.log.setDirectory.mock.invocationCallOrder[0]).toBeLessThan(ctx.log.info.mock.invocationCallOrder[0]!);
     });
 
-    describe("the module's VTT", () => {
+    describe('the project id', () => {
       const configFile = () => path.join(projectData, 'config.json');
       const read = (): unknown => JSON.parse(fs.readFileSync(configFile(), 'utf8'));
 
-      test("is configured in the project's file, named by the module id, running the project's Foundry VTT version", async () => {
+      test("is the module's id, recorded in the project's configuration", async () => {
         await runInit(project);
 
-        expect(read()).toEqual({ VTT: { 'my-module': vttSettings('13.351') } });
+        expect(read()).toMatchObject({ id: 'my-module' });
+      });
+
+      test("is registered in the user's run state, with the project's root", async () => {
+        await runInit(project);
+
+        expect(readRunState(userRunState)).toEqual({ PROJECTS: { 'my-module': { root: project } } });
+        expect(ctx.out.mock.calls[0]).toEqual([m['info.projectRegistered']({ id: 'my-module', file: userRunState })]);
+      });
+
+      test('is registered with the absolute root when the directory is given relative', async () => {
+        await runInit(path.relative(process.cwd(), project));
+
+        expect(readRunState(userRunState).PROJECTS?.['my-module']).toEqual({ root: project });
+      });
+
+      test('is registered alongside the other projects, keeping whatever else the run state holds', async () => {
+        writeRunState(userRunState, { PROJECTS: { other: { root: '/elsewhere' } }, KEEP: 1 });
+
+        await runInit(project);
+
+        expect(readRunState(userRunState)).toEqual({
+          PROJECTS: { other: { root: '/elsewhere' }, 'my-module': { root: project } },
+          KEEP: 1,
+        });
+      });
+
+      test('that another project is registered as is refused, before the project is made', async () => {
+        writeRunState(userRunState, { PROJECTS: { 'my-module': { root: '/elsewhere' } } });
+
+        await expect(runInit(project)).rejects.toThrow(
+          m['error.projectRegistered.elsewhere']({ id: 'my-module', root: '/elsewhere', file: userRunState }),
+        );
+
+        expect(fs.existsSync(projectData)).toBe(false);
+        expect(readRunState(userRunState)).toEqual({ PROJECTS: { 'my-module': { root: '/elsewhere' } } });
+        expect(ctx.log.setDirectory).not.toHaveBeenCalled();
+      });
+
+      test('that is registered for this directory already is refused, pointing to force-reset', async () => {
+        writeRunState(userRunState, { PROJECTS: { 'my-module': { root: project } } });
+
+        await expect(runInit(project)).rejects.toThrow(
+          m['error.projectRegistered.here']({ id: 'my-module', file: userRunState }),
+        );
+
+        expect(fs.existsSync(projectData)).toBe(false);
+      });
+
+      test('cannot be checked when the run state cannot be read, so nothing is made', async () => {
+        fs.mkdirSync(ctx.paths.userDataDir);
+        fs.writeFileSync(userRunState, 'not json');
+
+        await expect(runInit(project)).rejects.toThrow(userRunState);
+
+        expect(fs.existsSync(projectData)).toBe(false);
+      });
+
+      test('that cannot be read leaves the project unconfigured and unregistered, warning with the manifest', async () => {
+        fs.rmSync(path.join(project, 'module.json'));
+
+        await runInit(project);
+
+        expect(fs.existsSync(configFile())).toBe(false);
+        expect(fs.existsSync(userRunState)).toBe(false);
+        expect(ctx.log.warn.mock.calls.flat()).toEqual([
+          expect.stringContaining(path.join(project, 'module.json')),
+          m['warn.noProjectId'](),
+        ]);
+        // The project is still made.
+        expect(fs.statSync(projectData).isDirectory()).toBe(true);
+        expect(ctx.log.info).toHaveBeenCalledExactlyOnceWith(m['info.pdtInitialised']({ path: project }));
+      });
+    });
+
+    describe("the project's VTT", () => {
+      const configFile = () => path.join(projectData, 'config.json');
+      const read = (): unknown => JSON.parse(fs.readFileSync(configFile(), 'utf8'));
+
+      test("is configured in the project's file, named by the project id, running the project's Foundry VTT version", async () => {
+        await runInit(project);
+
+        expect(read()).toEqual({ id: 'my-module', VTT: { 'my-module': vttSettings('13.351') } });
         expect(vttSchema.parse((read() as { VTT: Record<string, unknown> }).VTT['my-module'])).toEqual(
           vttSettings('13.351'),
         );
-        expect(ctx.out).toHaveBeenCalledExactlyOnceWith(
+        expect(ctx.out).toHaveBeenLastCalledWith(
           m['info.vttConfigured']({ vtt: 'my-module', version: '13.351', file: configFile() }),
         );
         expect(ctx.log.warn).not.toHaveBeenCalled();
       });
 
-      test('is not configured without a manifest, with a warning naming it and the command to add the VTT', async () => {
-        fs.rmSync(path.join(project, 'module.json'));
-
-        await runInit(project);
-
-        expect(fs.existsSync(configFile())).toBe(false);
-        expect(ctx.log.warn).toHaveBeenCalledTimes(2);
-        expect(ctx.log.warn.mock.calls[0]![0]).toContain(path.join(project, 'module.json'));
-        expect(ctx.log.warn.mock.calls[1]![0]).toBe(
-          m['warn.projectVtt.notConfigured']({
-            command: `pdt config set VTT.<module-id> '${JSON.stringify(vttSettings('13.351'))}'`,
-          }),
-        );
-        // The project is still made.
-        expect(ctx.log.info).toHaveBeenCalledExactlyOnceWith(m['info.pdtInitialised']({ path: project }));
-      });
-
-      test('is not configured without the Foundry VTT version, with a warning naming the file', async () => {
+      test('is not configured without the Foundry VTT version, with a warning naming the file and the command to add it', async () => {
         fs.rmSync(path.join(project, '.foundryvtt'), { recursive: true });
 
         await runInit(project);
 
-        expect(fs.existsSync(configFile())).toBe(false);
-        expect(ctx.log.warn.mock.calls[0]![0]).toContain(path.join(project, '.foundryvtt', '.env'));
-        expect(ctx.log.warn.mock.calls[1]![0]).toBe(
+        expect(read()).toEqual({ id: 'my-module' });
+        expect(ctx.log.warn.mock.calls.flat()).toEqual([
+          expect.stringContaining(path.join(project, '.foundryvtt', '.env')),
           m['warn.projectVtt.notConfigured']({
             command: `pdt config set VTT.my-module '${JSON.stringify(vttSettings('<version>'))}'`,
           }),
-        );
-      });
-
-      test('warns about each thing it cannot find', async () => {
-        fs.rmSync(path.join(project, 'module.json'));
-        fs.rmSync(path.join(project, '.foundryvtt'), { recursive: true });
-
-        await runInit(project);
-
-        expect(ctx.log.warn).toHaveBeenCalledTimes(3);
+        ]);
+        // The project is still registered.
+        expect(readRunState(userRunState).PROJECTS).toHaveProperty('my-module');
       });
     });
   });
@@ -261,6 +323,7 @@ describe('init command', () => {
       expect(ctx.out.mock.calls.flat()).toEqual([
         m['info.creatingModule']({ path: fresh }),
         '✔ wrote 2 files',
+        m['info.projectRegistered']({ id: 'new-module', file: userRunState }),
         m['info.vttConfigured']({ vtt: 'new-module', version: '14.360', file: path.join(freshData, 'config.json') }),
       ]);
     });
@@ -269,8 +332,22 @@ describe('init command', () => {
       await runInit(fresh);
 
       expect(JSON.parse(fs.readFileSync(path.join(freshData, 'config.json'), 'utf8'))).toEqual({
+        id: 'new-module',
         VTT: { 'new-module': vttSettings('14.360') },
       });
+      expect(readRunState(userRunState)).toEqual({ PROJECTS: { 'new-module': { root: fresh } } });
+    });
+
+    test('refuses an id registered already only once the module is generated, leaving it unmade as a project', async () => {
+      writeRunState(userRunState, { PROJECTS: { 'new-module': { root: '/elsewhere' } } });
+
+      await expect(runInit(fresh)).rejects.toThrow(
+        m['error.projectRegistered.elsewhere']({ id: 'new-module', root: '/elsewhere', file: userRunState }),
+      );
+
+      expect(ctx.createModule).toHaveBeenCalledOnce();
+      expect(fs.existsSync(path.join(fresh, 'module.json'))).toBe(true);
+      expect(fs.existsSync(freshData)).toBe(false);
     });
 
     test("fails with the generator's error and does not make a project", async () => {
@@ -284,34 +361,50 @@ describe('init command', () => {
   });
 
   describe('in a directory that is already a project', () => {
+    let configFile: string;
+
     beforeEach(() => {
       fs.mkdirSync(projectData);
+      configFile = path.join(projectData, 'config.json');
+      fs.writeFileSync(configFile, '{"id":"kept"}');
+      fs.writeFileSync(path.join(projectData, 'pdt.log'), 'existing log');
       ctx.paths.pdtConfigDir = projectData;
     });
 
-    test('warns and leaves the project alone', async () => {
-      fs.writeFileSync(path.join(projectData, 'keep.txt'), 'existing data');
+    test('fails, pointing to force-reset, and leaves the project alone', async () => {
       fs.rmSync(path.join(project, 'package.json'));
 
-      await runInit(project);
-
-      expect(ctx.log.warn).toHaveBeenCalledExactlyOnceWith(
-        m['warn.alreadyExists']({ description: 'PDT data directory' }),
+      await expect(runInit(project)).rejects.toThrow(
+        m['error.alreadyInitialised']({ path: project, file: configFile }),
       );
-      expect(fs.readdirSync(projectData)).toEqual(['keep.txt']);
+
+      expect(fs.readdirSync(projectData).sort()).toEqual(['config.json', 'pdt.log']);
+      expect(fs.readFileSync(configFile, 'utf8')).toBe('{"id":"kept"}');
+      expect(fs.existsSync(userRunState)).toBe(false);
       expect(ctx.log.info).not.toHaveBeenCalled();
       expect(ctx.log.setDirectory).not.toHaveBeenCalled();
-      // Even though nothing but the data directory is there, it is not treated as empty.
       expect(ctx.createModule).not.toHaveBeenCalled();
     });
 
     test('also warns that no module is generated when new module options are given', async () => {
-      await runInit(project, undefined, { uiFramework: 'lit' });
+      await expect(runInit(project, undefined, { uiFramework: 'lit' })).rejects.toThrow(
+        m['error.alreadyInitialised']({ path: project, file: configFile }),
+      );
 
-      expect(ctx.log.warn.mock.calls.flat()).toEqual([
+      expect(ctx.log.warn).toHaveBeenCalledExactlyOnceWith(
         m['warn.moduleNotGenerated']({ path: project, options: '--ui-framework' }),
-        m['warn.alreadyExists']({ description: 'PDT data directory' }),
-      ]);
+      );
+    });
+
+    test('is initialised when it has no configuration, keeping the rest of its data directory', async () => {
+      fs.rmSync(configFile);
+
+      await runInit(project);
+
+      expect(ctx.createModule).not.toHaveBeenCalled();
+      expect(JSON.parse(fs.readFileSync(configFile, 'utf8'))).toMatchObject({ id: 'my-module' });
+      expect(fs.readFileSync(path.join(projectData, 'pdt.log'), 'utf8')).toBe('existing log');
+      expect(ctx.log.info).toHaveBeenCalledExactlyOnceWith(m['info.pdtInitialised']({ path: project }));
     });
   });
 

@@ -137,26 +137,16 @@ describe('project VTT', () => {
   });
 
   describe('projectVtt', () => {
-    test('is named by the module id, and runs the Foundry VTT version of the project', () => {
-      write(MODULE_MANIFEST, JSON.stringify({ id: 'arcane-ledger' }));
+    test("runs the project's Foundry VTT version", () => {
       write(FOUNDRY_ENV, 'VERSION=13.351\n');
 
-      expect(projectVtt(dir)).toEqual({ name: 'arcane-ledger', settings: vttSettings('13.351') });
+      expect(projectVtt(dir, 'arcane-ledger')).toEqual({ settings: vttSettings('13.351') });
     });
 
-    test('is each problem, and a command with placeholders for what is missing', () => {
-      expect(projectVtt(dir)).toEqual({
-        problems: [expect.stringContaining(manifest()), expect.stringContaining(env())],
-        command: `pdt config set VTT.<module-id> '${JSON.stringify(vttSettings('<version>'))}'`,
-      });
-    });
-
-    test('fills in the command with what it found', () => {
-      write(FOUNDRY_ENV, 'VERSION=13.351\n');
-
-      expect(projectVtt(dir)).toEqual({
-        problems: [expect.stringContaining(manifest())],
-        command: `pdt config set VTT.<module-id> '${JSON.stringify(vttSettings('13.351'))}'`,
+    test('is the problem, and a command naming the VTT by the project id, with a placeholder for the version', () => {
+      expect(projectVtt(dir, 'arcane-ledger')).toEqual({
+        problem: expect.stringContaining(env()),
+        command: `pdt config set VTT.arcane-ledger '${JSON.stringify(vttSettings('<version>'))}'`,
       });
     });
   });

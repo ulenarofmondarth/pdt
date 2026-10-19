@@ -26,6 +26,18 @@ describe('config schema', () => {
     expect(configSchema.parse(defaults).VTT).toEqual({});
   });
 
+  test('has no project id by default, and keeps one it is given', () => {
+    expect(configSchema.parse(defaults)).not.toHaveProperty('id');
+    expect(configSchema.parse({ ...defaults, id: 'arcane-ledger' }).id).toBe('arcane-ledger');
+  });
+
+  test.each(['', 'arcane.ledger'])('rejects a project id that cannot be a configuration key: "%s"', id => {
+    const result = configSchema.safeParse({ ...defaults, id });
+
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.path).toEqual(['id']);
+  });
+
   test.each(['Logging', 'VTT', 'DOCS'])('requires the %s section', section => {
     const config = validConfig();
     delete config[section];

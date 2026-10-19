@@ -50,6 +50,9 @@
           "user": "Die Einstellung stattdessen aus der Benutzerkonfiguration entfernen.",
           "all": "Die Einstellung aus jeder Konfigurationsdatei entfernen, die sie setzt."
         }
+      },
+      "forceReset": {
+        "description": "Das aktuelle Projekt von Grund auf neu einrichten: seinen Laufzeitstatus, seine Registrierung und seine Konfiguration entfernen und es dann initialisieren."
       }
     },
     "opt": {
@@ -68,11 +71,15 @@
     },
     "configSet": "{key} in {file} gesetzt",
     "configCleared": "{key} aus {file} entfernt",
-    "vttConfigured": "VTT {vtt} (Foundry VTT {version}) in {file} konfiguriert"
+    "vttConfigured": "VTT {vtt} (Foundry VTT {version}) in {file} konfiguriert",
+    "projectRegistered": "Projekt {id} in {file} registriert",
+    "forceReset": {
+      "removed": "{file} entfernt",
+      "unregistered": "Registrierung von Projekt {id} aus {file} entfernt"
+    }
   },
   "warn": {
     "pdtParentExists": "Versuch, ein PDT-Unterprojekt anzulegen (mit -f erzwingen).\n  Übergeordnetes Projekt unter {path}",
-    "alreadyExists": "{description} existiert bereits.",
     "moduleNotGenerated": "{path} ist nicht leer, daher wird dort kein Modul angelegt. Ignoriert: {options}",
     "logFileUnavailable": "Die Protokolldatei {file} kann nicht geschrieben werden, daher erscheinen Meldungen nur in der Konsole: {reason}",
     "configNotSet": "{key} ist in {file} nicht gesetzt, daher wurde nichts entfernt.",
@@ -87,7 +94,8 @@
         "idWithDot": "die ID {id} enthält einen Punkt, den ein Konfigurationsschlüssel nicht enthalten kann",
         "noVersion": "die Datei setzt {variable} nicht"
       }
-    }
+    },
+    "noProjectId": "Das Projekt hat keine ID, daher ist es nicht registriert und hat kein VTT. Korrigiere module.json und führe dann pdt force-reset im Projekt aus."
   },
   "error": {
     "notInPdtProject": "Kein PDT-Projekt.",
@@ -123,6 +131,15 @@
     "compendium": {
       "notRecognised": "{path} ist keine erkannte Kompendium-Datenbank.",
       "exportUnsupported": "Das Exportieren des Kompendiums unter {path} nach {targets} wird noch nicht unterstützt."
+    },
+    "alreadyInitialised": "{path} ist bereits ein PDT-Projekt: {file} existiert. Um es von Grund auf neu einzurichten, führe pdt force-reset im Projekt aus.",
+    "projectRegistered": {
+      "here": "Projekt {id} ist für dieses Verzeichnis bereits in {file} registriert. Führe pdt force-reset im Projekt aus oder entferne die Registrierung aus {file}.",
+      "elsewhere": "Ein anderes Projekt unter {root} ist in {file} bereits als {id} registriert. Jedes Projekt braucht eine eigene ID: ändere die ID in module.json."
+    },
+    "runState": {
+      "unreadable": "Die Laufzeitstatusdatei {file} konnte nicht gelesen werden: {reason}",
+      "invalid": "Die Laufzeitstatusdatei {file} ist ungültig: {problems}"
     }
   },
   "fatal": {

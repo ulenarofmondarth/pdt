@@ -41,6 +41,18 @@ In addition to user supplied configuration {{pdt}} also uses a runtime configura
 
 This runtime configuration is maintained by {{pdt}} and should not generally be edited by the user. Instead the various commands in {{pdt}} will manipulate the runtime configuration.
 
+It is kept as run state, in `run.state.json` (`@util/run-state.ts`): the user's in the user data directory, `runStateFile(paths.userDataDir)`, and a project's in its `.pdt` directory. Unlike the configuration it has no layers and no defaults. `readRunState` validates what pdt reads from it and keeps anything else as it is, so an older or newer pdt does not lose another's state.
+
+The user's run state registers each project under `PROJECTS`, by the project's id, with its root directory:
+
+```json
+{ "PROJECTS": { "arcane-ledger": { "root": "/home/me/projects/arcane-ledger" } } }
+```
+
+`init` (`initProject` in `src/cli/cmds/init.ts`) reads the module's id from `module.json` once any new module has been generated. It refuses an id that `registeredProject` finds, before it creates the `.pdt` directory. It then records the id as `id` in the project's configuration, names the VTT by it, and calls `registerProject`. `force-reset` removes the project's run state, calls `unregisterProject` for the project's root, removes the project's configuration, and calls `initProject` again.
+
+The user run state is kept in the user data directory rather than in a `.pdt` directory in the home directory: pdt finds a project by looking for a `.pdt` directory upwards from where it runs, up to the home directory, so a `~/.pdt` would make every directory under home look like one project.
+
 The {ref}`pdt_tlc_info` command displays this runtime configuration.
 
 ```{mermaid}
