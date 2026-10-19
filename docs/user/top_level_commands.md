@@ -230,7 +230,9 @@ On Windows a directory cannot be renamed while a program, such as your shell or 
 
 ## info
 
-Display the current project's runtime configuration.
+{command}`info`
+
+Display the current project's runtime configuration. It takes no arguments; to ask about another project, give {ref}`--project <pdt_cli_project>`.
 
 (pdt_tlc_config)=
 
