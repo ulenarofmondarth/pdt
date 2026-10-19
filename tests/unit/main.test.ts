@@ -7,6 +7,7 @@ import PDT from '@/constants.js';
 import logger, { configureLogger, setLogDirectory } from '@util/logger.js';
 import { m } from '@i18n/messages.js';
 import { createModule } from '@lib/ModuleGenerator.js';
+import { createVtt } from '@lib/VTT/createVtt.js';
 import { UNASKED_PROMPTER } from '@tests/unit/mocks/context.js';
 
 import type { CommandModule } from 'yargs';
@@ -269,6 +270,12 @@ describe('main', () => {
       const given = await contextGiven();
 
       expect(given.createModule).toBe(createModule);
+    });
+
+    test('creates VTTs with the VTT factory', async () => {
+      const given = await contextGiven();
+
+      expect(given.createVtt).toBe(createVtt);
     });
   });
 });

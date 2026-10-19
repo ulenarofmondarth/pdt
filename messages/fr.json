@@ -33,7 +33,12 @@
   },
   "info": {
     "pdtInitialised": "PDT initialisé pour {path}",
-    "creatingModule": "{path} est vide. Création d'un nouveau module Foundry VTT à cet emplacement."
+    "creatingModule": "{path} est vide. Création d'un nouveau module Foundry VTT à cet emplacement.",
+    "vtt": {
+      "starting": "Démarrage du VTT {vtt} (version {version})…",
+      "started": "Le VTT {vtt} a démarré.",
+      "alreadyRunning": "Le VTT {vtt} est déjà démarré."
+    }
   },
   "warn": {
     "pdtParentExists": "Tentative de création d'un sous-projet PDT (utiliser -f pour forcer).\n  Projet parent dans {path}",
@@ -56,9 +61,11 @@
       "unknownHostType": "Type d'hôte VTT inconnu : {type}",
       "noVersion": "Le serveur {server} n'a pas de version à exécuter sur un hôte Docker.",
       "pullFailed": "Impossible de télécharger {image} : {reason}",
-      "startFailed": "Impossible de démarrer le serveur {server} sur l'hôte Docker.",
+      "startFailed": "Impossible de démarrer le serveur {server} sur l'hôte Docker : {reason}",
       "stopUnsupported": "L'arrêt du serveur {server} n'est pas encore pris en charge sur un hôte Docker.",
-      "restartUnsupported": "Le redémarrage du serveur {server} n'est pas encore pris en charge sur un hôte Docker."
+      "restartUnsupported": "Le redémarrage du serveur {server} n'est pas encore pris en charge sur un hôte Docker.",
+      "unknownVtt": "Aucun VTT nommé {vtt} dans la configuration. VTT configurés : {known}",
+      "hostUnreachable": "Impossible de joindre l'hôte {type} du VTT {vtt}. Est-il démarré, et pouvez-vous l'utiliser ?"
     },
     "compendium": {
       "notRecognised": "{path} n'est pas une base de données de compendium reconnue.",

@@ -33,7 +33,12 @@
   },
   "info": {
     "pdtInitialised": "PDT inicializado para {path}",
-    "creatingModule": "{path} está vacío. Se crea allí un nuevo módulo de Foundry VTT."
+    "creatingModule": "{path} está vacío. Se crea allí un nuevo módulo de Foundry VTT.",
+    "vtt": {
+      "starting": "Iniciando el VTT {vtt} (versión {version})…",
+      "started": "El VTT {vtt} se ha iniciado.",
+      "alreadyRunning": "El VTT {vtt} ya está en marcha."
+    }
   },
   "warn": {
     "pdtParentExists": "Intento de crear un subproyecto PDT (use -f para forzarlo).\n  Proyecto principal en {path}",
@@ -56,9 +61,11 @@
       "unknownHostType": "Tipo de host VTT desconocido: {type}",
       "noVersion": "El servidor {server} no tiene una versión para ejecutar en un host Docker.",
       "pullFailed": "No se pudo descargar {image}: {reason}",
-      "startFailed": "No se pudo iniciar el servidor {server} en el host Docker.",
+      "startFailed": "No se pudo iniciar el servidor {server} en el host Docker: {reason}",
       "stopUnsupported": "Detener el servidor {server} aún no es compatible con un host Docker.",
-      "restartUnsupported": "Reiniciar el servidor {server} aún no es compatible con un host Docker."
+      "restartUnsupported": "Reiniciar el servidor {server} aún no es compatible con un host Docker.",
+      "unknownVtt": "No hay ningún VTT llamado {vtt} en la configuración. VTT configurados: {known}",
+      "hostUnreachable": "No se puede acceder al host {type} del VTT {vtt}. ¿Está en marcha y puedes usarlo?"
     },
     "compendium": {
       "notRecognised": "{path} no es una base de datos de compendio reconocida.",

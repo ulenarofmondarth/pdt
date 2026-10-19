@@ -50,6 +50,9 @@ export const vttSchema = z.object({
   host: hostSchema,
 });
 
+/** A VTT's settings: its server, and the host it runs on. */
+export type VttSettings = z.output<typeof vttSchema>;
+
 const npmDebugLevels = z.literal(['error', 'warn', 'info', 'http', 'verbose', 'debug', 'silly']);
 
 export const config = z.object({

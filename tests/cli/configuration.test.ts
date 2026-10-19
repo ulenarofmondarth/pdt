@@ -5,10 +5,11 @@ import PDT from '../../src/constants.js';
 import { Sandbox } from './pdt.js';
 
 /**
- * The configuration is observed through the log: `vtt start` logs at debug level only, so its line
- * is in the log file exactly when the configured level is debug.
+ * The configuration is observed through the log: every run logs what it parsed at debug level, so
+ * that line is in the log file exactly when the configured level is debug. `info` is run because it
+ * reaches nothing outside pdt.
  */
-const DEBUG_LINE = /^Running parsed command/;
+const DEBUG_LINE = /^Parser callback/;
 
 describe('configuration', () => {
   let sandbox: Sandbox;
@@ -37,16 +38,16 @@ describe('configuration', () => {
   }
 
   test('logs at the default level without any configuration', async () => {
-    await sandbox.run(['vtt', 'start']);
+    await sandbox.run(['info']);
 
-    expect(sandbox.logged(userLog)).toEqual([]);
+    expect(sandbox.logged(userLog)).not.toContainEqual(expect.stringMatching(DEBUG_LINE));
   });
 
   // Regression: the user's configuration file was never applied.
   test("applies the user's configuration file", async () => {
     userConfig({ Logging: { level: 'debug' } });
 
-    await sandbox.run(['vtt', 'start']);
+    await sandbox.run(['info']);
 
     expect(sandbox.logged(userLog)).toContainEqual(expect.stringMatching(DEBUG_LINE));
   });
@@ -55,7 +56,7 @@ describe('configuration', () => {
     const xdg = path.join(sandbox.root, 'xdg');
     userConfig({ Logging: { level: 'debug' } }, path.join(xdg, 'pdt'));
 
-    await sandbox.run(['vtt', 'start'], { env: { XDG_CONFIG_HOME: xdg } });
+    await sandbox.run(['info'], { env: { XDG_CONFIG_HOME: xdg } });
 
     expect(sandbox.logged(userLog)).toContainEqual(expect.stringMatching(DEBUG_LINE));
   });
@@ -64,7 +65,7 @@ describe('configuration', () => {
     userConfig({ Logging: { level: 'debug' } });
     projectConfig({ Logging: { level: 'error' } });
 
-    await sandbox.run(['vtt', 'start'], { cwd: project });
+    await sandbox.run(['info'], { cwd: project });
 
     expect(sandbox.logged(projectLog)).toEqual([]);
   });
@@ -72,7 +73,7 @@ describe('configuration', () => {
   test('lets PDT_LOG_LEVEL override every file', async () => {
     projectConfig({ Logging: { level: 'error' } });
 
-    await sandbox.run(['vtt', 'start'], { cwd: project, env: { PDT_LOG_LEVEL: 'debug' } });
+    await sandbox.run(['info'], { cwd: project, env: { PDT_LOG_LEVEL: 'debug' } });
 
     expect(sandbox.logged(projectLog)).toContainEqual(expect.stringMatching(DEBUG_LINE));
   });
@@ -80,7 +81,7 @@ describe('configuration', () => {
   test('names the log file as configured', async () => {
     userConfig({ Logging: { level: 'debug', filename: 'mine.log' } });
 
-    await sandbox.run(['vtt', 'start']);
+    await sandbox.run(['info']);
 
     expect(fs.readdirSync(sandbox.userDataDir)).toEqual(['mine.log']);
   });

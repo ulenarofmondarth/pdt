@@ -287,7 +287,7 @@ describe('DockerHost', () => {
       const host = hostWith();
 
       await expect(host.start(server)).rejects.toMatchObject({
-        message: m['error.vtt.startFailed']({ server: CONTAINER_NAME }),
+        message: m['error.vtt.startFailed']({ server: CONTAINER_NAME, reason: cause.message }),
         cause,
       });
     });
@@ -298,7 +298,7 @@ describe('DockerHost', () => {
       const host = hostWith();
 
       await expect(host.start(server)).rejects.toMatchObject({
-        message: m['error.vtt.startFailed']({ server: CONTAINER_NAME }),
+        message: m['error.vtt.startFailed']({ server: CONTAINER_NAME, reason: cause.message }),
         cause,
       });
       expect(docker.createContainer).not.toHaveBeenCalled();
@@ -314,7 +314,7 @@ describe('DockerHost', () => {
       const host = hostWith();
 
       await expect(host.start(server)).rejects.toMatchObject({
-        message: m['error.vtt.startFailed']({ server: CONTAINER_NAME }),
+        message: m['error.vtt.startFailed']({ server: CONTAINER_NAME, reason: cause.message }),
         cause,
       });
     });
@@ -326,7 +326,7 @@ describe('DockerHost', () => {
       const host = hostWith();
 
       await expect(host.start(server)).rejects.toMatchObject({
-        message: m['error.vtt.startFailed']({ server: CONTAINER_NAME }),
+        message: m['error.vtt.startFailed']({ server: CONTAINER_NAME, reason: cause.message }),
         cause,
       });
     });

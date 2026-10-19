@@ -33,7 +33,12 @@
   },
   "info": {
     "pdtInitialised": "PDT initialised for {path}",
-    "creatingModule": "{path} is empty. Creating a new Foundry VTT module there."
+    "creatingModule": "{path} is empty. Creating a new Foundry VTT module there.",
+    "vtt": {
+      "starting": "Starting VTT {vtt} (version {version})…",
+      "started": "VTT {vtt} has started.",
+      "alreadyRunning": "VTT {vtt} is already running."
+    }
   },
   "warn": {
     "pdtParentExists": "Attempt to create sub-PDT project (use -f to force).\n  Parent project at {path}",
@@ -56,9 +61,11 @@
       "unknownHostType": "Unknown VTT host type: {type}",
       "noVersion": "Server {server} has no version to run on a Docker host.",
       "pullFailed": "Could not pull {image}: {reason}",
-      "startFailed": "Could not start server {server} on the Docker host.",
+      "startFailed": "Could not start server {server} on the Docker host: {reason}",
       "stopUnsupported": "Stopping server {server} is not supported on a Docker host yet.",
-      "restartUnsupported": "Restarting server {server} is not supported on a Docker host yet."
+      "restartUnsupported": "Restarting server {server} is not supported on a Docker host yet.",
+      "unknownVtt": "There is no VTT named {vtt} in the configuration. Configured VTTs: {known}",
+      "hostUnreachable": "Cannot reach the {type} host for VTT {vtt}. Is it running, and can you use it?"
     },
     "compendium": {
       "notRecognised": "{path} is not a recognised compendium database.",

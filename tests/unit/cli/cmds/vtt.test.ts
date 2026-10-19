@@ -1,8 +1,10 @@
 import yargs from 'yargs';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { createVttCommand } from '@/cli/cmds/vtt.js';
+import FoundryVTTServer from '@lib/VTT/Server/FoundryVTTServer.js';
 import { m } from '@i18n/messages.js';
 import { createCommandContext, type CommandContextMock } from '@tests/unit/mocks/context.js';
+import { createHostMock } from '@tests/unit/mocks/vttHost.js';
 
 describe('vtt command', () => {
   let ctx: CommandContextMock;
@@ -16,12 +18,13 @@ describe('vtt command', () => {
    * there is one. (A .fail() handler would let yargs go on to run the command.)
    */
   function parse(commandLine: string): Promise<string | undefined> {
-    return new Promise(resolve => {
+    return new Promise((resolve, reject) => {
       yargs()
         .command(createVttCommand(ctx))
         .strict()
         .exitProcess(false)
-        .parse(commandLine, (err: Error | null) => resolve(err?.message));
+        .parseAsync(commandLine, (err: Error | null) => resolve(err?.message))
+        .catch(reject);
     });
   }
 
@@ -38,9 +41,12 @@ describe('vtt command', () => {
   });
 
   test('routes start to the start sub-command', async () => {
+    const host = createHostMock();
+    ctx.createVtt.mockImplementation((name, settings) => new FoundryVTTServer(name, settings.server, host));
+
     await parse('vtt start');
 
-    expect(ctx.log.debug).toHaveBeenCalledOnce();
+    expect(host.start).toHaveBeenCalledOnce();
     expect(ctx.log.error).not.toHaveBeenCalled();
   });
 

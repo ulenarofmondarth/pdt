@@ -257,17 +257,43 @@ This {program}`pdt` server becomes available to the VTT. Could use the p2p appro
 
 ## vtt
 
-{command}`vtt [init|launch|status|install]`
+{command}`vtt <command>`
 
-Controls a Foundry VTT instance.
+Controls the VTTs configured for a project. Each VTT is an entry under `VTT` in the configuration, naming a Foundry VTT server and the host it runs on. Out of the box there is one, `prj`: Foundry VTT 12 in a Docker container from the `felddy/foundryvtt` image.
+
+### vtt start
+
+{command}`vtt start [vtt]`
+
+Starts a VTT and waits until its host has started it.
+
+**vtt**
+
+: The name of the VTT to start. Defaults to `prj`.
+
+```shell
+pdt vtt start
+```
+
+On a Docker host, {program}`pdt` pulls the image the first time (tagged with the server's version, for example `felddy/foundryvtt:12`), creates a container named after the VTT if there is none, and starts it. A VTT that is already running is left alone.
+
+{program}`pdt` stops with an error, starting nothing, if:
+
+- there is no VTT of that name in the configuration (the error lists the ones there are);
+- the host cannot be reached, for example because the Docker engine is not running or you are not allowed to use it;
+- the image cannot be pulled, or the container cannot be created or started (the error gives Docker's reason).
+
+:::{todo}
+The container is started without the Foundry VTT licence credentials, published ports or a data directory, so the `felddy/foundryvtt` container exits straight away and the VTT cannot be reached yet.
+:::
 
 ### vtt init
 
 {command}`vtt init`
 
-### vtt launch
-
-{command}`vtt launch`
+:::{note}
+`vtt init`, `vtt status` and `vtt install` are planned, and not available yet.
+:::
 
 ### vtt status
 
