@@ -12,9 +12,5 @@ export default packageRelease({
     'out="$(pwd)/releases" && (cd ../../docs/_build/html && zip -qr "$out/pdt-docs-v${nextRelease.version}.zip" .)',
   ],
   output: 'version',
-  // pdt's commits since 0.2.1 were made before it moved into packages/pdt, so
-  // semantic-release-monorepo would drop them all. Count every commit for this one release; remove
-  // this once a release of pdt has been tagged @mondarth/pdt-v<version> after 0.2.1.
-  allCommitsTagFormat: '@mondarth/pdt-v${version}',
   githubAssets: [{ path: 'releases/pdt-docs-v*.zip', label: 'Documentation (HTML)' }],
 });

@@ -66,15 +66,9 @@ If the push to `dev` is refused, or `dev` has moved on since the release, the wo
 
 semantic-release finds each package's previous version from its git tags, `<package name>-v<version>`. A package with no tag at all would be released as `1.0.0`. So a new package starts from a tag, `<package name>-v0.0.0`, on `main`, created by hand when the package is added. Its first release is then `0.0.1` or `0.1.0`.
 
-pdt was released as `v0.1.0` to `v0.2.1` before the repository became a workspace. Its tag format changed to `@mondarth/pdt-v<version>` then. Before the first release after that, tag pdt's last release in the new format, on the same commit:
+pdt was released as `v0.1.0` to `v0.2.1` before the repository became a workspace. `@mondarth/pdt-v0.2.1` marks 0.2.1 in the new format, on the same commit, and pdt's releases since then (from `0.3.0`) are tagged `@mondarth/pdt-v<version>`.
 
-```shell
-git fetch --tags
-git tag @mondarth/pdt-v0.2.1 v0.2.1^{}
-git push origin @mondarth/pdt-v0.2.1
-```
-
-pdt's commits after 0.2.1, up to its move into `packages/pdt`, changed files at the root, so semantic-release-monorepo would count none of them. For its first release from the workspace, pdt's `release.config.js` counts every commit since its last tag instead (`allCommitsTagFormat`). Remove that option once the release is tagged; every later commit is made in `packages/`.
+semantic-release-monorepo counts a commit for a package only if it changes files in the package's directory, so commits made before a package moved there do not count. pdt's `0.3.0` counted every commit since `0.2.1` for that reason, as a one-off. Release a package before moving its files, or expect to handle its first release by hand in the same way.
 
 (npm-trusted-publisher)=
 
