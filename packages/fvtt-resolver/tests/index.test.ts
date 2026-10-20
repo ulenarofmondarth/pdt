@@ -6,7 +6,7 @@ describe('@mondarth/fvtt-resolver', () => {
     expect(resolver.packageName).toBe('@mondarth/fvtt-resolver');
   });
 
-  it('exports the version orders and range operations', () => {
+  it('exports the version orders, range operations and manifest reading', () => {
     expect(Object.keys(resolver).sort()).toEqual([
       'chooseOrder',
       'coreRange',
@@ -14,6 +14,7 @@ describe('@mondarth/fvtt-resolver', () => {
       'foundryDisagreements',
       'foundryOrder',
       'isNewerVersion',
+      'normaliseManifest',
       'packageName',
       'rangeOps',
       'relationshipRange',

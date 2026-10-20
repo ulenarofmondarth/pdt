@@ -19,31 +19,35 @@ interface Range {
 }
 
 /** One version of a package, normalised from its manifest. */
+/**
+ * A release holds what its manifest declares, cleaned up but not yet read as ranges: how
+ * bounds are read depends on policy (`relationshipBounds`, `versionOrder`), so ranges are
+ * built when a question is asked.
+ */
 interface Release {
   package: PackageRef;
   version: string;
-  /** Core versions it works with (minimum/maximum), and up to where that is verified. */
-  core: { range: Range; verified?: Range };
-  requires: Relationship[];
-  /** The systems it runs in; empty for any system. */
-  systems: Relationship[];
-  conflicts: Relationship[];
-  recommends: Relationship[];
-  /** `listed`: known from a listing only; relationships and `maximum` not yet loaded. */
-  detail: 'listed' | 'loaded';
+  /** The core versions it declares it works with. */
+  compatibility: Compatibility; // { minimum?, maximum?, verified? }, as text
+  relationships: { requires; systems; conflicts; recommends: Relationship[] };
   download?: string;
   manifest?: string;
   /** A premium package: downloading it needs the user's licence. */
-  protected?: boolean;
+  protected: boolean;
+  /** Where the manifest was read from. */
+  origin: string;
+  // To come with the sources:
+  /** `listed`: known from a listing only; relationships and `maximum` not yet loaded. */
+  detail: 'listed' | 'loaded';
   /** Core bounds from Foundry's listing, where they differ from the manifest's. */
   listing?: { minimum?: string; verified?: string };
-  /** What normalisation had to interpret, such as pre-v10 fields. */
-  warnings: string[];
 }
 
 interface Relationship {
   package: PackageRef;
-  range: Range;
+  /** The versions of the related package it admits, as declared. */
+  compatibility: Compatibility;
+  manifest?: string;
   reason?: string;
 }
 
@@ -62,7 +66,7 @@ interface Universe {
 }
 ```
 
-Manifests are read with zod schemas (as pdt reads its configuration), leniently, into these types. `normaliseManifest(json, origin)` returns a `Release` and its warnings, or the reasons it could not be read.
+Manifests are read with zod, leniently, into these types. `normaliseManifest(json, { origin, type })` returns a `Release` and its warnings, or the problems that make the manifest unreadable. Warnings and problems are data (a `code` and its details, such as `{ code: 'legacy-field', field: 'minimumCoreVersion', replacement: 'compatibility.minimum' }`), so that pdt words and translates them.
 
 ## Asking
 
