@@ -1,0 +1,57 @@
+{
+  "name": "@mondarth/fvtt-resolver",
+  "version": "0.0.0",
+  "description": "Works out which versions of Foundry VTT, game systems and modules can be installed together.",
+  "author": "Mark Bools",
+  "license": "MIT",
+  "type": "module",
+  "keywords": [
+    "foundryvtt",
+    "foundry-vtt",
+    "dependency-resolution",
+    "compatibility"
+  ],
+  "homepage": "https://github.com/ulenarofmondarth/pdt/tree/main/packages/fvtt-resolver#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ulenarofmondarth/pdt.git",
+    "directory": "packages/fvtt-resolver"
+  },
+  "bugs": {
+    "url": "https://github.com/ulenarofmondarth/pdt/issues"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.tsbuildinfo"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=24"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "build:clean": "pnpm run clean && pnpm run build",
+    "clean": "rimraf dist/",
+    "test": "vitest --run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "typecheck:fallback": "tsc6 --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "@vitest/coverage-v8": "^5.0.4",
+    "rimraf": "^6.0.1",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "typescript7": "npm:typescript@^7.0.2",
+    "vitest": "^5.0.4"
+  }
+}

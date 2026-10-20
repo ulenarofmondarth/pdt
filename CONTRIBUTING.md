@@ -56,7 +56,7 @@ CI runs all of these on every pull request, and also checks the commit messages.
 ## Code standards
 
 - All source is TypeScript in strict mode. Do not add JavaScript source files or use `any`.
-- The repository is a pnpm workspace: the `pdt` tool is in `packages/pdt`, and the root holds the shared tooling. Run the commands above from the root.
+- The repository is a pnpm workspace: the `pdt` tool is in `packages/pdt`, the `@mondarth/fvtt-resolver` library in `packages/fvtt-resolver`, and the root holds the shared tooling. Run the commands above from the root. Each package is released on its own, from the commits that change its files; use the scope `resolver` for the library's commits.
 - User-facing text goes in `packages/pdt/messages/en.json`, never hardcoded.
 - Log through `@util/logger.js`, not `console.log`. To exit the process, use `exit()` from that module in place of `process.exit()`.
 - Unit tests live in `packages/pdt/tests/unit/`, mirroring `packages/pdt/src/`, in `*.test.ts` files. Shared mocks are in `packages/pdt/tests/unit/mocks/`. Tests of the repository's tooling are in `tests/` at the root.

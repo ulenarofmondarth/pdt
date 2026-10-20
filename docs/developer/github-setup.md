@@ -57,8 +57,50 @@ If the push to `dev` is refused, or `dev` has moved on since the release, the wo
 
 - **Pull requests** (Settings → General): allow merge commits. The rulesets decide which merge methods each branch accepts.
 - **Pages**: Settings → Pages → Source: **GitHub Actions**. The `github-pages` environment only deploys from `main`.
+- **npm**: see {ref}`npm-trusted-publisher`.
 - **Code security**: enable Dependabot alerts and security updates, code scanning (the CodeQL workflow uploads its results), and private vulnerability reporting (which `SECURITY.md` points reporters to).
 
-## First release
+(release-tags)=
 
-semantic-release finds the previous version from git tags; with no tag at all the first release would be `1.0.0`. This repository started from a `v0.1.0` tag on `main`, so its first release was `0.2.0`.
+## Release tags
+
+semantic-release finds each package's previous version from its git tags, `<package name>-v<version>`. A package with no tag at all would be released as `1.0.0`. So a new package starts from a tag, `<package name>-v0.0.0`, on `main`, created by hand when the package is added. Its first release is then `0.0.1` or `0.1.0`.
+
+pdt was released as `v0.1.0` to `v0.2.1` before the repository became a workspace. Its tag format changed to `@mondarth/pdt-v<version>` then. Before the first release after that, tag pdt's last release in the new format, on the same commit:
+
+```shell
+git fetch --tags
+git tag @mondarth/pdt-v0.2.1 v0.2.1^{}
+git push origin @mondarth/pdt-v0.2.1
+```
+
+(npm-trusted-publisher)=
+
+## npm trusted publishing
+
+The release workflow publishes `@mondarth/fvtt-resolver` to npm without a token (see {ref}`npm-publishing`). npm trusts this repository's release workflow instead. That trust is set up per package on npmjs.com, and only for a package that already exists, so the first version is published by hand:
+
+1. **Have the scope.** The `@mondarth` scope must belong to your npm account, or to an npm organisation you can publish to. Turn on two-factor authentication for the account.
+2. **Publish a placeholder by hand.** On `main`, with the package at version `0.0.0`:
+
+   ```shell
+   pnpm --filter @mondarth/fvtt-resolver build
+   cd packages/fvtt-resolver
+   pnpm login
+   pnpm publish --access public
+   ```
+
+   Then tag that commit `@mondarth/fvtt-resolver-v0.0.0` and push the tag (see {ref}`release-tags`).
+3. **Add the trusted publisher.** On npmjs.com, open the package's **Settings**. Under **Trusted publishing**, choose **GitHub Actions** and enter:
+
+   | Field | Value |
+   | --- | --- |
+   | Organization or user | `ulenarofmondarth` |
+   | Repository | `pdt` |
+   | Workflow filename | `release.yml` |
+   | Environment name | leave empty |
+
+   npm does not check these when you save them. A mistake only shows when the next release fails to publish.
+4. **Stop token publishing.** Once a release has published through the workflow, set the package's **Publishing access** to **Require two-factor authentication and disallow tokens**. Trusted publishing keeps working, and nothing else can publish without your second factor.
+
+Provenance needs the repository and the package to be public.

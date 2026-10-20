@@ -3,8 +3,8 @@
 [![Dev CI](https://github.com/ulenarofmondarth/pdt/actions/workflows/dev.yml/badge.svg?branch=dev)](https://github.com/ulenarofmondarth/pdt/actions/workflows/dev.yml)
 [![Release](https://github.com/ulenarofmondarth/pdt/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/ulenarofmondarth/pdt/actions/workflows/release.yml)
 [![CodeQL](https://github.com/ulenarofmondarth/pdt/actions/workflows/codeql.yml/badge.svg?branch=dev)](https://github.com/ulenarofmondarth/pdt/actions/workflows/codeql.yml)
-[![Unit coverage](https://img.shields.io/codecov/c/github/ulenarofmondarth/pdt/dev?flag=unit&label=unit%20coverage&logo=codecov)](https://app.codecov.io/gh/ulenarofmondarth/pdt/tree/dev?flags%5B0%5D=unit)
-[![Latest release](https://img.shields.io/github/v/release/ulenarofmondarth/pdt)](https://github.com/ulenarofmondarth/pdt/releases/latest)
+[![Unit coverage](https://img.shields.io/codecov/c/github/ulenarofmondarth/pdt/dev?flag=pdt&label=unit%20coverage&logo=codecov)](https://app.codecov.io/gh/ulenarofmondarth/pdt/tree/dev?flags%5B0%5D=pdt)
+[![Latest release](https://img.shields.io/github/v/release/ulenarofmondarth/pdt?filter=!%40mondarth%2Ffvtt-resolver-*)](https://github.com/ulenarofmondarth/pdt/releases/latest)
 [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://ulenarofmondarth.github.io/pdt/)
 [![License: MIT](https://img.shields.io/github/license/ulenarofmondarth/pdt)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D24-brightgreen?logo=node.js&logoColor=white)](packages/pdt/package.json)
@@ -14,6 +14,8 @@
 `pdt` is a command line tool that supports the development of [Foundry VTT](https://foundryvtt.com) packages (systems and modules).
 
 > **Status: early development.** Only a few commands exist so far, their behaviour will change, and the package is not yet published to npm.
+
+The repository also holds [`@mondarth/fvtt-resolver`](packages/fvtt-resolver), a library that will work out which versions of Foundry VTT, game systems and modules can be installed together. It is published to npm on its own.
 
 ## What it does today
 
