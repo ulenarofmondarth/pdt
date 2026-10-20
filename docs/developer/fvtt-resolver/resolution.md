@@ -38,6 +38,22 @@ I propose the **PubGrub** algorithm (Natalie Weizenbaum, 2018, written for Dart'
 - **It learns from conflicts.** It does not retry the same dead end, which matters once the matrix asks for many resolutions over the same universe.
 - **It is well documented and small.** The algorithm is short, and there are several open implementations to test against. Writing our own (a few hundred lines) avoids a dependency, and lets incompatibilities carry our provenance.
 
+### The engine
+
+The solver (`src/solver/`) knows nothing of Foundry VTT. A provider supplies three things:
+- each package's version order;
+- its candidate versions, most preferred first;
+- the incompatibilities each version brings.
+
+It follows pub's description of the algorithm, with these choices:
+
+- **Which package next.** It decides the package with the fewest candidate versions left first, so that a dead end is found early. Among versions, it takes the provider's first.
+- **Dependencies are stated per version.** pub widens a dependency to every version of the package that shares it ("every version of foo depends on bar ^2.0.0"). This solver states it for the one version, so an explanation also says that no other version fits. Grouping versions that share a dependency can come later, to shorten explanations.
+- **Incompatibilities that cannot hold are ignored.** An example is a version that depends on a range of its own package that includes it.
+- **Explanations are kept whole.** A failure returns the incompatibility that proves it, and each derived incompatibility keeps the two it came from. Its leaves are the root, "no versions", or the provider's own incompatibilities with their data. So nothing is lost before the explanation is put into words.
+
+It is tested on the examples in pub's documentation, and against brute force: on thousands of random small registries with dependencies and conflicts, it finds a valid choice exactly when one exists.
+
 ### Encoding the domain
 
 The constraints of {doc}`domain` map directly onto PubGrub's incompatibilities:
