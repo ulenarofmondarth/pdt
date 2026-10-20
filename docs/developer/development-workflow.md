@@ -84,8 +84,53 @@ act
 
 If you have followed the {ref}`project-code-control` advice you will have a forked repository ready to prepare a {ref}`project-pull-request`.
 
-If you just want to use this modification yourself you can install directly from this local copy or you can push the change to your own forked repository's `main` and a new `npm` package will be published.
+If you just want to use this modification yourself you can run it directly from this local copy (see {ref}`running-development-version`) or you can push the change to your own forked repository's `main` and a new `npm` package will be published.
 
 ```{todo}
 Section on how `npm` packages are published, how to setup the project to use the correct account, etc.
+```
+
+(running-development-version)=
+
+## Running your development version
+
+To try your changes by hand, make the `pdt` command in your own shell run your working copy instead of a released package:
+
+```shell
+pnpm build        # dist/ must exist before pdt can run
+pnpm dev:link     # point the global pdt command at this working copy
+```
+
+`dev:link` runs `pnpm add --global "link:$(pwd)"` in `packages/pdt`: pnpm puts a `pdt` command in its global bin directory that runs `packages/pdt/dist/index.js` from your working copy. That directory must be on your `PATH`; if pnpm warns that it is not, run {command}`pnpm setup` and open a new shell. Check which `pdt` you get with:
+
+```shell
+command -v pdt    # in pnpm's global bin directory, e.g. ~/.local/share/pnpm/bin/pdt
+pdt --version
+```
+
+`pdt` runs the last build, so rebuild after each change, or leave a build running in a separate terminal that rebuilds whenever a source file changes:
+
+```shell
+pnpm build:watch
+```
+
+While it rebuilds, `dist/` is briefly incomplete, so a `pdt` run at that moment can fail; run it again once the build has finished. The same goes for {command}`pnpm test:cli`, which runs the same `dist/`.
+
+The link follows your working copy: after switching branches, the next build is the version `pdt` runs. `pdt --version` reports the version in `packages/pdt/package.json`, which is the last release, not your changes.
+
+:::{warning}
+Your development version is a real {program}`pdt`. It reads your own configuration, writes your own log files, and `pdt vtt start` starts containers on your Docker engine. To keep a check away from your own configuration and logs, run it in an empty directory with a home directory of its own:
+
+```shell
+cd "$(mktemp -d)" && HOME=$(mktemp -d) pdt vtt start
+```
+
+That does not isolate Docker: containers are still started on your engine, named after the VTT.
+:::
+
+To go back to a released {program}`pdt`:
+
+```shell
+pnpm dev:unlink
+pnpm add --global @mondarth/pdt   # only if you want the released version installed
 ```

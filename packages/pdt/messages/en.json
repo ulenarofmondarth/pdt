@@ -1,0 +1,226 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "ui": {
+    "cmd": {
+      "arg": {
+        "vtt": {
+          "description": "Name of the VTT, as configured under VTT. Defaults to the first VTT the project configures."
+        }
+      },
+      "vtt": {
+        "description": "Control a project scoped VTT"
+      },
+      "start": {
+        "description": "Start a VTT in the current project"
+      },
+      "stop": {
+        "description": "Stop a VTT in the current project"
+      },
+      "restart": {
+        "description": "Restart a VTT in the current project, from its current configuration"
+      },
+      "init": {
+        "description": "Initialise a project as a PDT project. In an empty directory, create a new Foundry VTT module first.",
+        "dir": {
+          "description": "An existing project directory."
+        },
+        "force": {
+          "description": "Initialise a project inside another PDT project."
+        },
+        "yes": {
+          "description": "Do not ask questions. Use the default for anything not given as an option."
+        },
+        "newModuleGroup": "New module options (empty directory only):"
+      },
+      "status": {
+        "description": "Show pdt's runtime state: the VTTs of the current project, or outside a project of every registered project, and whether each is running."
+      },
+      "config": {
+        "description": "Show or change the configuration.",
+        "get": {
+          "description": "Show a configuration value, or every value.",
+          "key": "Dot separated key of the setting, or group of settings, such as Logging.level.",
+          "listAll": "List every setting.",
+          "format": "How to write a group of settings.",
+          "showSource": "Show where each value comes from (flat and tree only).",
+          "printSecrets": "Show secret values, instead of *****."
+        },
+        "set": {
+          "description": "Set a value in the project configuration file, or the user configuration file outside a project.",
+          "key": "Dot separated key of the setting, such as Logging.level.",
+          "value": "The value. Text the setting accepts as it is is kept as text; anything else is read as JSON.",
+          "user": "Set the value in the user configuration file, even inside a project."
+        },
+        "clear": {
+          "description": "Remove a setting from the project configuration file, or the user configuration file with --user.",
+          "key": "Dot separated key of the setting, or group of settings, such as Logging.level.",
+          "user": "Remove the setting from the user configuration file instead.",
+          "all": "Remove the setting from every configuration file that sets it."
+        }
+      },
+      "forceReset": {
+        "description": "Set up the current project again from scratch: remove its run state, its registration and its configuration, then initialise it."
+      },
+      "prune": {
+        "description": "Forget the projects that are gone: remove from your run state every project whose directory no longer holds a .pdt directory."
+      },
+      "move": {
+        "description": "Update the current project's registration after moving it, or move it to a new directory.",
+        "destination": "Where to move the project to. It must not exist yet; its parent directory must.",
+        "stopAllContainers": "Stop every running VTT of the project before moving it.",
+        "restartAllContainers": "Stop every running VTT of the project before moving it, and start them again once it has moved."
+      }
+    },
+    "opt": {
+      "config": {
+        "description": "Override a setting for this run only, as <key>=<value>. Can be given more than once."
+      },
+      "project": {
+        "description": "Run as if in a project: give its id, as registered by init, or the path to its root directory."
+      }
+    }
+  },
+  "info": {
+    "pdtInitialised": "PDT initialised for {path}",
+    "creatingModule": "{path} is empty. Creating a new Foundry VTT module there.",
+    "vtt": {
+      "starting": "Starting VTT {vtt} (version {version}) on port {port}…",
+      "started": "VTT {vtt} has started: {url}",
+      "alreadyRunning": "VTT {vtt} is already running: {url}",
+      "stoppedOnItsOwn": "VTT {vtt} has stopped since pdt started it; clearing up what is left of it.",
+      "stopping": "Stopping VTT {vtt}…",
+      "stopped": "VTT {vtt} has stopped.",
+      "notRunning": "VTT {vtt} is not running: pdt has no record of starting it in this project.",
+      "waiting": "Waiting up to {timeout} seconds for VTT {vtt} to answer at {url}…"
+    },
+    "configSet": "Set {key} in {file}",
+    "configCleared": "Cleared {key} from {file}",
+    "vttConfigured": "Configured VTT {vtt} (Foundry VTT {version}) in {file}",
+    "projectRegistered": "Registered project {id} in {file}",
+    "forceReset": {
+      "removed": "Removed {file}",
+      "unregistered": "Removed the registration of project {id} from {file}"
+    },
+    "prune": {
+      "nothing": "Every project registered in {file} is still there; nothing was pruned.",
+      "removed": "Removed project {id} ({root}) from {file}: it is no longer a PDT project."
+    },
+    "move": {
+      "unchanged": "Project {id} is already registered at {root}.",
+      "registered": "Registered project {id} at {root} in {file}",
+      "moved": "Moved project {id} from {from} to {to}",
+      "changeDirectory": "Your shell is still in the old location. To carry on where you were: cd {dir}"
+    },
+    "gitignored": "Added {entries} to {file}, so that they are not committed.",
+    "status": {
+      "project": "Project {project} ({root})",
+      "running": "{vtt}: running at {url} (container {container})",
+      "stopped": "{vtt}: stopped",
+      "exited": "{vtt}: exited since pdt started it. See why with docker logs {container}; pdt vtt start starts it afresh.",
+      "unknown": "{vtt}: unknown, {reason}",
+      "noVtts": "No VTT is configured.",
+      "missing": "Project {project} ({root}): gone. Run pdt prune to forget it.",
+      "unusable": "Project {project} ({root}): cannot be read. {reason}",
+      "noProjects": "No projects are registered in {file}.",
+      "notConfigured": "recorded as started but no longer configured, so it cannot be asked about. Its container is {container}."
+    }
+  },
+  "warn": {
+    "pdtParentExists": "Attempt to create sub-PDT project (use -f to force).\n  Parent project at {path}",
+    "moduleNotGenerated": "{path} is not empty, so no module is generated there. Ignored: {options}",
+    "logFileUnavailable": "Cannot write the log file {file}, so messages go to the console only: {reason}",
+    "configNotSet": "{key} is not set in {file}, so nothing was cleared.",
+    "configSetElsewhere": "{key} is not set in {file}, so nothing was cleared. It is set in {others}: use --all to clear it there.",
+    "configNotSetAnywhere": "{key} is not set in any configuration file, so nothing was cleared.",
+    "projectVtt": {
+      "noModuleId": "Could not read the module id from {file}: {reason}",
+      "noFoundryVersion": "Could not read the Foundry VTT version from {file}: {reason}",
+      "notConfigured": "No VTT is configured for this project. To add one, fill in what is missing and run: {command}",
+      "reason": {
+        "noId": "it has no \"id\"",
+        "idWithDot": "its id, {id}, contains a dot, which a configuration key cannot",
+        "noVersion": "it does not set {variable}"
+      }
+    },
+    "noProjectId": "The project has no id, so it is not registered and has no VTT. Fix module.json, then run pdt force-reset in the project.",
+    "vtt": {
+      "noModuleMount": "The project has no id, so it is not given to VTT {vtt} as a module.",
+      "noAccount": "FOUNDRY.username and FOUNDRY.password are not both set, so VTT {vtt} can only use a Foundry VTT it has installed before. Set them with pdt config set --user.",
+      "notConfiguredToStop": "VTT {vtt} is recorded as started, but is no longer configured, so it cannot be stopped. Stop it yourself: docker rm -f {container}"
+    }
+  },
+  "error": {
+    "notInPdtProject": "Not a PDT project.",
+    "optionRequired": "{option} is required when the questions are not asked.",
+    "optionInvalid": "Invalid {option} \"{value}\": {reason}",
+    "config": {
+      "invalid": "The configuration is invalid:",
+      "unreadable": "Could not read the configuration file {file}: {reason}",
+      "notAnObject": "The configuration file {file} must contain a JSON object.",
+      "badKey": "\"{key}\" is not a configuration key: give its parts, separated by dots, such as Logging.level.",
+      "unknownKey": "{key} is not a configuration setting.",
+      "notSet": "{key} is not set.",
+      "noFile": "There is no {target} configuration file here.",
+      "keyRequired": "Give a configuration key, or --list-all to list every setting.",
+      "badOverride": "--config takes <key>=<value>, not \"{value}\".",
+      "keyAndListAll": "Give a configuration key or --list-all, not both.",
+      "noProject": "Not in a PDT project, so there is no project configuration file. Use --user for your user configuration file.",
+      "secretInConfig": "{file} holds secret settings, which pdt only reads from {secrets}: {keys}. Move them to {secrets} by hand, so that they cannot be committed with the configuration."
+    },
+    "commandRequired": "At least one top level command is required.",
+    "vtt": {
+      "unknownServerType": "Unknown VTT server type: {type}",
+      "unknownHostType": "Unknown VTT host type: {type}",
+      "noVersion": "Server {server} has no version to run on a Docker host.",
+      "pullFailed": "Could not pull {image}: {reason}",
+      "startFailed": "Could not start server {server} on the Docker host: {reason}",
+      "unknownVtt": "There is no VTT named {vtt} in the configuration. Configured VTTs: {known}",
+      "hostUnreachable": "Cannot reach the {type} host for VTT {vtt}. Is it running, and can you use it?",
+      "noneConfigured": "No VTT is configured. Run pdt init in the project, or add one with pdt config set.",
+      "containerRunning": "A container named {container} is already running, but this project has no record of starting it. Stop and remove it (docker rm -f {container}), then start the VTT again.",
+      "stopFailed": "Could not stop and remove container {container}: {reason}",
+      "noFreePort": "No port from {from} up is free.",
+      "portInUse": "Port {port}, which VTT.{vtt}.server.port sets, is in use. Free it, or set the port to auto.",
+      "stoppedWhileStarting": "VTT {vtt} stopped while it was starting. See why with docker logs {container}.",
+      "notReachable": "VTT {vtt} did not answer at {url} within {timeout} seconds. It is still running: see what it is doing with docker logs {container}, stop it with pdt vtt stop, or allow it longer with VTT.{vtt}.server.ready.timeout."
+    },
+    "compendium": {
+      "notRecognised": "{path} is not a recognised compendium database.",
+      "exportUnsupported": "Exporting the compendium at {path} to {targets} is not supported yet."
+    },
+    "alreadyInitialised": "{path} is already a PDT project: {file} exists. To set it up again from scratch, run pdt force-reset in the project.",
+    "projectRegistered": {
+      "here": "Project {id} is already registered for this directory in {file}. Run pdt force-reset in the project, or remove the registration from {file}.",
+      "elsewhere": "Another project, at {root}, is already registered as {id} in {file}. Each project needs its own id: change the id in module.json. If that project no longer exists, run pdt prune."
+    },
+    "runState": {
+      "unreadable": "Could not read the run state file {file}: {reason}",
+      "invalid": "The run state file {file} is invalid: {problems}"
+    },
+    "move": {
+      "noId": "This project's configuration has no id. Run pdt force-reset to set the project up.",
+      "stillAProject": "Project {id} is registered at {root} in {file}, which is still a PDT project. If this project is a copy, give it its own id in module.json and run pdt force-reset.",
+      "destinationExists": "{path} already exists. Give a path that does not exist yet.",
+      "noParent": "The directory to move the project into, {path}, does not exist.",
+      "intoItself": "Cannot move the project into itself: {path}",
+      "stopOrRestart": "Give --stop-all-containers or --restart-all-containers, not both.",
+      "vttsRunning": "VTTs of this project are running: {vtts}. They would lose the project when it moves. Stop them first, or give --stop-all-containers, or --restart-all-containers to start them again once it has moved."
+    },
+    "project": {
+      "empty": "--project needs a project id or the path to a project.",
+      "repeated": "--project was given {count} times; give it once.",
+      "asId": "project {id}",
+      "asPath": "{given}, which is not a registered project id",
+      "missing": "--project {as}: {root} does not exist. If the project has moved, run pdt move in it, or pdt prune.",
+      "notADirectory": "--project {as}: {root} is not a directory.",
+      "notAProject": "--project {as}: {root} is not a PDT project; it has no .pdt directory."
+    }
+  },
+  "fatal": {
+    "shouldNeverRun": "Should never run {argv}",
+    "noPdtRoot": "Unable to find a PDT root directory. Perhaps you forgot to 'init' this project?"
+  },
+  "debug": {
+    "running": "Running parsed command {argv}"
+  }
+}

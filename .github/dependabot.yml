@@ -10,7 +10,7 @@ updates:
       prefix-development: build(deps-dev)
     ignore:
       # Version 10 needs conventional-changelog-writer 9, but semantic-release's notes generator
-      # still uses writer 8 (tests/unit/config/release-notes.test.ts). Lift this once it upgrades.
+      # still uses writer 8 (tests/config/release-notes.test.ts). Lift this once it upgrades.
       - dependency-name: conventional-changelog-conventionalcommits
         update-types: ['version-update:semver-major']
       # The types must match the oldest Node.js we support (engines, .nvmrc), or newer APIs

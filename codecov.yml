@@ -7,9 +7,13 @@ coverage:
       default:
         informational: true
 
+# One flag per package. The lcov reports give paths from the repository root.
 flags:
-  unit:
-    paths: [src/]
+  pdt:
+    paths: [packages/pdt/src/]
+    carryforward: true
+  fvtt-resolver:
+    paths: [packages/fvtt-resolver/src/]
     carryforward: true
 
 comment:

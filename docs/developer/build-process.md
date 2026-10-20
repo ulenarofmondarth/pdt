@@ -2,15 +2,35 @@
 
 # Build Process
 
+(repository-layout)=
+
+## Repository layout
+
+The repository is a [pnpm workspace](https://pnpm.io/workspaces). Each package lives in a directory of its own under `packages/`:
+
+| Directory | What it holds |
+| --- | --- |
+| `packages/pdt` | The {program}`pdt` command line tool (`@mondarth/pdt`): its source, tests, test data, messages and build configuration |
+| `packages/fvtt-resolver` | `@mondarth/fvtt-resolver`, the library that works out which versions of Foundry VTT, systems and modules go together, published to npm on its own (see {doc}`fvtt-resolver`) |
+| the root | What the whole repository shares: the workspace (`package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`), the TypeScript, ESLint, Prettier and Vitest settings, the git hooks, commitlint and semantic-release, the workflows, these docs, and `tests/`, which checks that tooling |
+
+Paths in the developer documentation about {program}`pdt`'s code, such as `src/main.ts` or `tests/unit/`, are relative to `packages/pdt`.
+
+Run the scripts from the root. Most run in every package (`pnpm -r`); `build:watch`, `dev:link` and `dev:unlink` run in `packages/pdt`. To run a script in one package only, use `pnpm --filter @mondarth/pdt <script>`. A package depends on another in the workspace with `"workspace:*"`, so it always uses the copy in the repository.
+
 Running the build is as simple as `pnpm build`. This invokes {program}`vite` and it does all the heavy lifting.
+
+`pnpm build:watch` builds, then rebuilds whenever a source file changes, for running your working copy as `pdt` (see {ref}`running-development-version`). Every build, including each rebuild, makes `dist/index.js` executable, so it also runs as a program of its own through its `#!` line.
 
 ## Typescript configuration
 
-`tsconfig.json` runs the compiler in `strict` mode with `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes` and `noImplicitOverride` enabled. It targets `esnext` with `lib: ["esnext"]`; the `dom` library is deliberately left out because {program}`pdt` runs on Node, so accidental use of browser globals fails the type check.
+`tsconfig.base.json` at the root holds the compiler options every package shares. Each package's `tsconfig.json` extends it and adds its own `paths` (see {ref}`shortform-paths`); the root `tsconfig.json` covers the repository's own tooling (`tests/`, `scripts/` and the configuration files). {command}`pnpm typecheck` checks the root, then each package.
+
+The shared options run the compiler in `strict` mode with `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes` and `noImplicitOverride` enabled. It targets `esnext` with `lib: ["esnext"]`; the `dom` library is deliberately left out because {program}`pdt` runs on Node, so accidental use of browser globals fails the type check.
 
 The compiler never emits files (`noEmit`); {program}`vite` produces the build output.
 
-`allowJs` is enabled because the configuration tests import `release.config.js`, which semantic-release needs as JavaScript. There is no JavaScript in `src/`.
+`allowJs` is enabled because the root's tooling tests import `release.config.js`, which semantic-release needs as JavaScript. There is no JavaScript in `src/`.
 
 (typescript-compilers)=
 
@@ -43,6 +63,10 @@ Paths defined in `tsconfig.json` are used by the typescript transpiler (and cons
 These `paths` are also used during testing (see {doc}`testing`)
 
 The paths are repeated in `vite.config.ts` for use during the build.
+
+### Version
+
+`pdt --version` reports the version in `packages/pdt/package.json`. `vite.config.ts` reads it when the build (or a test run) starts and writes it into the bundle as `__PDT_VERSION__` (declared in `src/build-constants.d.ts`). Left to itself, yargs would look for a `package.json` above its own installed copy, which finds the right one only by chance of where pnpm puts its packages.
 
 (building-the-docs)=
 

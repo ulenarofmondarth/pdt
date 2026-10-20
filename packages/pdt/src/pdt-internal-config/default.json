@@ -1,0 +1,7 @@
+{
+  "Logging": {
+    "filename": "pdt.log",
+    "level": "warn"
+  },
+  "VTT": {}
+}

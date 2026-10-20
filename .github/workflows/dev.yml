@@ -73,21 +73,32 @@ jobs:
         run: pnpm test:coverage
       - name: Coverage summary
         if: ${{ !cancelled() }}
-        run: node scripts/coverage-summary.ts coverage/coverage-summary.json 'Unit coverage' >> "$GITHUB_STEP_SUMMARY"
-      - name: Upload coverage to Codecov
+        run: |
+          for package in pdt fvtt-resolver; do
+            node scripts/coverage-summary.ts "packages/${package}/coverage/coverage-summary.json" "Unit coverage: ${package}" >> "$GITHUB_STEP_SUMMARY"
+          done
+      - name: Upload pdt's coverage to Codecov
         if: ${{ !cancelled() }}
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
-          files: coverage/lcov.info
-          flags: unit
+          files: packages/pdt/coverage/lcov.info
+          flags: pdt
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
-      - name: Keep the coverage report
+      - name: Upload fvtt-resolver's coverage to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          files: packages/fvtt-resolver/coverage/lcov.info
+          flags: fvtt-resolver
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+      - name: Keep the coverage reports
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
           name: coverage
-          path: coverage
+          path: packages/*/coverage
           retention-days: 7
 
   build:
@@ -100,11 +111,14 @@ jobs:
       # Runs the built CLI as a user would: exit codes, output, configuration, logging, init.
       - name: Test the built CLI
         run: pnpm test:cli
+      # What npm would receive, without publishing it.
+      - name: Pack the publishable packages
+        run: pnpm --filter @mondarth/fvtt-resolver pack --dry-run
       - name: Keep the build
         uses: actions/upload-artifact@v7
         with:
           name: dist
-          path: dist
+          path: packages/*/dist
           retention-days: 7
 
   docs:
