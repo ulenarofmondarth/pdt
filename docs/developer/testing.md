@@ -2,13 +2,15 @@
 
 `PDT` uses [vitest](https://vitest.dev) as its testing framework.
 
-To run all defined tests and then watch for file changes use `pnpm vitest`. To run them once use `pnpm test`.
+To run all defined tests once use `pnpm test` at the root of the repository. It runs the tests of the repository's own tooling (`tests/` at the root, also run alone by `pnpm test:repo`), then the unit tests of each package. To run a package's tests and then watch for file changes, use `pnpm vitest` in its directory, such as `packages/pdt`.
+
+The rest of this page is about {program}`pdt`'s tests, in `packages/pdt`; paths are relative to it.
 
 Type checking is separate from the test run; use `pnpm typecheck` (see {ref}`typescript-compilers`).
 
 ## Coverage
 
-`pnpm test:coverage` runs the tests once and measures coverage with the `v8` provider. It prints a summary and writes an HTML report to `coverage/index.html` (plus `lcov` output for tooling).
+`pnpm test:coverage` runs the tests once and measures coverage with the `v8` provider. It prints a summary and writes an HTML report to `packages/pdt/coverage/index.html` (plus `lcov` output for tooling).
 
 Coverage is measured over `src/**/*.ts`, excluding the generated `src/paraglide` modules and type declarations.
 

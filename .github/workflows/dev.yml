@@ -73,12 +73,12 @@ jobs:
         run: pnpm test:coverage
       - name: Coverage summary
         if: ${{ !cancelled() }}
-        run: node scripts/coverage-summary.ts coverage/coverage-summary.json 'Unit coverage' >> "$GITHUB_STEP_SUMMARY"
+        run: node scripts/coverage-summary.ts packages/pdt/coverage/coverage-summary.json 'Unit coverage' >> "$GITHUB_STEP_SUMMARY"
       - name: Upload coverage to Codecov
         if: ${{ !cancelled() }}
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
-          files: coverage/lcov.info
+          files: packages/pdt/coverage/lcov.info
           flags: unit
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
@@ -87,7 +87,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: coverage
-          path: coverage
+          path: packages/pdt/coverage
           retention-days: 7
 
   build:
@@ -104,7 +104,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: dist
-          path: dist
+          path: packages/pdt/dist
           retention-days: 7
 
   docs:

@@ -1,9 +1,9 @@
 /**
- * Sets the release version in package.json. This replaces @semantic-release/npm, which runs
- * `npm version`: package.json requires pnpm through devEngines, so npm refuses to run here.
- * Bring that plugin back (with pnpm) only when the package is published to a registry.
+ * Sets the release version in packages/pdt/package.json. This replaces @semantic-release/npm,
+ * which runs `npm version`: the workspace requires pnpm through devEngines, so npm refuses to run
+ * here. Bring that plugin back (with pnpm) only when the package is published to a registry.
  */
-export const bumpVersionCmd = 'pnpm pkg set version=${nextRelease.version}';
+export const bumpVersionCmd = 'pnpm --dir packages/pdt pkg set version=${nextRelease.version}';
 
 /**
  * semantic-release configuration.
@@ -23,7 +23,7 @@ export default {
     [
       '@semantic-release/exec',
       {
-        // Bumps package.json first, so the bundle and docs carry the new version.
+        // Bumps the version first, so the bundle and docs carry the new version.
         prepareCmd: [
           bumpVersionCmd,
           `sed -i "s/^release = .*/release = '\${nextRelease.version}'/" docs/conf.py`,
@@ -39,7 +39,7 @@ export default {
     [
       '@semantic-release/git',
       {
-        assets: ['CHANGELOG.md', 'package.json', 'docs/conf.py'],
+        assets: ['CHANGELOG.md', 'packages/pdt/package.json', 'docs/conf.py'],
         message: 'chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}',
       },
     ],

@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module';
 import { describe, expect, it } from 'vitest';
-import config from '../../../release.config.js';
+import config from '../../release.config.js';
 
 /**
  * semantic-release renders the release notes with its own copy of conventional-changelog-writer,

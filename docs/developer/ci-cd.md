@@ -36,7 +36,7 @@ Runs on every push to `main`:
 2. **Semantic release** (`release.config.js`):
    1. works out the next version from the commits since the last tag (`fix` gives a patch, `feat` a minor, and `BREAKING CHANGE:` or `!` a major release), and stops if none warrants a release;
    2. writes the release notes and `CHANGELOG.md`;
-   3. sets the version in `package.json` (with `pnpm pkg set`) and `docs/conf.py`, then builds the bundle and the documentation and zips the documentation;
+   3. sets the version in `packages/pdt/package.json` (with `pnpm --dir packages/pdt pkg set`) and `docs/conf.py`, then builds the bundle and the documentation and zips the documentation;
    4. commits `chore(release): <version> [skip ci]` to `main` and tags it `v<version>`;
    5. creates the GitHub release with the documentation zip attached.
 3. **Bring dev up to date**, if a release was cut: fast-forwards `dev` to the release commit, or opens a pull request from `main` to `dev` if it cannot.
@@ -55,8 +55,8 @@ The jobs that push to the protected branches authenticate as the release App (se
 - **CodeQL** (`codeql.yml`): code scanning of the TypeScript and of the workflows themselves, on pushes, pull requests and weekly.
 - **Dependency review** (`dependency-review.yml`): fails pull requests that add dependencies with known vulnerabilities.
 - **Dependabot** (`.github/dependabot.yml`): weekly grouped updates for npm, the documentation's Python requirements and base image, and the GitHub Actions, raised against `dev`. Major updates of `@types/node`, which follows the Node.js baseline, are ignored; the baseline moves by hand.
-- **Third-party actions** are pinned to a full commit SHA with the release in a comment (`uses: docker/build-push-action@<sha> # v7.4.0`), because a tag can be moved by whoever controls the action's repository. Dependabot updates the SHA and the comment together. GitHub's own `actions/*` and `github/*` actions use version tags. `tests/unit/config/action-pins.test.ts` enforces this; to add an action, look up the commit of the release (`gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`).
+- **Third-party actions** are pinned to a full commit SHA with the release in a comment (`uses: docker/build-push-action@<sha> # v7.4.0`), because a tag can be moved by whoever controls the action's repository. Dependabot updates the SHA and the comment together. GitHub's own `actions/*` and `github/*` actions use version tags. `tests/config/action-pins.test.ts` enforces this; to add an action, look up the commit of the release (`gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`).
 
 ## Configuration tests
 
-`tests/unit/config/` checks the tooling configuration, so mistakes show up in CI rather than at release time: the commitlint rules, the version bump (pnpm, offline, nothing but the version changes), that the release notes render with the configured preset, the shape of the release workflow, and the action pins.
+`tests/config/` (at the root of the repository) checks the tooling configuration, so mistakes show up in CI rather than at release time: the commitlint rules, the version bump (pnpm, offline, nothing but the version changes), that the release notes render with the configured preset, the shape of the release workflow, and the action pins.

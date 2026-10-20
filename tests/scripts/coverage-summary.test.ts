@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isSummary, run, toMarkdown, type Totals } from '../../../scripts/coverage-summary.js';
+import { isSummary, run, toMarkdown, type Totals } from '../../scripts/coverage-summary.js';
 
 const total: Totals = {
   statements: { total: 200, covered: 190, pct: 95 },

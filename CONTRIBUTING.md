@@ -20,7 +20,7 @@ To run your working copy as `pdt` in your own shell, for manual checks:
 
 ```shell
 pnpm build
-pnpm dev:link       # the global pdt command now runs this working copy's dist/
+pnpm dev:link       # the global pdt command now runs this working copy's packages/pdt/dist/
 pnpm build:watch    # optional, in another terminal: rebuild on every change
 ```
 
@@ -45,7 +45,7 @@ Keep pull requests small and focused, and update the documentation alongside the
 | `pnpm typecheck`     | Types, with TypeScript 7 (`pnpm typecheck:fallback` uses TypeScript 6) |
 | `pnpm lint`          | ESLint; warnings fail                                                  |
 | `pnpm format:check`  | Formatting (`pnpm format` fixes it)                                    |
-| `pnpm test`          | Unit tests                                                             |
+| `pnpm test`          | The repository's tooling, then each package's unit tests               |
 | `pnpm test:coverage` | Unit tests with coverage; fails below the configured thresholds        |
 | `pnpm build`         | The bundle builds                                                      |
 | `pnpm test:cli`      | The built CLI, run as a user would (after `pnpm build`)                |
@@ -56,9 +56,10 @@ CI runs all of these on every pull request, and also checks the commit messages.
 ## Code standards
 
 - All source is TypeScript in strict mode. Do not add JavaScript source files or use `any`.
-- User-facing text goes in `messages/en.json`, never hardcoded.
+- The repository is a pnpm workspace: the `pdt` tool is in `packages/pdt`, and the root holds the shared tooling. Run the commands above from the root.
+- User-facing text goes in `packages/pdt/messages/en.json`, never hardcoded.
 - Log through `@util/logger.js`, not `console.log`. To exit the process, use `exit()` from that module in place of `process.exit()`.
-- Unit tests live in `tests/unit/`, mirroring `src/`, in `*.test.ts` files. Shared mocks are in `tests/unit/mocks/`.
+- Unit tests live in `packages/pdt/tests/unit/`, mirroring `packages/pdt/src/`, in `*.test.ts` files. Shared mocks are in `packages/pdt/tests/unit/mocks/`. Tests of the repository's tooling are in `tests/` at the root.
 
 ## Commit messages
 

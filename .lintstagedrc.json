@@ -1,4 +1,15 @@
 {
-  "*.ts": ["eslint --fix --max-warnings 0", "prettier --write", "bash -c 'pnpm typecheck'", "vitest related --run"],
+  "packages/pdt/**/*.ts": [
+    "eslint --fix --max-warnings 0",
+    "prettier --write",
+    "bash -c 'pnpm --filter @mondarth/pdt typecheck'",
+    "pnpm --dir packages/pdt exec vitest related --run"
+  ],
+  "{*.ts,{tests,scripts}/**/*.ts}": [
+    "eslint --fix --max-warnings 0",
+    "prettier --write",
+    "bash -c 'tsc --noEmit'",
+    "vitest related --run"
+  ],
   "*.{js,mjs,cjs,json,md,yml,yaml}": ["prettier --write"]
 }

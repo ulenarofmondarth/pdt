@@ -7,6 +7,10 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 
 import type { Plugin } from 'vite';
 
+const { version } = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, 'package.json'), 'utf8')) as {
+  version: string;
+};
+
 /**
  * Makes the CLI entry point executable after every build, including each rebuild in watch mode,
  * which writes the file afresh without the bit.
@@ -44,6 +48,7 @@ export default defineConfig({
     },
   },
   define: {
+    __PDT_VERSION__: JSON.stringify(version),
     __TEST_DATA__: JSON.stringify('./testdata'),
   },
   build: {

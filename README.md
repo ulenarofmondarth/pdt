@@ -7,7 +7,7 @@
 [![Latest release](https://img.shields.io/github/v/release/ulenarofmondarth/pdt)](https://github.com/ulenarofmondarth/pdt/releases/latest)
 [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://ulenarofmondarth.github.io/pdt/)
 [![License: MIT](https://img.shields.io/github/license/ulenarofmondarth/pdt)](LICENSE)
-[![Node.js](https://img.shields.io/badge/node-%3E%3D24-brightgreen?logo=node.js&logoColor=white)](package.json)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D24-brightgreen?logo=node.js&logoColor=white)](packages/pdt/package.json)
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-fe5196?logo=conventionalcommits&logoColor=white)](https://www.conventionalcommits.org)
 [![semantic-release](https://img.shields.io/badge/semantic--release-conventionalcommits-e10079?logo=semantic-release)](https://github.com/semantic-release/semantic-release)
 
@@ -42,14 +42,14 @@ git clone https://github.com/ulenarofmondarth/pdt.git
 cd pdt
 pnpm install
 pnpm build
-node dist/index.js --help
+node packages/pdt/dist/index.js --help
 ```
 
 ## Translations
 
 Messages are written in English and translated into German, French and Spanish.
 
-> **The translations are unreviewed.** They were produced by machine translation and have not been checked by a speaker of the language. Expect awkward or incorrect wording. Corrections are welcome; the files are in [`messages/`](messages/).
+> **The translations are unreviewed.** They were produced by machine translation and have not been checked by a speaker of the language. Expect awkward or incorrect wording. Corrections are welcome; the files are in [`packages/pdt/messages/`](packages/pdt/messages/).
 
 `pdt` does not yet choose a language for you, so it currently always runs in English. The text of the questions asked when creating a new module comes from the module generator and is English only.
 

@@ -101,7 +101,7 @@ pnpm build        # dist/ must exist before pdt can run
 pnpm dev:link     # point the global pdt command at this working copy
 ```
 
-`dev:link` runs `pnpm add --global "link:$(pwd)"`: pnpm puts a `pdt` command in its global bin directory that runs `dist/index.js` from your working copy. That directory must be on your `PATH`; if pnpm warns that it is not, run {command}`pnpm setup` and open a new shell. Check which `pdt` you get with:
+`dev:link` runs `pnpm add --global "link:$(pwd)"` in `packages/pdt`: pnpm puts a `pdt` command in its global bin directory that runs `packages/pdt/dist/index.js` from your working copy. That directory must be on your `PATH`; if pnpm warns that it is not, run {command}`pnpm setup` and open a new shell. Check which `pdt` you get with:
 
 ```shell
 command -v pdt    # in pnpm's global bin directory, e.g. ~/.local/share/pnpm/bin/pdt
@@ -116,7 +116,7 @@ pnpm build:watch
 
 While it rebuilds, `dist/` is briefly incomplete, so a `pdt` run at that moment can fail; run it again once the build has finished. The same goes for {command}`pnpm test:cli`, which runs the same `dist/`.
 
-The link follows your working copy: after switching branches, the next build is the version `pdt` runs. `pdt --version` reports the version in `package.json`, which is the last release, not your changes.
+The link follows your working copy: after switching branches, the next build is the version `pdt` runs. `pdt --version` reports the version in `packages/pdt/package.json`, which is the last release, not your changes.
 
 :::{warning}
 Your development version is a real {program}`pdt`. It reads your own configuration, writes your own log files, and `pdt vtt start` starts containers on your Docker engine. To keep a check away from your own configuration and logs, run it in an empty directory with a home directory of its own:
