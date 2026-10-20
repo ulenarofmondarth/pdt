@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { check } from '../src/check.js';
 import { coreCompatibility, releaseConstraints } from '../src/constraints.js';
+import { rangeOps } from '../src/range/range.js';
+import { foundryOrder } from '../src/version/foundry.js';
 import { withDefaults } from '../src/policy.js';
 import { resolve } from '../src/resolve.js';
 import { resolveInRounds } from '../src/rounds.js';
 import { chooseOrders } from '../src/universe.js';
 import { makeRelease } from './helpers.js';
 
-import type { PackageVersion, Resolution } from '../src/resolve.js';
+import type { Resolution } from '../src/resolve.js';
 import type { Release } from '../src/release.js';
 import type { CoreRelease, Universe } from '../src/universe.js';
 
@@ -55,10 +57,10 @@ const requireApp = { require: [{ package: 'module:app' }] };
 /** A loader over the manifests, which records what it is asked for. */
 function loader(available: readonly Release[] = manifests) {
   const asked: string[][] = [];
-  const load = (needs: readonly PackageVersion[]) => {
-    asked.push(needs.map(n => `${n.package}@${n.version}`));
+  const load = (needs: readonly Release[]) => {
+    asked.push(needs.map(n => `module:${n.package.id}@${n.version}`));
     return Promise.resolve(
-      available.filter(r => needs.some(n => n.package === `module:${r.package.id}` && n.version === r.version)),
+      available.filter(r => needs.some(n => n.package.id === r.package.id && n.version === r.version)),
     );
   };
   return { asked, load };
@@ -83,6 +85,36 @@ describe('resolve, with listed releases', () => {
       ok: false,
       needs: [{ package: 'module:lib', version: '2.0.0' }],
     });
+  });
+});
+
+describe('resolve, when a failure rests on there being no versions of something', () => {
+  // Only app's manifest could name the system; the universe has none yet.
+  const noSystem = {
+    core,
+    releases: [app, listed('app', '2.0.0'), listed('beta-only', '1.0.0-beta')],
+  };
+
+  it('asks for the newest listed release of each package with nothing loaded, since its manifest may name more', () => {
+    expect(resolve({ core, releases: [listed('app', '2.0.0'), listed('app', '1.0.0')] }, requireApp)).toMatchObject({
+      ok: false,
+      needs: [{ package: 'module:app', version: '2.0.0' }],
+    });
+  });
+
+  it('asks for nothing when the failure rests only on what the caller asked for', () => {
+    const ops = rangeOps(foundryOrder);
+    const result = resolve(universe, {
+      ...requireApp,
+      pins: [{ package: 'core', version: '14.368' }],
+      require: [{ package: 'core', range: ops.between(undefined, { version: '14', inclusive: false }) }],
+    });
+    expect('failure' in result).toBe(true);
+  });
+
+  it('does not ask again for a package that has a loaded release, or for one with no candidate left', () => {
+    const result = resolve(noSystem, requireApp);
+    expect('failure' in result).toBe(true);
   });
 });
 
@@ -131,6 +163,30 @@ describe('resolveInRounds', () => {
   it('does not count a release the loader returns still listed as loaded', async () => {
     const { unloaded } = await resolveInRounds(universe, requireApp, loader([listed('lib', '2.0.0')]).load);
     expect(unloaded).toEqual([{ package: 'module:lib', version: '2.0.0' }]);
+  });
+
+  it('adds the releases a load returns that the universe does not have yet', async () => {
+    // app's manifest names lib, which the universe has no listing of until app is loaded.
+    const start = { core, releases: [dnd5e, listed('app', '1.0.0')] };
+    const load = (needs: readonly Release[]) =>
+      Promise.resolve(
+        needs.some(n => n.package.id === 'app') ? [app, listed('lib', '1.0.0')] : [manifests[1] as Release],
+      );
+    const { resolution, rounds, universe: after } = await resolveInRounds(start, requireApp, load);
+    expect(chosen(resolution)).toEqual(['app@1.0.0', 'lib@1.0.0']);
+    expect(rounds).toBe(3);
+    expect(after.releases.map(r => `${r.package.id}@${r.version}:${r.detail}`)).toEqual([
+      'dnd5e@5.3.3:loaded',
+      'app@1.0.0:loaded',
+      'lib@1.0.0:loaded',
+    ]);
+  });
+
+  it('asks for each listed release once, though the universe lists it twice', async () => {
+    const twice = { ...universe, releases: [...universe.releases, listed('lib', '2.0.0')] };
+    const { asked, load } = loader();
+    await resolveInRounds(twice, requireApp, load);
+    expect(asked[0]).toEqual(['module:lib@2.0.0']);
   });
 
   it('stops after the most rounds allowed, with the last answer', async () => {

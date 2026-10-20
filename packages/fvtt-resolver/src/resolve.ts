@@ -99,6 +99,13 @@ function constraintsIn(incompatibility: Incompatibility<Reason>): Constraint[] {
   return cause.kind === 'external' && cause.data.kind === 'constraint' ? [cause.data.constraint] : [];
 }
 
+/** Whether an explanation rests on there being no versions of some package. */
+function restsOnNoVersions(incompatibility: Incompatibility<Reason>): boolean {
+  const { cause } = incompatibility;
+  if (cause.kind === 'derived') return restsOnNoVersions(cause.conflict) || restsOnNoVersions(cause.other);
+  return cause.kind === 'no-versions';
+}
+
 /**
  * Whether a package version looks like a pre-release, by the words packages use for them. Foundry
  * VTT has no notion of a pre-release, so this is a convention: `1.0.0-beta.1`, `2.0.0rc1`.
@@ -209,6 +216,10 @@ export function resolve(universe: Universe, requirements: Requirements, options:
   const provider: Provider<Reason> = {
     orderOf,
 
+    // Core and the world's system are chosen to suit the modules, so that the modules' preferences
+    // (verified, system ranges) are known when they are decided.
+    decideLast: key => key === CORE || key === WORLD_SYSTEM,
+
     versions(key, decided) {
       const all = candidates(key);
       const score = new Map(all.map(version => [version, preferenceScore(key, version, decided)]));
@@ -279,7 +290,19 @@ export function resolve(universe: Universe, requirements: Requirements, options:
 
   if (!result.ok) {
     // A failure that leans on a listed release's constraints may not hold once it is loaded.
-    const needs = listedAmong(constraintsIn(result.failure).map(({ from }) => from));
+    const leaning = constraintsIn(result.failure).map(({ from }) => from);
+    // A failure that rests on there being no versions of something may not hold either: a manifest
+    // can name packages the universe does not have yet. So it also needs the most preferred
+    // listed release of every package with nothing loaded.
+    const unexplored = restsOnNoVersions(result.failure)
+      ? [...releases].flatMap(([key, byVersion]) => {
+          const all = [...byVersion.values()];
+          if (all.some(release => release.detail === 'loaded')) return [];
+          const [first] = candidates(key).filter(version => byVersion.get(version)?.detail === 'listed');
+          return first === undefined ? [] : [{ package: key, version: first }];
+        })
+      : [];
+    const needs = listedAmong([...leaning, ...unexplored]);
     return needs.length > 0
       ? { ok: false, needs, warnings: orders.warnings }
       : { ok: false, failure: result.failure, warnings: orders.warnings };

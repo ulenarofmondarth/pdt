@@ -92,7 +92,7 @@ When more than one setup is valid, preferences pick between them. For each packa
    For example, midi-qol 14.0.15 prefers dnd5e 5.3.0 to 5.9.99, so once midi-qol is decided, dnd5e 5.3.3 comes before 6.0.6.
 3. **Newer over older.** "Newer" follows the `versionOrder` policy: Foundry's order by default.
 
-The solver tells the provider which versions are decided so far, so that a preference can depend on them. Packages are decided in the solver's own order: the one with the fewest candidate versions left first. Only what is needed is chosen, so recommendations and unneeded dependencies are left out.
+The solver tells the provider which versions are decided so far, so that a preference can depend on them. Packages are decided in the solver's order: one with no versions left first, to fail early; then the one with the fewest candidate versions left. Core and the world's system are decided **last**: they are chosen to suit the modules, so the modules' preferences must be known first. Deciding by fewest versions alone could choose the system before the module that prefers one of its versions. The real midi-qol showed this, choosing dnd5e 6.0.6 over the 5.3.3 it prefers. Only what is needed is chosen, so recommendations and unneeded dependencies are left out.
 
 Preferences only order the candidates, so they do not change the algorithm. The same requirements, universe and policy always give the same setup.
 
@@ -103,7 +103,10 @@ The solver needs a release's manifest to know its relationships, but loading eve
 1. Solve over the universe as it is. A listed release has no relationships yet, and only the core bounds its listing gives, so the solver carries on without them.
 2. Find what the answer depends on that is only listed:
    - for a setup, the listed releases in it;
-   - for a failure, the listed releases whose constraints the explanation leans on. A failure that leans on none is final: its derivation uses no constraint that loading could change.
+   - for a failure, the listed releases whose constraints the explanation leans on;
+   - for a failure that rests on there being no versions of something, also the most preferred listed release of every package with nothing loaded yet. A manifest can name packages the universe does not have yet. Before any manifest is loaded, for example, the universe may hold no system at all.
+
+   Any other failure is final: its derivation uses no constraint that loading could change.
 3. If there are none, the answer is final. Otherwise `resolve` returns `{ ok: false, needs }`: the caller loads the needed manifests into the universe, and solves again from the start.
 
 `resolveInRounds(universe, requirements, load)` runs the rounds.

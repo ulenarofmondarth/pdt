@@ -42,6 +42,14 @@ describe('the published package', () => {
     });
   });
 
+  it('exports the sources from their own subpath, so that the core does not load them', () => {
+    expect(manifest.exports['./sources']).toEqual({
+      types: built('src/sources/index.ts', '.d.ts'),
+      default: built('src/sources/index.ts', '.js'),
+    });
+    expect(Object.keys(manifest.exports)).toEqual(['.', './sources']);
+  });
+
   it('ships the build output', () => {
     expect(manifest.files).toContain(build.compilerOptions.outDir);
   });
