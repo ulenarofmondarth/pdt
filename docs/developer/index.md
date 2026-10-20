@@ -7,9 +7,6 @@ This documentation is intended for anyone wanting to develop the `pdt` applicati
 
 setup
 development-workflow
-tdd-primer
-design-philosophy
-error-handling
 testing
 i18n
 logging

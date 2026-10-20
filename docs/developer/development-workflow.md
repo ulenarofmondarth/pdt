@@ -53,9 +53,6 @@ flowchart LR
    sg1-->sg2
 
    click id1 href "contributing.html#contributing-to-pdt"
-   click id4 href "tdd-primer.html#tdd-write-failing-test"
-   click id5 href "tdd-primer.html#tdd-write-code"
-   click id6 href "tdd-primer.html#tdd-refactor"
 ```
 
 Use of Test Driven Development (TDD) is encouraged. So, first write a test to specify the change you are going to make. Tests live in `tests/unit/`, in a `.test.ts` file at the path that mirrors the source file (see {doc}`testing`). For a bug, first add a test that reproduces it.
