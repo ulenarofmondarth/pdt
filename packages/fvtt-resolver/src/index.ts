@@ -1,7 +1,7 @@
 /**
  * Works out which versions of Foundry VTT, game systems and modules can be installed together.
  *
- * This is the start of the core: how versions are ordered, and sets of versions.
+ * This is the start of the core: how versions are ordered, sets of versions, and reading manifests.
  *
  * @packageDocumentation
  */
@@ -21,3 +21,11 @@ export {
   type Compatibility,
   type RelationshipBounds,
 } from './range/compatibility.js';
+export type { PackageRef, PackageType, Relationship, Relationships, Release } from './release.js';
+export {
+  normaliseManifest,
+  type ManifestProblem,
+  type ManifestResult,
+  type ManifestSource,
+  type ManifestWarning,
+} from './manifest/normalise.js';

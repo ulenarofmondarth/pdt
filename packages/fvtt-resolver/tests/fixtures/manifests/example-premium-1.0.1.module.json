@@ -1,0 +1,25 @@
+{
+  "id": "example-adventure",
+  "title": "Example Adventure",
+  "version": "1.0.1",
+  "manifest": "https://r2.foundryvtt.com/packages-public/example-adventure/module-1.0.1.json",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "14.364"
+  },
+  "relationships": {
+    "systems": [
+      {
+        "id": "example-system",
+        "type": "system",
+        "compatibility": [
+          {
+            "minimum": "1.38.0",
+            "verified": "1.40.0"
+          }
+        ]
+      }
+    ]
+  },
+  "protected": true
+}
