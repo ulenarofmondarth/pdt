@@ -10,6 +10,8 @@ describe('@mondarth/fvtt-resolver', () => {
     expect(Object.keys(resolver).sort()).toEqual([
       'CORE',
       'DEFAULT_POLICY',
+      'REQUIREMENTS',
+      'WORLD_SYSTEM',
       'chooseOrder',
       'chooseOrders',
       'coreRange',
@@ -17,15 +19,18 @@ describe('@mondarth/fvtt-resolver', () => {
       'foundryDisagreements',
       'foundryOrder',
       'isNewerVersion',
+      'looksLikePrerelease',
       'normaliseManifest',
       'packageKey',
       'packageName',
       'rangeOps',
       'relationshipRange',
       'releaseConstraints',
+      'resolve',
       'semverOrder',
       'universeConstraints',
       'withDefaults',
+      'worldSystemVersion',
     ]);
   });
 });
