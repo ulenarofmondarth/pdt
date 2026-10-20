@@ -1,10 +1,6 @@
-# fvtt-resolver
+# The package
 
-`@mondarth/fvtt-resolver` (`packages/fvtt-resolver`) will work out which versions of Foundry VTT, game systems and modules can be installed together. It reads the compatibility and relationships their manifests declare, and the combinations declared valid. `pdt vtt install` will be built on it, but it is a package of its own, published to npm, so that other projects can use it too.
-
-```{todo}
-Design the API: the domain model (versions, constraints, manifests), what makes a combination valid, and how manifests are fetched. Until then the package only exports its name.
-```
+How `@mondarth/fvtt-resolver` is built, tested and released. The design of what it does starts at {doc}`index`.
 
 ## Shape of the package
 
