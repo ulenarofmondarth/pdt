@@ -128,6 +128,16 @@ describe('normaliseManifest', () => {
       });
     });
 
+    it('reports an id or type that cannot be turned into text, without throwing', () => {
+      expect(normaliseManifest({ id: { toString: 0 }, type: { toString: 0 }, version: '1' }, asModule)).toEqual({
+        ok: false,
+        problems: [
+          { code: 'invalid-id', id: '{"toString":0}' },
+          { code: 'wrong-type', expected: 'module', found: '{"toString":0}' },
+        ],
+      });
+    });
+
     it('refuses a manifest of another type of package', () => {
       expect(module({ type: 'system' })).toEqual({
         ok: false,

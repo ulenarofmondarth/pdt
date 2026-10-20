@@ -65,6 +65,14 @@ function isValidId(id: string): boolean {
   return /^[A-Za-z0-9_-]+$/.test(id) && !/^(con|prn|aux|nul|com\d|lpt\d)$/i.test(id);
 }
 
+/**
+ * A value as text for a problem report: text as it is, anything else as JSON. `String` would throw
+ * for an object whose `toString` is not a function, such as `{"toString": 0}` from a manifest.
+ */
+function asText(value: unknown): string {
+  return typeof value === 'string' ? value : JSON.stringify(value);
+}
+
 /** Whether Foundry VTT accepts a version: anything without `'`, `"`, `<`, `>` or `&`. */
 function isValidVersion(version: string): boolean {
   return !/['"<>&]/.test(version);
@@ -213,11 +221,11 @@ export function normaliseManifest(json: unknown, source: ManifestSource): Manife
   }
   const id = typeof rawId === 'string' ? rawId : undefined;
   if (rawId === undefined) problems.push({ code: 'missing-id' });
-  else if (id === undefined || !isValidId(id)) problems.push({ code: 'invalid-id', id: String(rawId) });
+  else if (id === undefined || !isValidId(id)) problems.push({ code: 'invalid-id', id: asText(rawId) });
 
   const type = manifest['type'];
   if (type !== undefined && type !== source.type) {
-    problems.push({ code: 'wrong-type', expected: source.type, found: String(type) });
+    problems.push({ code: 'wrong-type', expected: source.type, found: asText(type) });
   }
 
   let version = '0';
