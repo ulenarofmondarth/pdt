@@ -1,0 +1,188 @@
+# API sketch
+
+This is a sketch of the public surface, to make the model concrete. It is not a final API: names and details will change in review and in the building.
+
+## Data
+
+```typescript
+/** A package Foundry VTT installs, or `core` for Foundry VTT itself. */
+type PackageType = 'core' | 'module' | 'system' | 'world';
+
+interface PackageRef {
+  type: PackageType;
+  id: string;
+}
+
+/** A set of versions of one package: a union of intervals. */
+interface Range {
+  readonly intervals: readonly Interval[];
+}
+
+/** One version of a package, normalised from its manifest. */
+interface Release {
+  package: PackageRef;
+  version: string;
+  /** Core versions it works with (minimum/maximum), and up to where that is verified. */
+  core: { range: Range; verified?: Range };
+  requires: Relationship[];
+  /** The systems it runs in; empty for any system. */
+  systems: Relationship[];
+  conflicts: Relationship[];
+  recommends: Relationship[];
+  /** `listed`: known from a listing only; relationships and `maximum` not yet loaded. */
+  detail: 'listed' | 'loaded';
+  download?: string;
+  manifest?: string;
+  /** A premium package: downloading it needs the user's licence. */
+  protected?: boolean;
+  /** Core bounds from Foundry's listing, where they differ from the manifest's. */
+  listing?: { minimum?: string; verified?: string };
+  /** What normalisation had to interpret, such as pre-v10 fields. */
+  warnings: string[];
+}
+
+interface Relationship {
+  package: PackageRef;
+  range: Range;
+  reason?: string;
+}
+
+interface CoreRelease {
+  version: string; // "14.350"
+  generation: number; // 14
+  channel: 'stable' | 'testing' | 'development' | 'prototype';
+}
+
+/** Everything the solver may choose from. Plain, serialisable data. */
+interface Universe {
+  core: CoreRelease[];
+  releases: Release[];
+  /** What could not be fetched, so explanations can mention it. */
+  gaps: SourceGap[];
+}
+```
+
+Manifests are read with zod schemas (as pdt reads its configuration), leniently, into these types. `normaliseManifest(json, origin)` returns a `Release` and its warnings, or the reasons it could not be read.
+
+## Asking
+
+```typescript
+interface Requirements {
+  /** Packages that must be in the setup, each in a range ("any" by default). */
+  require: { package: PackageRef; range?: Range }[];
+  /** Exact versions: pins, or a lockfile replayed. */
+  pins?: { package: PackageRef; version: string }[];
+  /** Versions to prefer without requiring them, such as the lockfile when upgrading. */
+  prefer?: { package: PackageRef; version: string }[];
+}
+
+interface Declarations {
+  overrides?: Override[]; // extra exclusions, relaxed bounds, each with a reason
+  supportMatrix?: MatrixCell[];
+  /** Core builds the caller cannot run, each with its reason ("no felddy/foundryvtt image"). */
+  coreLimits?: { exclude: string[]; reason: string }[];
+}
+
+interface Policy {
+  verified: 'prefer' | 'require' | 'ignore';
+  conflicts: 'enforce' | 'warn';
+  coreChannels: CoreRelease['channel'][];
+  prereleases: 'exclude' | 'include';
+  recommends: 'report' | 'install';
+  missingCompatibility: 'any' | 'reject';
+  systemCompatibility: 'prefer' | 'require' | 'ignore';
+  relationshipBounds: 'foundry' | 'prefix';
+  versionOrder: 'foundry' | 'semver';
+  listingCompatibility: 'prefer' | 'ignore';
+}
+
+function check(universe: Universe, setup: SetupSpec, options?: Options): CheckResult;
+function resolve(universe: Universe, requirements: Requirements, options?: Options): Resolution;
+function matrix(universe: Universe, root: PackageRef, axes: MatrixAxes, options?: Options): Matrix;
+
+interface Options {
+  declarations?: Declarations;
+  policy?: Partial<Policy>;
+}
+
+type Resolution =
+  | { ok: true; setup: Setup; plan: InstallPlan }
+  | { ok: false; explanation: Explanation }
+  /** Listed releases were chosen: load these and resolve again (see Resolution, "Resolving in rounds"). */
+  | { ok: 'incomplete'; needs: ReleaseKey[] };
+```
+
+`Explanation` is a tree of incompatibilities, each with its provenance. `formatExplanation(explanation, messages)` turns it into numbered sentences, with the wording passed in, so pdt can translate it.
+
+## Building a universe (adapters)
+
+```typescript
+interface ReleaseSource {
+  /** The known releases of a package, listed or loaded, or why they could not be listed. */
+  releases(ref: PackageRef, signal?: AbortSignal): Promise<SourceResult<Release[]>>;
+  /** Load one listed release from its manifest. */
+  load(release: Release, signal?: AbortSignal): Promise<SourceResult<Release>>;
+}
+
+interface CoreSource {
+  releases(signal?: AbortSignal): Promise<SourceResult<CoreRelease[]>>;
+}
+
+/** Each adapter is made with its options: `fetch`, and a token where the service takes one. */
+function localSource(paths: string[], read: ReadFile): ReleaseSource;
+function foundryIndexSource(options: { fetch: typeof fetch }): ReleaseSource;
+function githubSource(options: { fetch: typeof fetch; token?: string }): ReleaseSource;
+function gitlabSource(options: { fetch: typeof fetch; token?: string }): ReleaseSource;
+function manifestUrlSource(options: { fetch: typeof fetch }): ReleaseSource;
+function foundryReleaseNotesSource(options: { fetch: typeof fetch }): CoreSource;
+
+function buildUniverse(input: {
+  requirements: Requirements;
+  sources: ReleaseSource[]; // tried in order
+  core: CoreSource;
+  cache?: Cache;
+  limit?: UniverseLimit; // e.g. only core generations 13 and 14
+  budget?: RequestBudget; // per source: most requests per run, most at a time
+}): Promise<Universe>;
+
+/**
+ * The rounds loop, for callers that fetch: resolve, load what was needed, and repeat
+ * until the answer is final. It lives with the sources, not in the core.
+ */
+function resolveWithSources(input: {
+  universe: Universe;
+  requirements: Requirements;
+  sources: ReleaseSource[];
+  options?: Options;
+  maxRounds?: number;
+}): Promise<{ resolution: Resolution; universe: Universe }>;
+```
+
+## How pdt would use it
+
+`pdt vtt install [vtt]` would:
+
+1. Read the VTT's configuration (`VTT.<vtt>.server.version` is the core release) and the project's module, from the working copy.
+2. Build a universe from:
+   - a local source for the project's module;
+   - the Foundry index, GitHub, GitLab and manifest-URL sources for everything else, with tokens from pdt's configuration;
+   - Foundry's release notes for core;
+   - pdt's cache, under the user data directory.
+3. List the felddy/foundryvtt image tags, and pass the builds without one as core limits.
+4. Resolve, with:
+   - the project's module and the core version as requirements;
+   - the system from configuration (or let the resolver choose);
+   - pins from the lockfile, and overrides from the project's configuration.
+5. On success, apply the install plan:
+   - download each release into the VTT's data directory (`Data/systems/<id>`, `Data/modules/<id>`), skipping what is already there at the right version;
+   - list premium packages for the user to install through Foundry VTT, since downloading them needs the user's licence;
+   - write the lockfile (for example `.pdt/vtt.lock.json`, beside the run state).
+6. On failure, print the explanation and exit with a non-zero code.
+
+`pdt vtt start` could then check the installed setup before starting, and warn about anything that is not valid. A future `pdt compat` (name to be decided) would print the matrix for the project's module.
+
+None of this changes the resolver: pdt supplies the adapters, the cache and the file formats, and the resolver stays pure.
+
+## Errors
+
+The core functions do not throw for anything a user can cause: no solution, an unreadable manifest, a missing package. These come back as values, with explanations. They throw only for programming errors, such as a malformed universe passed in by hand.
