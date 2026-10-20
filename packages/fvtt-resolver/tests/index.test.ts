@@ -6,19 +6,26 @@ describe('@mondarth/fvtt-resolver', () => {
     expect(resolver.packageName).toBe('@mondarth/fvtt-resolver');
   });
 
-  it('exports the version orders, range operations and manifest reading', () => {
+  it('exports what the core offers so far', () => {
     expect(Object.keys(resolver).sort()).toEqual([
+      'CORE',
+      'DEFAULT_POLICY',
       'chooseOrder',
+      'chooseOrders',
       'coreRange',
       'coreVerifiedRange',
       'foundryDisagreements',
       'foundryOrder',
       'isNewerVersion',
       'normaliseManifest',
+      'packageKey',
       'packageName',
       'rangeOps',
       'relationshipRange',
+      'releaseConstraints',
       'semverOrder',
+      'universeConstraints',
+      'withDefaults',
     ]);
   });
 });

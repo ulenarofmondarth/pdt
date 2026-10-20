@@ -1,7 +1,8 @@
 /**
  * Works out which versions of Foundry VTT, game systems and modules can be installed together.
  *
- * This is the start of the core: how versions are ordered, sets of versions, and reading manifests.
+ * This is the start of the core: how versions are ordered, sets of versions, reading manifests,
+ * and the constraints releases declare under a policy.
  *
  * @packageDocumentation
  */
@@ -29,3 +30,29 @@ export {
   type ManifestSource,
   type ManifestWarning,
 } from './manifest/normalise.js';
+export { DEFAULT_POLICY, withDefaults, type Policy } from './policy.js';
+export {
+  CORE,
+  chooseOrders,
+  packageKey,
+  type CoreChannel,
+  type CoreRelease,
+  type OrderWarning,
+  type Orders,
+  type PackageKey,
+  type Universe,
+} from './universe.js';
+export {
+  releaseConstraints,
+  universeConstraints,
+  type Advisory,
+  type Choice,
+  type Constraint,
+  type ConstraintContext,
+  type Dependency,
+  type Exclusion,
+  type Preference,
+  type Provenance,
+  type ReleaseRef,
+  type Unusable,
+} from './constraints.js';
