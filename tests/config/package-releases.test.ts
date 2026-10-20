@@ -31,19 +31,11 @@ function outputOf(config: Parameters<typeof pluginOptions>[0]): string {
 
 describe.each(releases)('the release of $dir', ({ dir, config }) => {
   const manifest = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')) as {
-    name: string;
     publishConfig?: { access?: string };
   };
 
-  // semantic-release-monorepo tags `<package name>-v<version>`; a release that counts every commit
-  // (see pdt's below) must tag the same way, or the next release would not find its tag.
-  it('counts only the commits that change the package, or tags as if it did', () => {
-    if (config.extends === undefined) {
-      expect(config.tagFormat).toBe(`${manifest.name}-v\${version}`);
-    } else {
-      expect(config.extends).toBe('semantic-release-monorepo');
-      expect(config.tagFormat).toBeUndefined();
-    }
+  it('counts only the commits that change the package, and tags it with the package name', () => {
+    expect(config.extends).toBe('semantic-release-monorepo');
   });
 
   it('is cut from main only', () => {
@@ -70,20 +62,6 @@ describe.each(releases)('the release of $dir', ({ dir, config }) => {
       expect(workflow.jobs.release?.permissions?.['id-token']).toBe('write');
     });
   }
-});
-
-/*
- * pdt's commits up to and including its move into packages/pdt changed src/ and the rest at the
- * root, so semantic-release-monorepo would drop every feat and fix since 0.2.1. Its first release
- * from the workspace counts every commit instead. Once that release is tagged, every later commit
- * is made in packages/, and this exception (and this test) should go.
- */
-describe("pdt's first release from the workspace", () => {
-  const pdt = releases.find(({ dir }) => dir === join('packages', 'pdt'));
-
-  it('counts the commits made before pdt moved into packages/pdt', () => {
-    expect(pdt?.config.extends).toBeUndefined();
-  });
 });
 
 describe('the releases', () => {

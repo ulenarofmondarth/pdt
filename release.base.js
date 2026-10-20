@@ -11,10 +11,6 @@ export const bumpVersionCmd = 'pnpm pkg set version=${nextRelease.version}';
  * @property {string} [publishCmd] Publishes the package to a registry; packages without one are only tagged
  * @property {string} output The release workflow's output that receives the new version
  * @property {{ path: string, label: string }[]} [githubAssets] Files attached to the GitHub release
- * @property {string} [allCommitsTagFormat] Counts every commit since the last tag, not only those
- *   that change the package, and tags in this format, which must be the one semantic-release-monorepo
- *   uses (`<package name>-v${version}`). Only for a release whose commits were made before the
- *   package moved into its directory.
  */
 
 /**
@@ -32,11 +28,9 @@ export const bumpVersionCmd = 'pnpm pkg set version=${nextRelease.version}';
  * @param {PackageRelease} release
  * @returns {import('semantic-release').GlobalConfig}
  */
-export function packageRelease({ prepare = [], publishCmd, output, githubAssets = [], allCommitsTagFormat }) {
+export function packageRelease({ prepare = [], publishCmd, output, githubAssets = [] }) {
   return {
-    ...(allCommitsTagFormat === undefined
-      ? { extends: 'semantic-release-monorepo' }
-      : { tagFormat: allCommitsTagFormat }),
+    extends: 'semantic-release-monorepo',
     branches: ['main'],
     plugins: [
       ['@semantic-release/commit-analyzer', { preset: 'conventionalcommits' }],
