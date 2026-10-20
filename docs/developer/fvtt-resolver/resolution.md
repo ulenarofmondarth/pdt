@@ -62,21 +62,39 @@ The constraints of {doc}`domain` map directly onto PubGrub's incompatibilities:
 | --- | --- |
 | Dependency: *R* needs *P* in *X* | {*R*, *P* not in *X*} |
 | Exclusion: *R* excludes *P* in *X* | {*R*, *P* in *X*} |
-| Requirement: use *P* in *X* | {*P* not in *X*} |
-| Pin: use *P* at *v* | {*P* not at *v*} |
+| Unusable: *R* | {*R*} |
+| Requirement: use *P* in *X* | {requirements, *P* not in *X*} |
+| Pin: use *P* at *v* | {requirements, *P* not at *v*} |
 
-The one shape PubGrub has no term for is the **choice** made by `relationships.systems`: the world's system must be dnd5e 4 to 5, *or* pf2e 7. The proposal handles it with a virtual package, `world-system`. Each of its versions is one system release (`dnd5e@5.1.0`, `pf2e@7.2.0`), ordered within each system, and a world has exactly one. A module's systems list then becomes an ordinary dependency on a set of `world-system` versions, and choosing the system is choosing a version of `world-system`. Core is already a package. So the solver deals with packages, versions and sets of versions only.
+The caller's requirements are a virtual package, `requirements`: the solver's root. A setup always has a core release and a system, so the root also needs `core` and `world-system`, at any version. Preferences and advisories bring no incompatibility.
+
+The one shape PubGrub has no term for is the **choice** made by `relationships.systems`: the world's system must be dnd5e 4 to 5, *or* pf2e 7. A second virtual package, `world-system`, handles it.
+- **Its versions:** each is one system release, written `dnd5e@5.1.0`. They are ordered by system id, then in that system's own order.
+- **A system and its version are tied together:** a system release depends on exactly its own `world-system` version, and that version depends on the release. So a world has exactly one system.
+- **A module's systems list:** it becomes an ordinary dependency on the matching `world-system` versions. Each option's range becomes the stretch of that system's versions; a range open at an end runs to the first or last version of the system.
+
+Choosing the system is choosing a version of `world-system`. Core is already a package. So the solver deals with packages, versions and sets of versions only.
+
+Candidates are the releases in the universe:
+- **Core:** limited to the policy's `coreChannels`.
+- **Pre-releases:** left out unless `prereleases: include`, or they are pinned or preferred. Foundry VTT has no notion of a pre-release, so a version counts as one when it contains a word such as `alpha`, `beta`, `rc`, `pre` or `dev`.
+- **Duplicates:** when the universe gives the same version twice, the first is used.
 
 ### Preferences
 
-When more than one setup is valid, preferences pick between them, in this order:
+When more than one setup is valid, preferences pick between them. For each package, the candidate versions are ordered:
 
-1. **Pins and locked versions**, so that an existing setup changes only when it must.
-2. **Verified over unverified** (with the default `verified: prefer` policy).
-3. **Newer over older**, package by package, in the order the requirements name them, then the order they are reached. "Newer" follows the `versionOrder` policy: Foundry's order by default.
-4. **Fewer packages**: recommendations and unneeded dependencies are left out.
+1. **Pinned and preferred versions** first, so that an existing setup changes only when it must.
+2. **Versions more of the releases already decided prefer.** These are the preference constraints:
+   - `verified`, under `verified: prefer`;
+   - the ranges in `relationships.systems`, under `systemCompatibility: prefer`.
 
-PubGrub takes preferences through the order in which it decides packages and versions, so they do not change the algorithm. The same requirements and the same universe always give the same setup.
+   For example, midi-qol 14.0.15 prefers dnd5e 5.3.0 to 5.9.99, so once midi-qol is decided, dnd5e 5.3.3 comes before 6.0.6.
+3. **Newer over older.** "Newer" follows the `versionOrder` policy: Foundry's order by default.
+
+The solver tells the provider which versions are decided so far, so that a preference can depend on them. Packages are decided in the solver's own order: the one with the fewest candidate versions left first. Only what is needed is chosen, so recommendations and unneeded dependencies are left out.
+
+Preferences only order the candidates, so they do not change the algorithm. The same requirements, universe and policy always give the same setup.
 
 ## Resolving in rounds
 

@@ -122,6 +122,29 @@ describe('solve', () => {
     expect(result.ok && result.versions.get('foo')).toBe('1.0.0');
   });
 
+  it('tells the provider what is decided, so that a preference can depend on it', () => {
+    const registry: Registry = {
+      root: { '1.0.0': { foo: 'any', bar: 'any' } },
+      foo: { '1.0.0': {} },
+      bar: { '1.0.0': {}, '2.0.0': {} },
+    };
+    const seen: string[][] = [];
+    const base = provider(registry);
+    const result = solve(
+      {
+        ...base,
+        versions: (key, decided) => {
+          seen.push([...decided.keys()]);
+          // Once foo is decided, bar 1.0.0 is preferred.
+          return key === 'bar' && decided.has('foo') ? ['1.0.0', '2.0.0'] : base.versions(key, decided);
+        },
+      },
+      root,
+    );
+    expect(seen[0]).toEqual(['root']);
+    expect(result.ok && Object.fromEntries(result.versions)).toEqual({ root: '1.0.0', foo: '1.0.0', bar: '1.0.0' });
+  });
+
   it('respects a conflict: a version and a range that must not both be chosen', () => {
     expect(
       run({

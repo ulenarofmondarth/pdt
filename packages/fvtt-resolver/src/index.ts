@@ -1,8 +1,8 @@
 /**
  * Works out which versions of Foundry VTT, game systems and modules can be installed together.
  *
- * This is the start of the core: how versions are ordered, sets of versions, reading manifests,
- * and the constraints releases declare under a policy.
+ * The core so far: how versions are ordered, sets of versions, reading manifests, the constraints
+ * releases declare under a policy, and resolving them into the best setup.
  *
  * @packageDocumentation
  */
@@ -56,3 +56,19 @@ export {
   type ReleaseRef,
   type Unusable,
 } from './constraints.js';
+export {
+  REQUIREMENTS,
+  WORLD_SYSTEM,
+  looksLikePrerelease,
+  resolve,
+  worldSystemVersion,
+  type PackageVersion,
+  type Reason,
+  type Requirement,
+  type Requirements,
+  type Resolution,
+  type ResolveOptions,
+  type Setup,
+} from './resolve.js';
+export type { Cause, Incompatibility } from './solver/solver.js';
+export type { Term } from './solver/term.js';

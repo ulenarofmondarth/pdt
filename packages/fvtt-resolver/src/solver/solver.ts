@@ -36,8 +36,12 @@ export interface Incompatibility<C> {
 export interface Provider<C> {
   /** How a package's versions are ordered. */
   orderOf(key: PackageKey): VersionOrder;
-  /** The versions of a package that may be chosen, most preferred first. */
-  versions(key: PackageKey): readonly string[];
+  /**
+   * The versions of a package that may be chosen, most preferred first.
+   *
+   * @param decided - The versions decided on so far, which a preference may depend on
+   */
+  versions(key: PackageKey, decided: ReadonlyMap<PackageKey, string>): readonly string[];
   /**
    * What choosing a version brings: its dependencies, exclusions and so on, each as terms that
    * cannot all hold, one of them being the version itself.
@@ -282,7 +286,7 @@ export function solve<C>(provider: Provider<C>, root: { package: PackageKey; ver
     for (const [key, term] of positive) {
       if (decisions.has(key)) continue;
       const ops = opsOf(key);
-      const candidates = key === root.package ? [root.version] : provider.versions(key);
+      const candidates = key === root.package ? [root.version] : provider.versions(key, decisions);
       const versions = candidates.filter(version => ops.contains(term.range, version));
       if (chosen === undefined || versions.length < chosen.versions.length) chosen = { key, versions };
     }

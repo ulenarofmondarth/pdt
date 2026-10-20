@@ -71,13 +71,14 @@ Manifests are read with zod, leniently, into these types. `normaliseManifest(jso
 ## Asking
 
 ```typescript
+/** Packages are named by key: `core`, or `<type>:<id>` such as `module:midi-qol`. */
 interface Requirements {
-  /** Packages that must be in the setup, each in a range ("any" by default). */
-  require: { package: PackageRef; range?: Range }[];
-  /** Exact versions: pins, or a lockfile replayed. */
-  pins?: { package: PackageRef; version: string }[];
+  /** Packages that must be in the setup, each in a range ("any" by default). A setup always has a core and a system. */
+  require?: { package: PackageKey; range?: Range }[];
+  /** Exact versions: pins, or a lockfile replayed. A pin may choose a version the policy would not. */
+  pins?: { package: PackageKey; version: string }[];
   /** Versions to prefer without requiring them, such as the lockfile when upgrading. */
-  prefer?: { package: PackageRef; version: string }[];
+  prefer?: { package: PackageKey; version: string }[];
 }
 
 interface Declarations {
@@ -101,7 +102,7 @@ interface Policy {
 }
 
 function check(universe: Universe, setup: SetupSpec, options?: Options): CheckResult;
-function resolve(universe: Universe, requirements: Requirements, options?: Options): Resolution;
+function resolve(universe: Universe, requirements: Requirements, options?: { policy?: Partial<Policy> }): Resolution;
 function matrix(universe: Universe, root: PackageRef, axes: MatrixAxes, options?: Options): Matrix;
 
 interface Options {
@@ -109,9 +110,12 @@ interface Options {
   policy?: Partial<Policy>;
 }
 
+// As built: `setup` is the core version, the system release and the module releases;
+// `failure` is the solver's incompatibility, with its derivation, as the explanation.
+// The install plan, and resolving in rounds (`ok: 'incomplete'`), come with the sources.
 type Resolution =
-  | { ok: true; setup: Setup; plan: InstallPlan }
-  | { ok: false; explanation: Explanation }
+  | { ok: true; setup: Setup; warnings: OrderWarning[] }
+  | { ok: false; failure: Incompatibility<Reason>; warnings: OrderWarning[] }
   /** Listed releases were chosen: load these and resolve again (see Resolution, "Resolving in rounds"). */
   | { ok: 'incomplete'; needs: ReleaseKey[] };
 ```
