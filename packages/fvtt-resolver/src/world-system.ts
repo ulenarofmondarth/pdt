@@ -13,9 +13,11 @@ import type { VersionOrder } from './version/order.js';
 
 export const WORLD_SYSTEM: PackageKey = 'world-system';
 
-/** Before every release of a system, and after every release of it. */
-const BOTTOM = '';
-const TOP = '\uffff';
+/** The version part before every release of a system, and after every release of it. */
+export const SYSTEM_START = '';
+export const SYSTEM_END = '\uffff';
+const BOTTOM = SYSTEM_START;
+const TOP = SYSTEM_END;
 
 /** The world-system version for a release of a system, by the system's id. */
 export function worldSystemVersion(system: string, version: string): string {

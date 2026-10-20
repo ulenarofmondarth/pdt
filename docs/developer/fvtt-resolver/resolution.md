@@ -115,7 +115,19 @@ An answer from a round that still needed manifests is provisional, and is never 
 Every question returns plain data:
 
 - **Setup**: the chosen releases, the verdict for each, and for each the constraints that put it there.
-- **Explanation**: the derivation, as a tree of incompatibilities, each with its provenance. A formatter turns the tree into numbered sentences like the example above. The tree and the wording are kept apart, so pdt can translate the wording (paraglide) and other tools can render it as they please.
+- **Explanation**: the derivation, as a tree of incompatibilities, each with its provenance. `explain` turns the tree into numbered sentences. The tree and the wording are kept apart, so pdt can translate the wording (paraglide) and other tools can render it as they please.
+
+  For example, midi-qol 14.0.15 with only dnd5e 6.0.6 available, under `systemCompatibility: require`:
+
+  > Because no version of midi-qol other than 14.0.15 is available and midi-qol 14.0.15 runs only in dnd5e 5.3.0 to 5.9.99, midi-qol needs a world with dnd5e 5.3.0 to 5.9.99.
+  > So, because no system in dnd5e 5.3.0 to 5.9.99 is available and the requirements need midi-qol, the requirements cannot be met. (1)
+
+  It follows pub's method for its error reports:
+  - each step of the derivation is a sentence ("Because …, …", "And because …", "Thus, …");
+  - a step that later steps refer back to is numbered, and referred to by its number;
+  - a step used only once is folded into the sentence that uses it, where that reads better.
+
+  The wording is an `ExplanationMessages` object, with English (`englishMessages`) by default. Every phrase is a function of the phrases inside it, so that a translation can order words as its language needs. Sets of versions are written as "5.3.0 to 5.9.99", "14.0.18 or later" or "1.0.0 up to but not including 2.0.0". A set open at both ends is written as what it leaves out: "other than 14.0.15".
 - **Install plan**: from a setup, what to fetch, in dependency order, with download URLs, and what is already present at the right version.
 - **Matrix**: cells of setups and explanations, with the axes they were resolved for.
 

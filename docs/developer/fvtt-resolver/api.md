@@ -123,7 +123,7 @@ type Resolution =
   | { ok: 'incomplete'; needs: ReleaseKey[] };
 ```
 
-`Explanation` is a tree of incompatibilities, each with its provenance. `formatExplanation(explanation, messages)` turns it into numbered sentences, with the wording passed in, so pdt can translate it.
+The explanation is the solver's failure: a tree of incompatibilities, each with its provenance. `explain(failure, messages?)` turns it into numbered sentences (`{ text, number? }[]`), with the wording passed in, so pdt can translate it; `explanationText` joins them into lines. `formatExplanation(failure, external, messages?)` does the same for any solver failure, given words for its data.
 
 ## Building a universe (adapters)
 
