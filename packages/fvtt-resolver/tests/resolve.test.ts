@@ -89,6 +89,24 @@ describe('resolve', () => {
     });
   });
 
+  it('decides the system after the modules, so that their preferences count, even when the system has fewer versions', () => {
+    // Three versions of the module, two of dnd5e: by fewest versions alone, the system would be
+    // decided first, before the module could prefer one.
+    const versions = ['1.0.0', '1.1.0', '1.2.0'].map(version =>
+      module('picky', version, {
+        relationships: relationships({
+          systems: [related('system', 'dnd5e', { minimum: '5.0.0', maximum: '5.9.99' })],
+        }),
+      }),
+    );
+    expect(
+      summary(resolve(universe(...versions, dnd5eOld, dnd5eNew), { require: [{ package: 'module:picky' }] })),
+    ).toMatchObject({
+      system: 'dnd5e@5.3.3',
+      modules: ['picky@1.2.0'],
+    });
+  });
+
   it('chooses the newest dnd5e when system ranges are ignored', () => {
     expect(summary(resolve(midiUniverse, requireMidi, { policy: { systemCompatibility: 'ignore' } }))).toMatchObject({
       system: 'dnd5e@6.0.6',

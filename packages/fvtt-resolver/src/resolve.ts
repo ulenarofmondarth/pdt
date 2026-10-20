@@ -209,6 +209,10 @@ export function resolve(universe: Universe, requirements: Requirements, options:
   const provider: Provider<Reason> = {
     orderOf,
 
+    // Core and the world's system are chosen to suit the modules, so that the modules' preferences
+    // (verified, system ranges) are known when they are decided.
+    decideLast: key => key === CORE || key === WORLD_SYSTEM,
+
     versions(key, decided) {
       const all = candidates(key);
       const score = new Map(all.map(version => [version, preferenceScore(key, version, decided)]));
