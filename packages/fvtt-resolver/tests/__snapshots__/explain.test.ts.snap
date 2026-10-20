@@ -1,0 +1,18 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`formatExplanation, on pub’s examples > explains a linear failure step by step 1`] = `
+"Because no version of foo after 1.0.0 up to but not including 2.0.0 is available and foo 1.0.0 depends on bar ^2.0.0, foo 1.0.0 up to but not including 2.0.0 needs bar 2.0.0 up to but not including 3.0.0.
+Because no version of bar after 2.0.0 up to but not including 3.0.0 is available and bar 2.0.0 depends on baz ^3.0.0, bar 2.0.0 up to but not including 3.0.0 needs baz 3.0.0 up to but not including 4.0.0.
+Thus, foo 1.0.0 up to but not including 2.0.0 needs baz 3.0.0 up to but not including 4.0.0.
+So, because root 1.0.0 depends on foo ^1.0.0 and root 1.0.0 depends on baz ^1.0.0, root 1.0.0 cannot be used. (1)"
+`;
+
+exports[`formatExplanation, on pub’s examples > numbers a step that a later one refers back to 1`] = `
+"Because a 1.0.0 depends on b ^2.0.0 and no version of a after 1.0.0 up to but not including 2.0.0 is available, a 1.0.0 up to but not including 2.0.0 needs b 2.0.0 up to but not including 3.0.0.
+And because foo 1.0.0 depends on a ^1.0.0, foo 1.0.0 needs b 2.0.0 up to but not including 3.0.0.
+So, because foo 1.0.0 depends on b ^1.0.0 and no version of foo after 1.0.0 up to but not including 1.1.0 or after 1.1.0 up to but not including 2.0.0 is available, foo 1.0.0 up to but not including 1.1.0 or after 1.1.0 up to but not including 2.0.0 cannot be used. (1)
+Because x 1.0.0 depends on y ^2.0.0 and no version of x after 1.0.0 up to but not including 2.0.0 is available, x 1.0.0 up to but not including 2.0.0 needs y 2.0.0 up to but not including 3.0.0.
+And because foo 1.1.0 depends on x ^1.0.0 and foo 1.1.0 depends on y ^1.0.0, foo 1.1.0 cannot be used.
+And because foo 1.0.0 up to but not including 1.1.0 or after 1.1.0 up to but not including 2.0.0 cannot be used (1), foo 1.0.0 up to but not including 2.0.0 cannot be used.
+So, because root 1.0.0 depends on foo ^1.0.0, root 1.0.0 cannot be used. (2)"
+`;
