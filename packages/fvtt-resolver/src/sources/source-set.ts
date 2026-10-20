@@ -18,6 +18,25 @@ export interface SourceSetOptions {
   readonly http: HttpClient;
   /** The core releases of interest. Releases whose `minimum` is newer than all of them are left out. */
   readonly core: readonly CoreRelease[];
+  /**
+   * Manifest URLs declared for packages, by package key, such as those in pdt's configuration. The
+   * relationships of loaded releases declare more as they are loaded.
+   */
+  readonly manifests?: Readonly<Record<PackageKey, readonly string[]>>;
+  /**
+   * The source whose listing says which releases a package offers: Foundry VTT's index by default.
+   */
+  readonly listing?: string;
+  /**
+   * What to do with releases of a listed package, from other sources, that are newer than the newest
+   * the listing offers, such as a line its author publishes on GitLab but not on Foundry VTT's
+   * listing. Older ones always fill in its history, and a package not listed keeps every release.
+   *
+   * - `exclude` (the default): leave them out, as Foundry VTT's users cannot install them from it.
+   * - `last`: keep them, marked `unlisted`, so that one is chosen only when no listed version fits.
+   * - `include`: keep them as they are.
+   */
+  readonly unlisted?: 'exclude' | 'last' | 'include';
 }
 
 export interface SourceSet {
@@ -38,8 +57,21 @@ const MANIFEST_SOURCE = 'manifest';
 const bare = (version: string) => version.replace(/^[vV]/, '');
 
 /** Sources working together. */
-export function sourceSet({ sources, http, core }: SourceSetOptions): SourceSet {
+export function sourceSet({
+  sources,
+  http,
+  core,
+  manifests = {},
+  listing = 'foundry-index',
+  unlisted = 'exclude',
+}: SourceSetOptions): SourceSet {
   const known = new Set<PackageKey>();
+  const declared = new Map<PackageKey, Set<string>>(
+    Object.entries(manifests).map(([key, urls]) => [key, new Set(urls)]),
+  );
+  const declare = (key: PackageKey, url: string | undefined) => {
+    if (url !== undefined) declared.set(key, new Set([...(declared.get(key) ?? []), url]));
+  };
   const gaps: SourceGap[] = [];
   const newestCore = core
     .map(c => c.version)
@@ -53,19 +85,35 @@ export function sourceSet({ sources, http, core }: SourceSetOptions): SourceSet 
 
   /** Every release of a package that the sources list, the first source's where they list the same version. */
   async function list(ref: PackageRef): Promise<Release[]> {
-    known.add(packageKey(ref));
+    const key = packageKey(ref);
+    known.add(key);
     const versions = new Map<string, Release>();
+    // The manifest URLs earlier sources listed, which later sources may find the package by.
+    const seen = new Set<string>();
+    // The newest version the listing offers, if it lists the package.
+    let newestListed: string | undefined;
+    const fromListing = new Set<Release>();
     for (const source of sources) {
-      const found = await source.releases(ref);
+      const found = await source.releases(ref, { declared: [...(declared.get(key) ?? [])], seen: [...seen] });
       if (!found.ok) {
         gaps.push(found.gap);
         continue;
       }
       for (const release of found.value) {
+        if (release.manifest !== undefined) seen.add(release.manifest);
+        if (source.name === listing) {
+          fromListing.add(release);
+          if (newestListed === undefined || isNewerVersion(release.version, newestListed))
+            newestListed = release.version;
+        }
         if (!versions.has(release.version) && possible(release)) versions.set(release.version, release);
       }
     }
-    return [...versions.values()];
+    return [...versions.values()].flatMap((release): Release[] => {
+      if (unlisted === 'include' || newestListed === undefined || fromListing.has(release)) return [release];
+      if (!isNewerVersion(release.version, newestListed)) return [release];
+      return unlisted === 'last' ? [{ ...release, unlisted: true }] : [];
+    });
   }
 
   /** Loads one listed release from its manifest, keeping the listing's bounds. */
@@ -92,7 +140,12 @@ export function sourceSet({ sources, http, core }: SourceSetOptions): SourceSet 
     // not another version: Foundry's listing gives `v1.1.4` as `1.1.4`. The release keeps the
     // listed version, so that it stays the release the solver asked for.
     if (bare(read.release.version) !== bare(release.version)) return gap(release.manifest, 'invalid');
-    return { ...read.release, version: release.version, ...(release.listing && { listing: release.listing }) };
+    return {
+      ...read.release,
+      version: release.version,
+      ...(release.listing && { listing: release.listing }),
+      ...(release.unlisted === true && { unlisted: true }),
+    };
   }
 
   return {
@@ -106,7 +159,8 @@ export function sourceSet({ sources, http, core }: SourceSetOptions): SourceSet 
       const named = new Map<PackageKey, PackageRef>();
       for (const release of loaded) {
         const { requires, systems } = release.relationships;
-        for (const { package: ref } of [...requires, ...systems]) {
+        for (const { package: ref, manifest } of [...requires, ...systems]) {
+          declare(packageKey(ref), manifest);
           if (ref.type !== 'world' && !known.has(packageKey(ref))) named.set(packageKey(ref), ref);
         }
       }

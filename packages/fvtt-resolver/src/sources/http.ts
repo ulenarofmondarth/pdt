@@ -36,6 +36,8 @@ export interface GetOptions {
   readonly staleIfError?: number;
   /** The cache key, when it should differ from the URL. */
   readonly key?: string;
+  /** More headers to send, such as a token. */
+  readonly headers?: Readonly<Record<string, string>>;
 }
 
 /** What fetching gave: the value, or a gap without its source, which the source adds. */
@@ -76,7 +78,7 @@ export function httpClient({
   return {
     requests: () => made,
 
-    async getJson(url, { maxAge, staleIfError = 0, key = url }) {
+    async getJson(url, { maxAge, staleIfError = 0, key = url, headers: extra = {} }) {
       const cached = await cache.get(key);
       const age = cached === undefined ? Infinity : now() - cached.storedAt;
       if (cached !== undefined && age < maxAge) return { ok: true, value: cached.value };
@@ -89,7 +91,7 @@ export function httpClient({
 
       let response: Response;
       try {
-        const headers: Record<string, string> = { 'User-Agent': userAgent };
+        const headers: Record<string, string> = { ...extra, 'User-Agent': userAgent };
         if (cached?.etag !== undefined) headers['If-None-Match'] = cached.etag;
         response = await limited(() => fetch(url, { headers }));
       } catch {

@@ -317,9 +317,42 @@ The core package (`@mondarth/fvtt-resolver`) contains no I/O at all. The sources
   - **A manifest of another version** than the one listed is refused, since a "latest" manifest URL would describe another release. A leading `v` is not another version: socketlib's manifest says `v1.1.4` where the listing says `1.1.4`, and the release keeps the listed version.
   - **`gaps()`** gives what could not be fetched or read.
 
+`githubSource(http, { token })` and `gitlabSource(http, { token, hosts })`
+: List a repository's releases (the newest 100) from GitHub's or GitLab's API. Each with the package's manifest attached (`module.json` or `system.json`) becomes a listed release.
+  - **Version:** read from the tag (`v1.1.4`, `release-6.0.6`). Loading the manifest checks it.
+  - **Repository:** found from the package's manifest URLs, through the hints the source set gives each source:
+    - *declared* URLs, from a relationship's `manifest` or the caller;
+    - *seen* URLs, of the releases earlier sources listed.
+  - **GitLab** recognises `gitlab.com`, or the self-hosted hosts given. A release link matches by its name or by the file in its URL.
+  - **Tokens** are optional.
+
+`manifestUrlSource(http)`
+: Reads the release a *declared* manifest URL describes, already loaded. It never reads the URLs other sources listed, since those are one per version, and reading them all would spend the request budget.
+
+`localSource(manifests)`
+: The caller's own manifests, read by the caller, such as the working copy of the package under development. Those it cannot read are listed in `problems`.
+
+`sourceSet({ …, manifests, listing, unlisted })`
+: `manifests` declares manifest URLs for packages. `unlisted` decides what happens to releases of a listed package, from other sources, that are newer than the newest the listing offers. midi-qol shows why this needs a choice: its author publishes 14.6.x, 14.0.x and 13.0.x lines on GitLab, while Foundry's listing offers the 14.0.x line.
+  - `exclude` (the default): leave them out, as Foundry's users cannot install them from it.
+  - `last`: keep them, marked `unlisted`; `resolve` ranks every listed version ahead of them.
+  - `include`: keep them as they are.
+
+  Older releases from other sources always fill in the history. A package the listing does not list keeps every release. `listing` names the source whose listing counts: Foundry's index by default.
+
 ### Live checks
 
-`pnpm --filter @mondarth/fvtt-resolver check:live` runs the checks in `tests-live/` against the real services. It is never run in CI. It resolves midi-qol against Foundry's index, and reports the rounds, requests, gaps and setup found. On 20 October 2026 it took 3 rounds and 11 requests to find:
+`pnpm --filter @mondarth/fvtt-resolver check:live` runs the checks in `tests-live/` against the real services. It is never run in CI. It resolves midi-qol against Foundry's index, and reports the rounds, requests, gaps and setup found. On 20 October 2026, with Foundry's index alone, it took 3 rounds and 11 requests to find:
 - core 14.368;
 - dnd5e 5.3.3;
 - midi-qol 14.0.15, dae 14.0.18, lib-wrapper 1.13.5.1 and socketlib 1.1.4.
+
+With GitHub, dnd5e's history grew from the 28 versions Foundry's details list to 102. With every source:
+
+| `unlisted` | Setup | Rounds | Requests |
+| --- | --- | --- | --- |
+| `exclude` | the same as above | 3 | 17 |
+| `last` | the same as above | 4 | 19 |
+| `include` | GitLab's midi-qol 14.6.0 and dae 14.6.0, with dnd5e 6.0.6 | 8 | 22 |
+
+Without a token, GitHub allows 60 requests an hour; the live checks read `GITHUB_TOKEN`.

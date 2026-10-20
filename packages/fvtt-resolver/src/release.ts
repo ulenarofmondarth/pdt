@@ -61,4 +61,10 @@ export interface Release {
    * manifest's.
    */
   readonly listing?: Compatibility;
+  /**
+   * A release the package's listing does not offer, such as one on GitHub newer than any Foundry
+   * VTT lists. `resolve` ranks every offered version ahead of it, so it is chosen only when none of
+   * those fits.
+   */
+  readonly unlisted?: boolean;
 }
