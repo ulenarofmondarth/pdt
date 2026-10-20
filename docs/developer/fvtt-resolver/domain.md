@@ -239,6 +239,24 @@ Verdicts are Foundry's `CONST.PACKAGE_AVAILABILITY_CODES` (as in 14.368). Foundr
 
 Where the resolver is stricter than Foundry, a verdict carries a second, resolver-only finding. Examples: a conflict, or a dependency's dependency that does not fit. See {doc}`questions`, decision 12.
 
+`check` gives each release in a setup both parts:
+- **Foundry's code,** found by Foundry's rules in Foundry's order:
+  1. the core bounds;
+  2. then `MISSING_DEPENDENCY`, when a required module is absent, outside the required range, or unusable on this core;
+  3. then, for a module, `UNVERIFIED_SYSTEM`, when the setup's system is not one it lists, or is outside the listed range.
+
+  Foundry checks the system last, so that code replaces a missing dependency, as it does in Foundry.
+- **The resolver's findings:**
+  - the hard constraints the setup breaks;
+  - the preferences it misses;
+  - the advisories that apply.
+
+  A setup is valid when it breaks no hard constraint.
+
+Two details differ from Foundry:
+- **A dependency's own verdict.** Foundry judges a dependency by its verdict after that dependency's own dependencies are tested, which depends on the order it loads packages in. `check` judges it by its verdict from its core bounds, so the answer does not depend on order.
+- **World codes.** `MISSING_SYSTEM` and `REQUIRES_DEPENDENCY_UPDATE` describe a world, and need a world manifest, so `check` does not give them.
+
 ## The universe
 
 The **universe** is every release the resolver may choose from: for each package involved, its known releases, and the known core releases. It is plain data, assembled beforehand from the sources (see {doc}`sources`), and the solver never looks beyond it. That makes a resolution reproducible: the same universe, requirements, declarations and policy always give the same answer. A universe can be saved with its result, which makes a lockfile or a bug report replayable offline.

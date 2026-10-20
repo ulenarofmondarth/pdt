@@ -8,17 +8,21 @@ describe('@mondarth/fvtt-resolver', () => {
 
   it('exports what the core offers so far', () => {
     expect(Object.keys(resolver).sort()).toEqual([
+      'AVAILABILITY',
       'CORE',
       'DEFAULT_POLICY',
       'REQUIREMENTS',
       'WORLD_SYSTEM',
+      'check',
       'chooseOrder',
       'chooseOrders',
+      'coreAvailability',
       'coreRange',
       'coreVerifiedRange',
       'foundryDisagreements',
       'foundryOrder',
       'isNewerVersion',
+      'isUnavailable',
       'looksLikePrerelease',
       'normaliseManifest',
       'packageKey',
@@ -30,6 +34,7 @@ describe('@mondarth/fvtt-resolver', () => {
       'semverOrder',
       'universeConstraints',
       'withDefaults',
+      'withinRelationship',
       'worldSystemVersion',
     ]);
   });

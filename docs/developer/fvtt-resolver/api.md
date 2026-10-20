@@ -101,7 +101,10 @@ interface Policy {
   listingCompatibility: 'prefer' | 'ignore';
 }
 
-function check(universe: Universe, setup: SetupSpec, options?: Options): CheckResult;
+// setup: { core: '14.368', system: { package: 'system:dnd5e', version: '5.3.3' }, modules: [...] }
+// CheckResult: valid, and for each release its Foundry availability code and the
+// constraints broken, preferences missed and advisories that apply.
+function check(universe: Universe, setup: SetupSpec, options?: { policy?: Partial<Policy> }): CheckResult;
 function resolve(universe: Universe, requirements: Requirements, options?: { policy?: Partial<Policy> }): Resolution;
 function matrix(universe: Universe, root: PackageRef, axes: MatrixAxes, options?: Options): Matrix;
 
