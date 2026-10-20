@@ -74,6 +74,8 @@ git tag @mondarth/pdt-v0.2.1 v0.2.1^{}
 git push origin @mondarth/pdt-v0.2.1
 ```
 
+pdt's commits after 0.2.1, up to its move into `packages/pdt`, changed files at the root, so semantic-release-monorepo would count none of them. For its first release from the workspace, pdt's `release.config.js` counts every commit since its last tag instead (`allCommitsTagFormat`). Remove that option once the release is tagged; every later commit is made in `packages/`.
+
 (npm-trusted-publisher)=
 
 ## npm trusted publishing
