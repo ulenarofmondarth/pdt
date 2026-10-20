@@ -6,18 +6,42 @@ describe('@mondarth/fvtt-resolver', () => {
     expect(resolver.packageName).toBe('@mondarth/fvtt-resolver');
   });
 
-  it('exports the version orders and range operations', () => {
+  it('exports what the core offers so far', () => {
     expect(Object.keys(resolver).sort()).toEqual([
+      'AVAILABILITY',
+      'CORE',
+      'DEFAULT_POLICY',
+      'REQUIREMENTS',
+      'WORLD_SYSTEM',
+      'check',
       'chooseOrder',
+      'chooseOrders',
+      'coreAvailability',
       'coreRange',
       'coreVerifiedRange',
+      'describeIncompatibility',
+      'describeReason',
+      'englishMessages',
+      'explain',
+      'explanationText',
+      'formatExplanation',
       'foundryDisagreements',
       'foundryOrder',
       'isNewerVersion',
+      'isUnavailable',
+      'looksLikePrerelease',
+      'normaliseManifest',
+      'packageKey',
       'packageName',
       'rangeOps',
       'relationshipRange',
+      'releaseConstraints',
+      'resolve',
       'semverOrder',
+      'universeConstraints',
+      'withDefaults',
+      'withinRelationship',
+      'worldSystemVersion',
     ]);
   });
 });

@@ -1,0 +1,14 @@
+{
+  "name": "times-up",
+  "version": "0.8.28",
+  "minimumCoreVersion": "0.8.2",
+  "compatibleCoreVersion": "9.231",
+  "dependencies": [
+    {
+      "name": "lib-wrapper",
+      "type": "module"
+    }
+  ],
+  "manifest": "https://gitlab.com/tposney/times-up/raw/master/package/module0828.json",
+  "download": "https://gitlab.com/tposney/times-up/raw/master/package/times-up-v0.8.28.zip"
+}

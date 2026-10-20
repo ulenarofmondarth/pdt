@@ -122,15 +122,25 @@ The resolver follows Foundry by default. The `relationshipBounds` policy can rea
 
 ## Constraints
 
-Everything the resolver must respect is a **constraint** of one of three shapes:
+Everything the resolver must respect is a **hard constraint** of one of four shapes:
 
 | Shape | Meaning | Example |
 | --- | --- | --- |
 | **Dependency** | If release *R* is used, package *P* must be used, at a version in range *X* | my-module 2.0.0 needs `core` 13 to 14 |
 | **Exclusion** | Release *R* and package *P* at a version in range *X* must not both be used | my-module 2.0.0 conflicts with other-module below 3.0 |
 | **Choice** | If release *R* is used, the world's system must be one of these (each with its range) | my-module 2.0.0 runs only in dnd5e 4 to 5, or pf2e 7 |
+| **Unusable** | Release *R* cannot be used at all | my-module 2.0.0 declares no core compatibility, under `missingCompatibility: reject` |
 
-Each constraint carries its **provenance**: which declaration produced it, and from which manifest, project file or policy. Explanations are built from provenance.
+Policy can soften what a manifest declares, so there are also **soft constraints**, which decide which valid setup is best and what is reported, but never whether a setup is valid:
+
+| Shape | Meaning | Example |
+| --- | --- | --- |
+| **Preference** | If *R* and *P* are both used, a version of *P* in range *X* is better | my-module 2.0.0 is verified on core 13 (`verified: prefer`) |
+| **Advisory** | Reported, not enforced | my-module 2.0.0 recommends helper-module; or conflicts with other-module, under `conflicts: warn` |
+
+Each constraint carries its **provenance**: the manifest it came from, the field that declared it (such as `relationships.requires[0]`), and the policy setting that shaped it, if any. Project declarations will add their own provenance. Explanations are built from provenance.
+
+`releaseConstraints` builds a release's constraints under a policy, given the order of each package's versions (`chooseOrders`). Since a package is ordered one way throughout, its order is chosen from all its versions in the universe and every bound placed on it.
 
 ### From a manifest
 
@@ -228,6 +238,24 @@ Verdicts are Foundry's `CONST.PACKAGE_AVAILABILITY_CODES` (as in 14.368). Foundr
 | 11 | `REQUIRES_DEPENDENCY_UPDATE` | no | A required module does not suit this core |
 
 Where the resolver is stricter than Foundry, a verdict carries a second, resolver-only finding. Examples: a conflict, or a dependency's dependency that does not fit. See {doc}`questions`, decision 12.
+
+`check` gives each release in a setup both parts:
+- **Foundry's code,** found by Foundry's rules in Foundry's order:
+  1. the core bounds;
+  2. then `MISSING_DEPENDENCY`, when a required module is absent, outside the required range, or unusable on this core;
+  3. then, for a module, `UNVERIFIED_SYSTEM`, when the setup's system is not one it lists, or is outside the listed range.
+
+  Foundry checks the system last, so that code replaces a missing dependency, as it does in Foundry.
+- **The resolver's findings:**
+  - the hard constraints the setup breaks;
+  - the preferences it misses;
+  - the advisories that apply.
+
+  A setup is valid when it breaks no hard constraint.
+
+Two details differ from Foundry:
+- **A dependency's own verdict.** Foundry judges a dependency by its verdict after that dependency's own dependencies are tested, which depends on the order it loads packages in. `check` judges it by its verdict from its core bounds, so the answer does not depend on order.
+- **World codes.** `MISSING_SYSTEM` and `REQUIRES_DEPENDENCY_UPDATE` describe a world, and need a world manifest, so `check` does not give them.
 
 ## The universe
 

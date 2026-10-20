@@ -19,31 +19,35 @@ interface Range {
 }
 
 /** One version of a package, normalised from its manifest. */
+/**
+ * A release holds what its manifest declares, cleaned up but not yet read as ranges: how
+ * bounds are read depends on policy (`relationshipBounds`, `versionOrder`), so ranges are
+ * built when a question is asked.
+ */
 interface Release {
   package: PackageRef;
   version: string;
-  /** Core versions it works with (minimum/maximum), and up to where that is verified. */
-  core: { range: Range; verified?: Range };
-  requires: Relationship[];
-  /** The systems it runs in; empty for any system. */
-  systems: Relationship[];
-  conflicts: Relationship[];
-  recommends: Relationship[];
-  /** `listed`: known from a listing only; relationships and `maximum` not yet loaded. */
-  detail: 'listed' | 'loaded';
+  /** The core versions it declares it works with. */
+  compatibility: Compatibility; // { minimum?, maximum?, verified? }, as text
+  relationships: { requires; systems; conflicts; recommends: Relationship[] };
   download?: string;
   manifest?: string;
   /** A premium package: downloading it needs the user's licence. */
-  protected?: boolean;
+  protected: boolean;
+  /** Where the manifest was read from. */
+  origin: string;
+  // To come with the sources:
+  /** `listed`: known from a listing only; relationships and `maximum` not yet loaded. */
+  detail: 'listed' | 'loaded';
   /** Core bounds from Foundry's listing, where they differ from the manifest's. */
   listing?: { minimum?: string; verified?: string };
-  /** What normalisation had to interpret, such as pre-v10 fields. */
-  warnings: string[];
 }
 
 interface Relationship {
   package: PackageRef;
-  range: Range;
+  /** The versions of the related package it admits, as declared. */
+  compatibility: Compatibility;
+  manifest?: string;
   reason?: string;
 }
 
@@ -62,18 +66,19 @@ interface Universe {
 }
 ```
 
-Manifests are read with zod schemas (as pdt reads its configuration), leniently, into these types. `normaliseManifest(json, origin)` returns a `Release` and its warnings, or the reasons it could not be read.
+Manifests are read with zod, leniently, into these types. `normaliseManifest(json, { origin, type })` returns a `Release` and its warnings, or the problems that make the manifest unreadable. Warnings and problems are data (a `code` and its details, such as `{ code: 'legacy-field', field: 'minimumCoreVersion', replacement: 'compatibility.minimum' }`), so that pdt words and translates them.
 
 ## Asking
 
 ```typescript
+/** Packages are named by key: `core`, or `<type>:<id>` such as `module:midi-qol`. */
 interface Requirements {
-  /** Packages that must be in the setup, each in a range ("any" by default). */
-  require: { package: PackageRef; range?: Range }[];
-  /** Exact versions: pins, or a lockfile replayed. */
-  pins?: { package: PackageRef; version: string }[];
+  /** Packages that must be in the setup, each in a range ("any" by default). A setup always has a core and a system. */
+  require?: { package: PackageKey; range?: Range }[];
+  /** Exact versions: pins, or a lockfile replayed. A pin may choose a version the policy would not. */
+  pins?: { package: PackageKey; version: string }[];
   /** Versions to prefer without requiring them, such as the lockfile when upgrading. */
-  prefer?: { package: PackageRef; version: string }[];
+  prefer?: { package: PackageKey; version: string }[];
 }
 
 interface Declarations {
@@ -96,8 +101,11 @@ interface Policy {
   listingCompatibility: 'prefer' | 'ignore';
 }
 
-function check(universe: Universe, setup: SetupSpec, options?: Options): CheckResult;
-function resolve(universe: Universe, requirements: Requirements, options?: Options): Resolution;
+// setup: { core: '14.368', system: { package: 'system:dnd5e', version: '5.3.3' }, modules: [...] }
+// CheckResult: valid, and for each release its Foundry availability code and the
+// constraints broken, preferences missed and advisories that apply.
+function check(universe: Universe, setup: SetupSpec, options?: { policy?: Partial<Policy> }): CheckResult;
+function resolve(universe: Universe, requirements: Requirements, options?: { policy?: Partial<Policy> }): Resolution;
 function matrix(universe: Universe, root: PackageRef, axes: MatrixAxes, options?: Options): Matrix;
 
 interface Options {
@@ -105,14 +113,17 @@ interface Options {
   policy?: Partial<Policy>;
 }
 
+// As built: `setup` is the core version, the system release and the module releases;
+// `failure` is the solver's incompatibility, with its derivation, as the explanation.
+// The install plan, and resolving in rounds (`ok: 'incomplete'`), come with the sources.
 type Resolution =
-  | { ok: true; setup: Setup; plan: InstallPlan }
-  | { ok: false; explanation: Explanation }
+  | { ok: true; setup: Setup; warnings: OrderWarning[] }
+  | { ok: false; failure: Incompatibility<Reason>; warnings: OrderWarning[] }
   /** Listed releases were chosen: load these and resolve again (see Resolution, "Resolving in rounds"). */
   | { ok: 'incomplete'; needs: ReleaseKey[] };
 ```
 
-`Explanation` is a tree of incompatibilities, each with its provenance. `formatExplanation(explanation, messages)` turns it into numbered sentences, with the wording passed in, so pdt can translate it.
+The explanation is the solver's failure: a tree of incompatibilities, each with its provenance. `explain(failure, messages?)` turns it into numbered sentences (`{ text, number? }[]`), with the wording passed in, so pdt can translate it; `explanationText` joins them into lines. `formatExplanation(failure, external, messages?)` does the same for any solver failure, given words for its data.
 
 ## Building a universe (adapters)
 
