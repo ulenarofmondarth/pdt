@@ -92,12 +92,21 @@ These rules have consequences that SemVer does not share:
 
 The first row is why the `prereleases` policy excludes pre-releases by default: under Foundry's order, a beta would otherwise win over its own release.
 
-Each kind of version sits behind a small `VersionScheme` (parse, compare, display). There are three schemes:
-- `core`, for core versions;
-- `foundry`, the default for packages;
-- `semver`, which the `versionOrder` policy selects. It falls back to `foundry` for versions that are not SemVer.
+### A consistent order
 
-The solver works only with ranges, so it does not care which scheme a package uses.
+Foundry's comparison is not a consistent order. Numeric parts compare as numbers, but a part that mixes digits and text compares as text. So `10a` is newer than `10` (text), `10` than `9` (numbers), and `9` than `10a` (text): a cycle. Checking a version against a bound is still well defined, since it is one comparison. But "newest" needs an order that sorts the same way every time.
+
+So the resolver orders versions by a **`VersionOrder`**: a total order, with a way to read a version or a bound. There are two:
+
+`foundry`
+: The default. It compares part by part as Foundry does, but reads a part that starts with digits as that number followed by the rest (`10a` is 10, then `a`). It agrees with Foundry wherever the first parts that differ are both numbers, or are not both numbers and do not both start with a digit, which covers the versions packages use. Where it differs, as for `10a` against `9`, the pairs are reported as warnings (`foundryDisagreements`), so that a user knows where "newest" may not be what Foundry would pick.
+
+`semver`
+: SemVer 2.0.0 precedence, selected by the `versionOrder` policy. It reads SemVer versions, and a short bound such as `"4"` or `"4.1"` as `4.0.0` or `4.1.0`. Ordering some of a package's versions one way and the rest another would make cycles again. So `semver` applies to a package only when it can read every version and bound given on it. Otherwise the package falls back to `foundry`, and the versions it could not read are reported.
+
+Core versions use the `foundry` order too. Their parts are all numbers, where it is exactly Foundry's. What is special about core is how bounds are read (the generation rule, [above](#core-versions)), and that belongs to building ranges, not to the order.
+
+The solver works only with ranges, so it does not care which order a package uses.
 
 ## Ranges
 
