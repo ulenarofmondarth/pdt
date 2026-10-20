@@ -107,6 +107,31 @@ describe('resolve', () => {
     });
   });
 
+  describe('unlisted releases', () => {
+    const lib = (version: string, unlisted = false) => module('lib', version, unlisted ? { unlisted: true } : {});
+
+    it('chooses a listed version over a newer unlisted one', () => {
+      const found = resolve(universe(dnd5eOld, lib('3.0.0', true), lib('2.0.0')), {
+        require: [{ package: 'module:lib' }],
+      });
+      expect(summary(found)).toMatchObject({ modules: ['lib@2.0.0'] });
+    });
+
+    it('chooses an unlisted version when no listed one fits', () => {
+      const atLeast3 = rangeOps(foundryOrder).between({ version: '3', inclusive: true }, undefined);
+      const found = resolve(universe(dnd5eOld, lib('3.0.0', true), lib('2.0.0')), {
+        require: [{ package: 'module:lib', range: atLeast3 }],
+      });
+      expect(summary(found)).toMatchObject({ modules: ['lib@3.0.0'] });
+    });
+
+    it('ranks an unlisted system after the listed ones', () => {
+      expect(summary(resolve(universe({ ...dnd5eNew, unlisted: true }, dnd5eOld), {}))).toMatchObject({
+        system: 'dnd5e@5.3.3',
+      });
+    });
+  });
+
   it('chooses the newest dnd5e when system ranges are ignored', () => {
     expect(summary(resolve(midiUniverse, requireMidi, { policy: { systemCompatibility: 'ignore' } }))).toMatchObject({
       system: 'dnd5e@6.0.6',

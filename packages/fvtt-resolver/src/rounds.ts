@@ -78,9 +78,11 @@ export async function resolveInRounds(
           // A release that could not be loaded is used as listed, so that it is not asked for again.
           const found = loaded.get(key);
           if (found === undefined) return { ...release, detail: 'loaded' as const };
-          // The listing's bounds stay with the release, for the listingCompatibility policy.
+          // What the listing said stays with the release: its bounds, for the listingCompatibility
+          // policy, and whether it offers the release at all.
           const listing = found.listing ?? release.listing;
-          return listing === undefined ? found : { ...found, listing };
+          const unlisted = found.unlisted ?? release.unlisted;
+          return { ...found, ...(listing && { listing }), ...(unlisted !== undefined && { unlisted }) };
         }),
         ...added,
       ],

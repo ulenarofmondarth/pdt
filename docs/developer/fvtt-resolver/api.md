@@ -141,12 +141,14 @@ interface CoreSource {
 }
 
 /** Each adapter is made with its options: `fetch`, and a token where the service takes one. */
-function localSource(paths: string[], read: ReadFile): ReleaseSource;
-function foundryIndexSource(options: { fetch: typeof fetch }): ReleaseSource;
-function githubSource(options: { fetch: typeof fetch; token?: string }): ReleaseSource;
-function gitlabSource(options: { fetch: typeof fetch; token?: string }): ReleaseSource;
-function manifestUrlSource(options: { fetch: typeof fetch }): ReleaseSource;
-function foundryReleaseNotesSource(options: { fetch: typeof fetch }): CoreSource;
+// As built, in @mondarth/fvtt-resolver/sources: each source fetches through one httpClient,
+// which takes the fetch, the cache and the request budget.
+function localSource(manifests: { json: unknown; origin: string; type: 'module' | 'system' }[]): ReleaseSource;
+function foundryIndexSource(http: HttpClient): ReleaseSource;
+function githubSource(http: HttpClient, options?: { token?: string }): ReleaseSource;
+function gitlabSource(http: HttpClient, options?: { token?: string; hosts?: string[] }): ReleaseSource;
+function manifestUrlSource(http: HttpClient): ReleaseSource;
+function foundryReleaseNotesSource(http: HttpClient): CoreSource; // to come
 
 function buildUniverse(input: {
   requirements: Requirements;

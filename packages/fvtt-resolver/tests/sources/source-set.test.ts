@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { resolveInRounds } from '../../src/rounds.js';
+import { githubSource } from '../../src/sources/forge.js';
 import { foundryIndexSource } from '../../src/sources/foundry-index.js';
 import { httpClient } from '../../src/sources/http.js';
 import { sourceSet } from '../../src/sources/source-set.js';
@@ -65,6 +66,174 @@ describe('sourceSet', () => {
     const universe = await set.universe([module('example-lib')]);
     expect(universe.releases.map(r => `${r.version}:${r.origin}`)).toEqual(['2.1.0:own', '1.0.0:own']);
     expect(set.gaps()).toEqual([{ source: 'failing', url: 'x', reason: 'network' }]);
+  });
+
+  describe('hints', () => {
+    /** A source that records the hints it is given, and lists one release with a manifest URL. */
+    function recording(name: string, version: string) {
+      const hints: unknown[] = [];
+      const source: ReleaseSource = {
+        name,
+        releases: (ref, given) => {
+          hints.push(given);
+          return Promise.resolve({
+            ok: true,
+            value: [
+              makeRelease({
+                id: ref.id,
+                version,
+                manifest: `https://example.org/${name}/${version}.json`,
+                detail: 'listed',
+              }),
+            ],
+          });
+        },
+      };
+      return { source, hints };
+    }
+
+    it('tells each source the manifests declared for the package and those earlier sources listed', async () => {
+      const first = recording('first', '2.0.0');
+      const second = recording('second', '1.0.0');
+      const { fetch } = fakeFetch({});
+      const http = httpClient({ fetch });
+      const set = sourceSet({
+        sources: [first.source, second.source],
+        http,
+        core: [],
+        manifests: { 'module:example-lib': ['https://example.org/declared.json'] },
+      });
+      await set.universe([module('example-lib')]);
+      expect(first.hints).toEqual([{ declared: ['https://example.org/declared.json'], seen: [] }]);
+      expect(second.hints).toEqual([
+        { declared: ['https://example.org/declared.json'], seen: ['https://example.org/first/2.0.0.json'] },
+      ]);
+    });
+
+    it('takes the manifests a loaded release’s relationships declare as hints for the packages they name', async () => {
+      const recorder = recording('recorder', '1.0.0');
+      const { set } = setup(
+        {
+          'https://example.org/app.json': {
+            body: {
+              id: 'app',
+              version: '1.0.0',
+              relationships: { requires: [{ id: 'helper', manifest: 'https://example.org/helper/module.json' }] },
+            },
+          },
+        },
+        () => [recorder.source],
+      );
+      await set.load([
+        makeRelease({ id: 'app', version: '1.0.0', manifest: 'https://example.org/app.json', detail: 'listed' }),
+      ]);
+      expect(recorder.hints).toEqual([{ declared: ['https://example.org/helper/module.json'], seen: [] }]);
+    });
+  });
+
+  it('fills in from GitHub the history Foundry’s index does not list', async () => {
+    const githubApi = 'https://api.github.com/repos/example/example-lib/releases?per_page=100';
+    const download = (tag: string) => `https://github.com/example/example-lib/releases/download/${tag}/module.json`;
+    const { fetch } = fakeFetch(
+      answers({
+        [details('example-lib')]: {
+          body: { versions: [{ version: '2.1.0', minimum: '13', manifest: download('v2.1.0') }] },
+        },
+        [githubApi]: {
+          body: [
+            { tag_name: 'v2.1.0', assets: [{ name: 'module.json', browser_download_url: download('v2.1.0') }] },
+            { tag_name: 'v2.0.0', assets: [{ name: 'module.json', browser_download_url: download('v2.0.0') }] },
+          ],
+        },
+      }),
+    );
+    const http = httpClient({ fetch });
+    const set = sourceSet({ sources: [foundryIndexSource(http, { indexUrl: INDEX }), githubSource(http)], http, core });
+    const universe = await set.universe([module('example-lib')]);
+    expect(universe.releases.map(r => `${r.version}:${r.origin}`)).toEqual([
+      `2.1.0:${details('example-lib')}`,
+      `2.0.0:${githubApi}`,
+    ]);
+  });
+
+  describe('releases newer than the listing offers', () => {
+    const githubApi = 'https://api.github.com/repos/example/example-lib/releases?per_page=100';
+    const download = (tag: string) => `https://github.com/example/example-lib/releases/download/${tag}/module.json`;
+    const tags = ['v2.5.0', 'v2.1.0', 'v2.0.0'];
+    const github = {
+      body: tags.map(tag => ({
+        tag_name: tag,
+        assets: [{ name: 'module.json', browser_download_url: download(tag) }],
+      })),
+    };
+    const listedOnly = { body: { versions: [{ version: '2.1.0', minimum: '13', manifest: download('v2.1.0') }] } };
+
+    async function versionsWith(unlisted?: 'exclude' | 'last' | 'include', extra: Record<string, Answer> = {}) {
+      const { fetch } = fakeFetch(answers({ [details('example-lib')]: listedOnly, [githubApi]: github, ...extra }));
+      const http = httpClient({ fetch });
+      const set = sourceSet({
+        sources: [foundryIndexSource(http, { indexUrl: INDEX }), githubSource(http)],
+        http,
+        core,
+        ...(unlisted && { unlisted }),
+      });
+      return (await set.universe([module('example-lib')])).releases.map(
+        r => `${r.version}${r.unlisted === true ? ' unlisted' : ''}`,
+      );
+    }
+
+    it('leaves them out by default, keeping the older history', async () => {
+      expect(await versionsWith()).toEqual(['2.1.0', '2.0.0']);
+      expect(await versionsWith('exclude')).toEqual(['2.1.0', '2.0.0']);
+    });
+
+    it('keeps them, marked, under last', async () => {
+      expect(await versionsWith('last')).toEqual(['2.1.0', '2.5.0 unlisted', '2.0.0']);
+    });
+
+    it('keeps them as they are under include', async () => {
+      expect(await versionsWith('include')).toEqual(['2.1.0', '2.5.0', '2.0.0']);
+    });
+
+    it('keeps every release of a package the listing does not list', async () => {
+      const notListed = { body: { ...index(), packages: index().packages.filter(p => p.id !== 'example-lib') } };
+      const { fetch } = fakeFetch(answers({ [INDEX]: notListed, [githubApi]: github }));
+      const http = httpClient({ fetch });
+      // Nothing lists it, so a declared manifest URL is how GitHub finds its repository.
+      const set = sourceSet({
+        sources: [foundryIndexSource(http, { indexUrl: INDEX }), githubSource(http)],
+        http,
+        core,
+        manifests: { 'module:example-lib': [download('v2.5.0')] },
+      });
+      const found = (await set.universe([module('example-lib')])).releases;
+      expect(found.map(r => `${r.version}${r.unlisted === true ? ' unlisted' : ''}`)).toEqual([
+        '2.5.0',
+        '2.1.0',
+        '2.0.0',
+      ]);
+    });
+
+    it('takes the listing from the source named', async () => {
+      const own = fixed('own', [makeRelease({ id: 'example-lib', version: '2.0.0', origin: 'own' })]);
+      const later = fixed('later', [makeRelease({ id: 'example-lib', version: '9.0.0', origin: 'later' })]);
+      const { fetch } = fakeFetch({});
+      const http = httpClient({ fetch });
+      const set = sourceSet({ sources: [own, later], http, core, listing: 'own' });
+      expect((await set.universe([module('example-lib')])).releases.map(r => r.version)).toEqual(['2.0.0']);
+    });
+
+    it('keeps the mark when a release is loaded', async () => {
+      const { set } = setup({ 'https://example.org/lib.json': { body: { id: 'example-lib', version: '2.5.0' } } });
+      const marked = makeRelease({
+        id: 'example-lib',
+        version: '2.5.0',
+        manifest: 'https://example.org/lib.json',
+        detail: 'listed',
+        unlisted: true,
+      });
+      expect((await set.load([marked]))[0]?.unlisted).toBe(true);
+    });
   });
 
   it('keeps every release when no core is of interest', async () => {

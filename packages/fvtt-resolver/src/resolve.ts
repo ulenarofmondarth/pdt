@@ -227,8 +227,15 @@ export function resolve(universe: Universe, requirements: Requirements, options:
         const named = key === WORLD_SYSTEM ? splitWorldSystem(version) : { system: key, version };
         return isPreferred(named.system, named.version);
       };
+      const unlisted = (version: string) => {
+        const named = key === WORLD_SYSTEM ? splitWorldSystem(version) : { system: key, version };
+        return releaseOf(named.system, named.version)?.unlisted === true;
+      };
       return [...all].sort(
-        (a, b) => Number(pinned(b)) - Number(pinned(a)) || (score.get(b) as number) - (score.get(a) as number),
+        (a, b) =>
+          Number(pinned(b)) - Number(pinned(a)) ||
+          Number(unlisted(a)) - Number(unlisted(b)) ||
+          (score.get(b) as number) - (score.get(a) as number),
       );
     },
 

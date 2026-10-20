@@ -153,6 +153,16 @@ describe('resolveInRounds', () => {
     expect(after.releases.find(r => r.package.id === 'lib')).toEqual(manifests[1]);
   });
 
+  it('keeps a release’s unlisted mark when it is loaded', async () => {
+    const marked = { ...listed('lib', '1.0.0'), unlisted: true };
+    const { universe: after } = await resolveInRounds(
+      { ...universe, releases: [dnd5e, app, marked] },
+      requireApp,
+      loader().load,
+    );
+    expect(after.releases.find(r => r.package.id === 'lib')?.unlisted).toBe(true);
+  });
+
   it('uses a release as listed when it cannot be loaded, and says so', async () => {
     const { resolution, rounds, unloaded } = await resolveInRounds(universe, requireApp, loader([]).load);
     expect(chosen(resolution)).toEqual(['app@1.0.0', 'lib@2.0.0']);

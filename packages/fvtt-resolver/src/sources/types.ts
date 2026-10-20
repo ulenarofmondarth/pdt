@@ -26,10 +26,21 @@ export interface SourceGap {
 export type SourceResult<T> =
   { readonly ok: true; readonly value: T } | { readonly ok: false; readonly gap: SourceGap };
 
+/** What is known of where a package's manifests are, which a source may use to find its releases. */
+export interface SourceHints {
+  /**
+   * Manifest URLs declared for the package: in a relationship's `manifest`, or given by the caller.
+   * Each is expected to describe the package's newest release.
+   */
+  readonly declared: readonly string[];
+  /** Manifest URLs of the package's releases that earlier sources listed, each of one version. */
+  readonly seen: readonly string[];
+}
+
 /** One way of finding a package's releases. */
 export interface ReleaseSource {
   /** The source's name, as gaps report it. */
   readonly name: string;
   /** The releases of a package this source knows of, listed or loaded: none if it knows none. */
-  releases(ref: PackageRef): Promise<SourceResult<Release[]>>;
+  releases(ref: PackageRef, hints?: SourceHints): Promise<SourceResult<Release[]>>;
 }

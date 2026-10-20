@@ -16,4 +16,14 @@ export {
 } from './http.js';
 export { FOUNDRY_PACKAGE_INDEX, foundryIndexSource, type FoundryIndexOptions } from './foundry-index.js';
 export { sourceSet, type SourceSet, type SourceSetOptions } from './source-set.js';
-export type { ReleaseSource, SourceGap, SourceResult } from './types.js';
+export { githubSource, gitlabSource, type GithubOptions, type GitlabOptions } from './forge.js';
+export { manifestUrlSource } from './manifest-url.js';
+export { localSource, type LocalManifest, type LocalSource } from './local.js';
+export {
+  githubRepository,
+  gitlabProject,
+  tagVersion,
+  type GithubRepository,
+  type GitlabProject,
+} from './repository.js';
+export type { ReleaseSource, SourceGap, SourceHints, SourceResult } from './types.js';
