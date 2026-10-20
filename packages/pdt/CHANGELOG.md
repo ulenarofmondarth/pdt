@@ -1,3 +1,32 @@
+## [0.3.0](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/pdt-v0.2.1...@mondarth/pdt-v0.3.0) (2026-10-20)
+
+### Features
+
+* **cli:** add a global --project option ([828ea42](https://github.com/ulenarofmondarth/pdt/commit/828ea421bf1aa5118e5c5a4c3b051b03c1810f4d))
+* **cli:** refuse --project given more than once ([9d1e900](https://github.com/ulenarofmondarth/pdt/commit/9d1e90064477c3412bb2e9349bd0dc5825304457))
+* **cli:** replace info with status, reporting pdt's runtime state ([2280468](https://github.com/ulenarofmondarth/pdt/commit/2280468196a208d3247863aa90108cccab9c7852))
+* **cli:** tell exited VTTs from stopped ones in status ([8917894](https://github.com/ulenarofmondarth/pdt/commit/89178948c3cd9f637dc09bc3afd4f8ce08101fe1))
+* **config:** add pdt config clear ([306b885](https://github.com/ulenarofmondarth/pdt/commit/306b885820ea51a0ec2bc93beed0f4fd7b4ec603))
+* **config:** add pdt config get and set, and --config overrides ([63fb3d6](https://github.com/ulenarofmondarth/pdt/commit/63fb3d6fc0316ab3f60d5241e6693aa6568190b7))
+* **config:** keep secret settings in secrets.conf ([40c3bdc](https://github.com/ulenarofmondarth/pdt/commit/40c3bdc3ffe63b9f641e066e72310344c50b9529))
+* **config:** track sources and set values in configuration files ([2189a6b](https://github.com/ulenarofmondarth/pdt/commit/2189a6bdf0cc3a9ff2fc69baf15e37b043a02fc8))
+* **init:** configure the module's VTT instead of a built-in prj ([f8e9d16](https://github.com/ulenarofmondarth/pdt/commit/f8e9d1621962d371ba566cb080ca339d8c5dd06b))
+* **init:** register projects by id and add force-reset ([b4cf2cb](https://github.com/ulenarofmondarth/pdt/commit/b4cf2cbe3b43bca079548eb722ed834e315de635))
+* **project:** add prune and move commands ([ff54363](https://github.com/ulenarofmondarth/pdt/commit/ff54363ac17883c6df5e6d9c696413ef06b7ef4b))
+* **vtt:** add vtt stop and restart, with run state and auto ports ([f564074](https://github.com/ulenarofmondarth/pdt/commit/f564074230180b86494ef2741e2ca1cf5c07fd35))
+* **vtt:** add VTT.<vtt>.server.hot_reload, on unless set ([1fb4408](https://github.com/ulenarofmondarth/pdt/commit/1fb44086e09c2d25b6fe054e7def84b902ba1e02))
+* **vtt:** run Foundry with its account, data and module, and wait ([5a48a68](https://github.com/ulenarofmondarth/pdt/commit/5a48a6877b777fb383715000cd626d0203d198d6))
+* **vtt:** start the configured VTT with pdt vtt start ([fb30e0a](https://github.com/ulenarofmondarth/pdt/commit/fb30e0a88889ef9df9a5de64048842a8fcc8f2d3))
+
+### Bug Fixes
+
+* **cli:** refuse stray arguments to init and info ([777a7d0](https://github.com/ulenarofmondarth/pdt/commit/777a7d00fbe8288c34932c85dfd869f4fc6d8e30))
+* **config:** follow XDG_DATA_HOME for the user data directory ([f9241dd](https://github.com/ulenarofmondarth/pdt/commit/f9241dd2b2040a0d3c3a26d257b371548e438ddf))
+* **config:** read and extend .gitignore through one descriptor ([ac8dbd6](https://github.com/ulenarofmondarth/pdt/commit/ac8dbd60226b0042d3e4523f180e7889aeaae3f7))
+* **release:** count pdt's commits from before the workspace ([fd42e7b](https://github.com/ulenarofmondarth/pdt/commit/fd42e7be94e5e2c8891513162c683e3ffde60ba0))
+* **vtt:** find a started VTT on the host it was started on ([2eaa53a](https://github.com/ulenarofmondarth/pdt/commit/2eaa53a2cdaa2a5b213499084282e7f0eec8f3b3))
+* **vtt:** run the container as the user, not by FOUNDRY_UID ([65973b0](https://github.com/ulenarofmondarth/pdt/commit/65973b0189fea1dcbf5a60f7f7876bdf7693c11a))
+
 ## [0.2.1](https://github.com/ulenarofmondarth/pdt/compare/v0.2.0...v0.2.1) (2026-10-18)
 
 ### Bug Fixes
