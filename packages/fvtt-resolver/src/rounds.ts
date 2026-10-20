@@ -35,42 +35,55 @@ const keyOf = (key: string, version: string) => `${key}@${version}`;
 /**
  * Resolves, loading listed releases as the answer needs them.
  *
- * @param load - Loads releases from their manifests. It returns the releases it loaded, in any order,
- *   and may leave out any it could not load
+ * @param load - Loads listed releases from their manifests. It returns the releases it loaded, in
+ *   any order, and may leave out any it could not load. It may also return releases the universe
+ *   does not have yet, such as the listings of packages a loaded release names, which are added.
  */
 export async function resolveInRounds(
   universe: Universe,
   requirements: Requirements,
-  load: (needs: readonly PackageVersion[]) => Promise<readonly Release[]>,
+  load: (needs: readonly Release[]) => Promise<readonly Release[]>,
   { maxRounds = 10, ...options }: RoundsOptions = {},
 ): Promise<RoundsResult> {
   let current = universe;
   const unloaded: PackageVersion[] = [];
+  const keyOfRelease = (release: Release) => keyOf(packageKey(release.package), release.version);
   for (let rounds = 1; ; rounds++) {
     const resolution = resolve(current, requirements, options);
     if (!('needs' in resolution) || rounds >= maxRounds) return { resolution, universe: current, rounds, unloaded };
 
-    const loaded = new Map(
-      (await load(resolution.needs))
-        .filter(release => release.detail === 'loaded')
-        .map(release => [keyOf(packageKey(release.package), release.version), release]),
-    );
     const needed = new Set(resolution.needs.map(need => keyOf(need.package, need.version)));
+    const listed = new Map<string, Release>();
+    for (const release of current.releases) {
+      const key = keyOfRelease(release);
+      if (release.detail === 'listed' && needed.has(key) && !listed.has(key)) listed.set(key, release);
+    }
+    const returned = await load([...listed.values()]);
+    const loaded = new Map(
+      returned
+        .filter(release => release.detail === 'loaded' && needed.has(keyOfRelease(release)))
+        .map(release => [keyOfRelease(release), release]),
+    );
+    const known = new Set(current.releases.map(keyOfRelease));
+    const added = returned.filter(release => !known.has(keyOfRelease(release)));
     for (const need of resolution.needs) {
       if (!loaded.has(keyOf(need.package, need.version))) unloaded.push(need);
     }
     current = {
       ...current,
-      releases: current.releases.map(release => {
-        const key = keyOf(packageKey(release.package), release.version);
-        if (!needed.has(key) || release.detail !== 'listed') return release;
-        // A release that could not be loaded is used as listed, so that it is not asked for again.
-        const found = loaded.get(key);
-        if (found === undefined) return { ...release, detail: 'loaded' };
-        // The listing's bounds stay with the release, for the listingCompatibility policy.
-        const listing = found.listing ?? release.listing;
-        return listing === undefined ? found : { ...found, listing };
-      }),
+      releases: [
+        ...current.releases.map(release => {
+          const key = keyOfRelease(release);
+          if (!needed.has(key) || release.detail !== 'listed') return release;
+          // A release that could not be loaded is used as listed, so that it is not asked for again.
+          const found = loaded.get(key);
+          if (found === undefined) return { ...release, detail: 'loaded' as const };
+          // The listing's bounds stay with the release, for the listingCompatibility policy.
+          const listing = found.listing ?? release.listing;
+          return listing === undefined ? found : { ...found, listing };
+        }),
+        ...added,
+      ],
     };
   }
 }
