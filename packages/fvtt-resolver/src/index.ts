@@ -43,7 +43,9 @@ export {
   type PackageKey,
   type Universe,
 } from './universe.js';
+export { resolveInRounds, type RoundsOptions, type RoundsResult } from './rounds.js';
 export {
+  coreCompatibility,
   releaseConstraints,
   universeConstraints,
   type Advisory,

@@ -66,7 +66,7 @@ describe('explain', () => {
       { require: [{ package: 'module:midi-qol' }] },
       { policy: { systemCompatibility: 'require' } },
     );
-    if (result.ok) throw new Error('Expected a failure');
+    if (result.ok || 'needs' in result) throw new Error('Expected a failure');
     expect(explanationText(explain(result.failure))).toBe(
       [
         'Because no version of midi-qol other than 14.0.15 is available and midi-qol 14.0.15 runs only in dnd5e 5.3.0 to 5.9.99, midi-qol needs a world with dnd5e 5.3.0 to 5.9.99.',
@@ -80,7 +80,7 @@ describe('explain', () => {
       require: [{ package: 'module:midi-qol' }],
       pins: [{ package: 'core', version: '13.351' }],
     });
-    if (result.ok) throw new Error('Expected a failure');
+    if (result.ok || 'needs' in result) throw new Error('Expected a failure');
     expect(explain(result.failure)).toEqual([
       {
         text: 'Because no version of Foundry VTT 13.351 is available and Foundry VTT 13.351 is pinned, the requirements cannot be met.',
@@ -91,7 +91,7 @@ describe('explain', () => {
 
   it('words an explanation in the messages given', () => {
     const result = resolve(universe, { require: [{ package: 'module:ghost' }] });
-    if (result.ok) throw new Error('Expected a failure');
+    if (result.ok || 'needs' in result) throw new Error('Expected a failure');
     const shouting: ExplanationMessages = { ...englishMessages, name: key => englishMessages.name(key).toUpperCase() };
     expect(explanationText(explain(result.failure, shouting))).toBe(
       'Because no version of GHOST is available and the requirements need GHOST, the requirements cannot be met. (1)',

@@ -81,10 +81,22 @@ export interface Setup {
 export type Resolution =
   | { readonly ok: true; readonly setup: Setup; readonly warnings: readonly OrderWarning[] }
   /** The incompatibility that proves there is no valid setup, with its derivation: the explanation. */
-  | { readonly ok: false; readonly failure: Incompatibility<Reason>; readonly warnings: readonly OrderWarning[] };
+  | { readonly ok: false; readonly failure: Incompatibility<Reason>; readonly warnings: readonly OrderWarning[] }
+  /**
+   * Not yet an answer: the answer depends on listed releases, whose manifests are not loaded. Load
+   * them into the universe and resolve again (see `resolveInRounds`).
+   */
+  | { readonly ok: false; readonly needs: readonly PackageVersion[]; readonly warnings: readonly OrderWarning[] };
 
 export interface ResolveOptions {
   readonly policy?: Partial<Policy>;
+}
+
+/** The constraints at the leaves of an explanation. */
+function constraintsIn(incompatibility: Incompatibility<Reason>): Constraint[] {
+  const { cause } = incompatibility;
+  if (cause.kind === 'derived') return [...constraintsIn(cause.conflict), ...constraintsIn(cause.other)];
+  return cause.kind === 'external' && cause.data.kind === 'constraint' ? [cause.data.constraint] : [];
 }
 
 /**
@@ -255,12 +267,30 @@ export function resolve(universe: Universe, requirements: Requirements, options:
   };
 
   const result = solve(provider, { package: REQUIREMENTS, version: '0' });
-  if (!result.ok) return { ok: false, failure: result.failure, warnings: orders.warnings };
+
+  /** The listed releases among these versions, which must be loaded before the answer is final. */
+  const listedAmong = (versions: readonly PackageVersion[]): PackageVersion[] => {
+    const needs = new Map<string, PackageVersion>();
+    for (const { package: key, version } of versions) {
+      if (releaseOf(key, version)?.detail === 'listed') needs.set(`${key}@${version}`, { package: key, version });
+    }
+    return [...needs.values()];
+  };
+
+  if (!result.ok) {
+    // A failure that leans on a listed release's constraints may not hold once it is loaded.
+    const needs = listedAmong(constraintsIn(result.failure).map(({ from }) => from));
+    return needs.length > 0
+      ? { ok: false, needs, warnings: orders.warnings }
+      : { ok: false, failure: result.failure, warnings: orders.warnings };
+  }
 
   const chosen = [...result.versions].flatMap(([key, version]) => {
     const release = releaseOf(key, version);
     return release === undefined ? [] : [release];
   });
+  const needs = listedAmong([...result.versions].map(([key, version]) => ({ package: key, version })));
+  if (needs.length > 0) return { ok: false, needs, warnings: orders.warnings };
   return {
     ok: true,
     setup: {
