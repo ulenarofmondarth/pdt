@@ -1,27 +1,10 @@
 {
-  "name": "@mondarth/pdt",
-  "version": "0.2.1",
+  "name": "pdt-workspace",
+  "private": true,
+  "description": "The pdt repository: the pdt CLI and the packages it is built from (packages/*).",
   "author": "Mark Bools",
   "license": "MIT",
   "type": "module",
-  "bugs": {
-    "url": "https://github.com/ulenarofmondarth/pdt/issues"
-  },
-  "homepage": "https://github.com/ulenarofmondarth/pdt#readme",
-  "funding": [
-    {
-      "type": "patreon",
-      "url": "https://patreon.com/Mondarth"
-    },
-    {
-      "type": "ko-fi",
-      "url": "https://ko-fi.com/ulenarofmondarth"
-    }
-  ],
-  "main": "dist/index.js",
-  "bin": {
-    "pdt": "./dist/index.js"
-  },
   "engines": {
     "node": ">=24"
   },
@@ -34,16 +17,14 @@
     }
   },
   "scripts": {
-    "build": "vite build",
-    "build:watch": "vite build --watch",
-    "dev:link": "pnpm add --global \"link:$(pwd)\"",
-    "dev:unlink": "pnpm remove --global @mondarth/pdt",
-    "build:clean": "pnpm run clean && pnpm run build",
-    "test": "vitest --run",
-    "test:coverage": "vitest run --coverage",
-    "test:cli": "vitest run --config vitest.cli.config.ts",
-    "clean": "rimraf dist/",
-    "test:ci": "vitest run --related",
+    "build": "pnpm -r build",
+    "build:watch": "pnpm --filter @mondarth/pdt build:watch",
+    "dev:link": "pnpm --filter @mondarth/pdt dev:link",
+    "dev:unlink": "pnpm --filter @mondarth/pdt dev:unlink",
+    "test": "pnpm test:repo && pnpm -r test",
+    "test:repo": "vitest run",
+    "test:coverage": "pnpm test:repo && pnpm -r test:coverage",
+    "test:cli": "pnpm -r test:cli",
     "prepare": "husky",
     "build:docs": "DOCS_UID=$(id -u) DOCS_GID=$(id -g) docker compose -f docs/compose.yaml run --rm --no-deps -T docs make html",
     "devserve:docs": "DOCS_UID=$(id -u) DOCS_GID=$(id -g) docker compose -f docs/compose.yaml run --rm --service-ports docs make livehtml",
@@ -52,27 +33,21 @@
     "lint-staged": "lint-staged",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
-    "typecheck": "tsc --noEmit",
-    "typecheck:fallback": "tsc6 --noEmit",
+    "typecheck": "tsc --noEmit && pnpm -r typecheck",
+    "typecheck:fallback": "tsc6 --noEmit && pnpm -r typecheck:fallback",
     "release:dry-run": "semantic-release --dry-run --no-ci",
     "commit": "cz"
   },
-  "keywords": [],
-  "description": "A CLI tool supporting development of FoundryVTT packages.",
   "devDependencies": {
     "@babel/eslint-parser": "^8.0.7",
     "@commitlint/cli": "^21.2.3",
     "@commitlint/config-conventional": "^21.2.3",
     "@commitlint/types": "^21.2.3",
     "@eslint/js": "^10.0.1",
-    "@inlang/paraglide-js": "2.27.0",
     "@semantic-release/changelog": "^7.0.0",
     "@semantic-release/exec": "^7.1.0",
     "@semantic-release/git": "^11.0.1",
-    "@types/dockerode": "^3.3.35",
     "@types/node": "^24.19.2",
-    "@types/yargs": "^17.0.33",
-    "@vitest/coverage-v8": "^5.0.4",
     "commitizen": "4.3.2",
     "conventional-changelog-conventionalcommits": "^9.3.1",
     "cz-conventional-changelog": "3.3.0",
@@ -85,31 +60,13 @@
     "jiti": "^2.7.0",
     "lint-staged": "^17.6.0",
     "prettier": "^3.3.3",
-    "rimraf": "^6.0.1",
-    "rollup-plugin-node-externals": "^9.0.1",
     "semantic-release": "^25.0.9",
-    "tsconfig-paths": "^4.2.0",
     "typedoc": "^0.28.20",
     "typedoc-plugin-rename-defaults": "^0.7.3",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "typescript-eslint": "^8.71.2",
     "typescript7": "npm:typescript@^7.0.2",
-    "vite": "^8.3.4",
-    "vite-tsconfig-paths": "^6.1.1",
-    "vitest": "^5.0.4"
-  },
-  "dependencies": {
-    "@inquirer/prompts": "^8.7.3",
-    "@mondarth/create-fvtt-module": "^0.3.0",
-    "chalk": "^6.0.1",
-    "classic-level": "^3.0.0",
-    "dockerode": "^5.0.1",
-    "fast-glob": "^3.3.3",
-    "figlet": "^1.12.0",
-    "find-up": "^8.0.0",
-    "winston": "^3.19.0",
-    "yaml": "^2.9.1",
-    "yargs": "^18.2.0",
-    "zod": "^4.6.7"
+    "vitest": "^5.0.4",
+    "yaml": "^2.9.1"
   }
 }

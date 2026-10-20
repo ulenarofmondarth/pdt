@@ -7,9 +7,13 @@ coverage:
       default:
         informational: true
 
+# Coverage is measured in packages/pdt, so the report's paths start at its src/.
+fixes:
+  - '^src/::packages/pdt/src/'
+
 flags:
   unit:
-    paths: [src/]
+    paths: [packages/pdt/src/]
     carryforward: true
 
 comment:

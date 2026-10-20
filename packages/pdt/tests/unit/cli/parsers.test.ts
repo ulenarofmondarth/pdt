@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import { describe, expect, test } from 'vitest';
 import { createParser } from '@/cli/parsers.js';
 import { pdtCommands } from '@/cli/commands.js';
@@ -20,6 +21,17 @@ describe('command line parser', () => {
     const { err } = await parse('');
 
     expect(err?.message).toBe('At least one top level command is required.');
+  });
+
+  // yargs would otherwise look for a package.json above its own installed copy, which finds pdt's
+  // only by chance of where the package manager puts it.
+  test("reports the version in pdt's package.json", async () => {
+    const { version } = JSON.parse(fs.readFileSync('package.json', 'utf8')) as { version: string };
+
+    const { err, output } = await parse('--version');
+
+    expect(err).toBeFalsy();
+    expect(output).toBe(version);
   });
 
   test('rejects a command it does not know', async () => {

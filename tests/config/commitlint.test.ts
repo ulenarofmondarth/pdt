@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import config from '../../../commitlint.config.js';
+import config from '../../commitlint.config.js';
 
 type Rule = (parsed: { subject: string | null }) => [boolean, string?];
 

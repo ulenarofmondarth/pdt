@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"],
+      "@util/*": ["./src/util/*"],
+      "@lib/*": ["./src/lib/*"],
+      "@schema/*": ["./src/schema/*"],
+      "@i18n/*": ["./src/paraglide/*"],
+      "@tests/*": ["./tests/*"]
+    }
+  },
+  "include": ["src/**/*", "tests/**/*", "*.config.ts"]
+}

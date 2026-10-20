@@ -13,6 +13,8 @@ import { m } from '@i18n/messages.js';
 export function createParser(commands: readonly CommandModule[]): Argv {
   const parser = yargs()
     .scriptName(PDT.PROGRAM_NAME)
+    // Otherwise yargs looks for a package.json above its own installed copy, not pdt's.
+    .version(__PDT_VERSION__)
     // pdt decides the exit code (see main); yargs must never end the process itself.
     .exitProcess(false)
     .strict(true)

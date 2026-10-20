@@ -1,0 +1,78 @@
+{
+  "name": "@mondarth/pdt",
+  "version": "0.2.1",
+  "author": "Mark Bools",
+  "license": "MIT",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/ulenarofmondarth/pdt/issues"
+  },
+  "homepage": "https://github.com/ulenarofmondarth/pdt#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ulenarofmondarth/pdt.git",
+    "directory": "packages/pdt"
+  },
+  "funding": [
+    {
+      "type": "patreon",
+      "url": "https://patreon.com/Mondarth"
+    },
+    {
+      "type": "ko-fi",
+      "url": "https://ko-fi.com/ulenarofmondarth"
+    }
+  ],
+  "main": "dist/index.js",
+  "bin": {
+    "pdt": "./dist/index.js"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "vite build",
+    "build:watch": "vite build --watch",
+    "dev:link": "pnpm add --global \"link:$(pwd)\"",
+    "dev:unlink": "pnpm remove --global @mondarth/pdt",
+    "build:clean": "pnpm run clean && pnpm run build",
+    "test": "vitest --run",
+    "test:coverage": "vitest run --coverage",
+    "test:cli": "vitest run --config vitest.cli.config.ts",
+    "clean": "rimraf dist/",
+    "test:ci": "vitest run --related",
+    "typecheck": "tsc --noEmit",
+    "typecheck:fallback": "tsc6 --noEmit"
+  },
+  "keywords": [],
+  "description": "A CLI tool supporting development of FoundryVTT packages.",
+  "devDependencies": {
+    "@inlang/paraglide-js": "2.27.0",
+    "@types/dockerode": "^3.3.35",
+    "@types/node": "^24.19.2",
+    "@types/yargs": "^17.0.33",
+    "@vitest/coverage-v8": "^5.0.4",
+    "rimraf": "^6.0.1",
+    "rollup-plugin-node-externals": "^9.0.1",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "typescript7": "npm:typescript@^7.0.2",
+    "vite": "^8.3.4",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^5.0.4"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^8.7.3",
+    "@mondarth/create-fvtt-module": "^0.3.0",
+    "chalk": "^6.0.1",
+    "classic-level": "^3.0.0",
+    "dockerode": "^5.0.1",
+    "fast-glob": "^3.3.3",
+    "figlet": "^1.12.0",
+    "find-up": "^8.0.0",
+    "winston": "^3.19.0",
+    "yaml": "^2.9.1",
+    "yargs": "^18.2.0",
+    "zod": "^4.6.7"
+  }
+}
