@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module';
 import { describe, expect, it } from 'vitest';
-import config from '../../release.config.js';
+import { packageRelease } from '../../release.base.js';
 
 /**
  * semantic-release renders the release notes with its own copy of conventional-changelog-writer,
@@ -20,7 +20,9 @@ async function loadGenerateNotes(): Promise<GenerateNotes> {
   return module.generateNotes as GenerateNotes;
 }
 
-/** The options this project passes to a plugin in release.config.js. */
+const config = packageRelease({ output: 'version' });
+
+/** The options each package passes to a plugin (release.base.js). */
 function pluginOptions(name: string): object {
   for (const plugin of config.plugins ?? []) {
     if (Array.isArray(plugin) && plugin[0] === name) return (plugin[1] ?? {}) as object;

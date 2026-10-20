@@ -11,6 +11,7 @@ The repository is a [pnpm workspace](https://pnpm.io/workspaces). Each package l
 | Directory | What it holds |
 | --- | --- |
 | `packages/pdt` | The {program}`pdt` command line tool (`@mondarth/pdt`): its source, tests, test data, messages and build configuration |
+| `packages/fvtt-resolver` | `@mondarth/fvtt-resolver`, the library that works out which versions of Foundry VTT, systems and modules go together, published to npm on its own (see {doc}`fvtt-resolver`) |
 | the root | What the whole repository shares: the workspace (`package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`), the TypeScript, ESLint, Prettier and Vitest settings, the git hooks, commitlint and semantic-release, the workflows, these docs, and `tests/`, which checks that tooling |
 
 Paths in the developer documentation about {program}`pdt`'s code, such as `src/main.ts` or `tests/unit/`, are relative to `packages/pdt`.

@@ -16,6 +16,7 @@ logging
 configuration
 commands
 vtt
+fvtt-resolver
 build-process
 code-control
 ci-cd

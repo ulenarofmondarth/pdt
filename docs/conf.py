@@ -1,4 +1,7 @@
 # Configuration file for the Sphinx documentation builder.
+
+import json
+from pathlib import Path
 #
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
@@ -9,8 +12,8 @@
 project = 'Foundry VTT Package Developer Toolkit'
 copyright = '2024, Ulenar of Mondarth'
 author = 'Ulenar of Mondarth'
-# Rewritten by semantic-release (see release.config.js); keep this line's format.
-release = '0.2.1'
+# pdt's version, from its package.json. The container sees it at /pdt/package.json (compose.yaml).
+release = json.loads(Path('/pdt/package.json').read_text())['version']
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

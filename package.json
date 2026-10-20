@@ -35,7 +35,8 @@
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit && pnpm -r typecheck",
     "typecheck:fallback": "tsc6 --noEmit && pnpm -r typecheck:fallback",
-    "release:dry-run": "semantic-release --dry-run --no-ci",
+    "release": "pnpm --recursive --workspace-concurrency=1 exec semantic-release",
+    "release:dry-run": "pnpm --recursive --workspace-concurrency=1 exec semantic-release --dry-run --no-ci",
     "commit": "cz"
   },
   "devDependencies": {
@@ -61,6 +62,7 @@
     "lint-staged": "^17.6.0",
     "prettier": "^3.3.3",
     "semantic-release": "^25.0.9",
+    "semantic-release-monorepo": "^8.0.2",
     "typedoc": "^0.28.20",
     "typedoc-plugin-rename-defaults": "^0.7.3",
     "typescript": "npm:@typescript/typescript6@^6.0.2",

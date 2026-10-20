@@ -3,9 +3,11 @@ name: Release
 # Pushes to `main` (normally a merge from `dev`) are released:
 #
 #   1. Dev CI runs in full. Nothing is released unless it passes.
-#   2. semantic-release works out the version from the commits, tags it, writes the changelog
-#      and creates the GitHub release with the documentation (.zip) attached.
-#   3. If a release was cut, `dev` is brought up to date with the release commit.
+#   2. semantic-release runs for each package (`pnpm release`): it works out the package's version
+#      from the commits that change it, tags it `<package name>-v<version>`, writes its changelog
+#      and creates its GitHub release. pdt's release has the documentation (.zip) attached;
+#      @mondarth/fvtt-resolver is published to npm through trusted publishing (OIDC, no token).
+#   3. If anything was released, `dev` is brought up to date with the release commits.
 #   4. The documentation is published to GitHub Pages.
 #
 # It can also be started by hand on `main` (Actions > Release > Run workflow), for example to
@@ -43,8 +45,11 @@ jobs:
       contents: write
       issues: write
       pull-requests: write
+      # npm trusted publishing: pnpm publish exchanges the workflow's OIDC token with npm.
+      id-token: write
     outputs:
       version: ${{ steps.release.outputs.version }}
+      fvtt-resolver-version: ${{ steps.release.outputs.fvtt-resolver-version }}
     steps:
       # The release App is on the rulesets' bypass list, so its token may push to the
       # protected branches. Each token expires within an hour.
@@ -71,7 +76,7 @@ jobs:
       - uses: ./.github/actions/setup
       - name: Release
         id: release
-        run: pnpm exec semantic-release
+        run: pnpm release
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           GIT_AUTHOR_NAME: ${{ steps.identity.outputs.name }}
@@ -82,7 +87,7 @@ jobs:
   sync-dev:
     name: Bring dev up to date
     needs: release
-    if: needs.release.outputs.version != ''
+    if: needs.release.outputs.version != '' || needs.release.outputs.fvtt-resolver-version != ''
     runs-on: ubuntu-latest
     steps:
       # The release App is on the rulesets' bypass list, so its token may push to the
@@ -98,7 +103,7 @@ jobs:
           ref: main
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
-      # Fast-forwards dev onto the release commit. If dev has moved on, or the push is refused,
+      # Fast-forwards dev onto the release commits. If dev has moved on, or the push is refused,
       # opens a pull request from main to dev instead (unless one is already open).
       - name: Merge main into dev
         run: |
@@ -111,11 +116,10 @@ jobs:
             exit 0
           fi
           gh pr create --base dev --head main \
-            --title "chore(release): merge v${VERSION} back into dev" \
-            --body "Brings the release commit (version, changelog) from main back into dev."
+            --title "chore(release): merge the release back into dev" \
+            --body "Brings the release commits (versions, changelogs) from main back into dev."
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          VERSION: ${{ needs.release.outputs.version }}
 
   pages:
     name: Publish to GitHub Pages
@@ -131,7 +135,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ needs.release.outputs.version != '' && format('v{0}', needs.release.outputs.version) || github.sha }}
+          ref: ${{ needs.release.outputs.version != '' && format('@mondarth/pdt-v{0}', needs.release.outputs.version) || github.sha }}
       # Built here rather than by docs.yml, so the documentation carries the release's version.
       - uses: ./.github/actions/build-docs
       - uses: actions/configure-pages@v6

@@ -1,0 +1,18 @@
+# fvtt-resolver
+
+`@mondarth/fvtt-resolver` (`packages/fvtt-resolver`) will work out which versions of Foundry VTT, game systems and modules can be installed together. It reads the compatibility and relationships their manifests declare, and the combinations declared valid. `pdt vtt install` will be built on it, but it is a package of its own, published to npm, so that other projects can use it too.
+
+```{todo}
+Design the API: the domain model (versions, constraints, manifests), what makes a combination valid, and how manifests are fetched. Until then the package only exports its name.
+```
+
+## Shape of the package
+
+- **Pure core.** The resolver depends on plain data only: no network, files or Foundry runtime. Fetching and caching manifests will sit behind adapters, so the core stays deterministic and easy to test, and runs wherever its users do.
+- **ES modules with types.** `pnpm build` compiles `src/` with {command}`tsc` (`tsconfig.build.json`) into `dist/`, as JavaScript with type declarations, one file per source file. Nothing is bundled. `exports` in `package.json` is the only way in, and `files` ships only `dist/`.
+- **No path aliases.** The compiler does not rewrite import paths in its output, so the package imports its own modules by relative path.
+- **Tests** live in `tests/` and run with {program}`vitest`. Coverage must stay at 100%. `tests/package.test.ts` checks what a consumer of the published package relies on: its name, `exports`, `files` and `repository`. CI also runs `pnpm pack --dry-run` to show what npm would receive.
+
+## Releases
+
+The package is released on its own, from the commits that change files in `packages/fvtt-resolver`, and published to npm through trusted publishing (see {ref}`npm-publishing`). Use the scope `resolver` in its commit messages, as in `feat(resolver): ...`.

@@ -5,6 +5,12 @@
     "bash -c 'pnpm --filter @mondarth/pdt typecheck'",
     "pnpm --dir packages/pdt exec vitest related --run"
   ],
+  "packages/fvtt-resolver/**/*.ts": [
+    "eslint --fix --max-warnings 0",
+    "prettier --write",
+    "bash -c 'pnpm --filter @mondarth/fvtt-resolver typecheck'",
+    "pnpm --dir packages/fvtt-resolver exec vitest related --run"
+  ],
   "{*.ts,{tests,scripts}/**/*.ts}": [
     "eslint --fix --max-warnings 0",
     "prettier --write",
