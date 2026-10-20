@@ -10,6 +10,7 @@ export function makeRelease(fields: Partial<Release> & { id?: string } = {}): Re
     relationships: { requires: [], systems: [], conflicts: [], recommends: [] },
     protected: false,
     origin: `https://example.org/${id}/module.json`,
+    detail: 'loaded',
     ...rest,
   };
 }

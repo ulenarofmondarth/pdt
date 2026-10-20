@@ -53,6 +53,7 @@ const requireMidi = { require: [{ package: 'module:midi-qol' }] };
 
 /** What a resolution chose, as `id@version`, or the reasons at the leaves of its explanation. */
 function summary(resolution: Resolution) {
+  if ('needs' in resolution) return { needs: resolution.needs.map(n => `${n.package}@${n.version}`) };
   if (!resolution.ok) return { leaves: leaves(resolution.failure) };
   const { setup } = resolution;
   return {

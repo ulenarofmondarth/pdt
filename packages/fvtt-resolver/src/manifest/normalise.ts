@@ -263,6 +263,7 @@ export function normaliseManifest(json: unknown, source: ManifestSource): Manife
       ...(download && { download }),
       protected: manifest['protected'] === true,
       origin: source.origin,
+      detail: 'loaded',
     },
     warnings,
   };

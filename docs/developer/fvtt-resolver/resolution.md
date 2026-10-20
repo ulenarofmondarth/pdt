@@ -100,9 +100,17 @@ Preferences only order the candidates, so they do not change the algorithm. The 
 
 The solver needs a release's manifest to know its relationships, but loading every manifest of every package up front would cost far more requests than a question needs (see [Request budget](sources.md#request-budget)). So the universe holds *listed* releases, whose manifests are not yet loaded, and resolution proceeds in rounds:
 
-1. Solve over the universe as it is. When the solver chooses a release that is only listed, it records that the release is **needed**. It then carries on as if the release had no relationships, and only the core bounds its listing gives.
-2. If nothing was needed, the answer is final: a setup, or an explanation.
-3. Otherwise the caller loads the needed manifests, adds them to the universe, and solves again from the start.
+1. Solve over the universe as it is. A listed release has no relationships yet, and only the core bounds its listing gives, so the solver carries on without them.
+2. Find what the answer depends on that is only listed:
+   - for a setup, the listed releases in it;
+   - for a failure, the listed releases whose constraints the explanation leans on. A failure that leans on none is final: its derivation uses no constraint that loading could change.
+3. If there are none, the answer is final. Otherwise `resolve` returns `{ ok: false, needs }`: the caller loads the needed manifests into the universe, and solves again from the start.
+
+`resolveInRounds(universe, requirements, load)` runs the rounds.
+- **Loading:** `load` is a function the caller passes in, so the core still does no I/O.
+- **The listing's bounds** stay with each loaded release, for the `listingCompatibility` policy.
+- **A release `load` cannot load** is kept as listed and reported in `unloaded`, so that it is not asked for again.
+- **Round limit:** after `maxRounds` (10 by default), the last, incomplete answer is returned.
 
 Each round loads at least one new manifest, so the rounds end. The first round typically needs the newest acceptable release of every package; later rounds need only the few releases that conflicts lead the solver back to. In practice it settles in two or three rounds.
 
