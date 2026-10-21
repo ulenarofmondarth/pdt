@@ -85,6 +85,17 @@ export const foundryAccount = z.object({
 /** The Foundry VTT account, to download and license Foundry VTT with. */
 export type FoundryAccount = z.output<typeof foundryAccount>;
 
+/** Where pdt finds packages' releases, beyond Foundry VTT's own listing. */
+export const packageSources = z.object({
+  /** A GitHub token, for GitHub's higher rate limit when listing releases. */
+  github_token: secret().optional(),
+  /** A GitLab token, for GitLab's releases. */
+  gitlab_token: secret().optional(),
+});
+
+/** Where pdt finds packages' releases. */
+export type PackageSources = z.output<typeof packageSources>;
+
 const npmDebugLevels = z.literal(['error', 'warn', 'info', 'http', 'verbose', 'debug', 'silly']);
 
 export const config = z.object({
@@ -99,6 +110,7 @@ export const config = z.object({
   }),
   VTT: z.record(z.string(), vttSchema),
   FOUNDRY: foundryAccount.optional(),
+  SOURCES: packageSources.optional(),
 });
 
 export type Config = z.infer<typeof config>;

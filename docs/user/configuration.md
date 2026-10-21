@@ -54,6 +54,8 @@ Some settings are secret: passwords, keys and the like. They are kept apart from
 | `FOUNDRY.username`, `FOUNDRY.password` | Your Foundry VTT account, used to download Foundry VTT |
 | `FOUNDRY.license_key` | Your Foundry VTT licence key |
 | `VTT.<name>.server.admin_key` | The administrator password of a VTT's server |
+| `SOURCES.github_token` | A GitHub token, for GitHub's higher rate limit when finding packages' releases |
+| `SOURCES.gitlab_token` | A GitLab token, for packages released on GitLab |
 
 Your Foundry VTT account is the same for every project, so `FOUNDRY` usually belongs in your user secrets file, `secrets.conf` in your user configuration directory (`~/.config/pdt/secrets.conf` on Linux).
 

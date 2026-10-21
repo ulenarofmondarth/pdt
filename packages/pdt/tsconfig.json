@@ -7,7 +7,9 @@
       "@lib/*": ["./src/lib/*"],
       "@schema/*": ["./src/schema/*"],
       "@i18n/*": ["./src/paraglide/*"],
-      "@tests/*": ["./tests/*"]
+      "@tests/*": ["./tests/*"],
+      "@mondarth/fvtt-resolver": ["../fvtt-resolver/src/index.ts"],
+      "@mondarth/fvtt-resolver/sources": ["../fvtt-resolver/src/sources/index.ts"]
     }
   },
   "include": ["src/**/*", "tests/**/*", "*.config.ts"]

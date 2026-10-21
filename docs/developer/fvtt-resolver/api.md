@@ -192,24 +192,29 @@ function resolveInRounds(
 
 ## How pdt would use it
 
-`pdt vtt install [vtt]` would:
+`pdt vtt install [vtt]` will:
 
-1. Read the VTT's configuration (`VTT.<vtt>.server.version` is the core release) and the project's module, from the working copy.
+1. Read the VTT's configuration (`VTT.<vtt>.server.version` is the core release, `VTT.<vtt>.packages` what else to install) and the project's module, from the working copy.
 2. Build a universe from:
    - a local source for the project's module;
-   - the Foundry index, GitHub, GitLab and manifest-URL sources for everything else, with tokens from pdt's configuration;
+   - the Foundry index, GitHub, GitLab and manifest-URL sources for everything else, with tokens from `SOURCES.github_token` and `SOURCES.gitlab_token`;
    - Foundry's release notes for core;
-   - pdt's cache, under the user data directory.
-3. List the felddy/foundryvtt image tags, and pass the builds without one as core limits.
+   - pdt's cache, on disk under `<user data>/cache/resolver/`.
+3. List the image's tags on Docker Hub, a generation at a time, keeping only the tags that are exactly a release's version, and pass the builds without one as core limits.
 4. Resolve, with:
-   - the project's module and the core version as requirements;
-   - the system from configuration (or let the resolver choose);
-   - pins from the lockfile, and overrides from the project's configuration.
+   - the project's module, the modules in `packages.modules`, and the configured core version as requirements: install does not change core;
+   - the system in `packages.system`, or the one the resolver chooses;
+   - pins from the lockfile (preferences with `--upgrade`), and the overrides in `packages.overrides`.
 5. On success, apply the install plan:
-   - download each release into the VTT's data directory (`Data/systems/<id>`, `Data/modules/<id>`), skipping what is already there at the right version;
+   - download each release into the VTT's data directory (`Data/systems/<id>`, `Data/modules/<id>`), skipping what is already there at the right version, and taking the folder that holds the manifest as the package, as Foundry does;
    - list premium packages for the user to install through Foundry VTT, since downloading them needs the user's licence;
-   - write the lockfile (for example `.pdt/vtt.lock.json`, beside the run state).
-6. On failure, print the explanation and exit with a non-zero code.
+   - remove packages no longer needed, as a setting says: `auto` removes only those the previous lockfile says pdt installed, `never` removes none, and `remove` removes every package the setup does not need, even those installed by hand;
+   - write the lockfile, `.pdt/vtt.lock.json`, beside the run state.
+6. On failure, print the explanation, in the user's language, and exit with a non-zero code.
+
+A running VTT is handled as a setting says: `auto` stops it, installs and starts it again; `block` refuses to install; `warn` installs and advises a restart.
+
+It is built in three steps: the wiring (pdt's use of the resolver, the image tags, the disk cache and the tokens); resolving, with `--dry-run` to show the plan; then installing, with the lockfile and the settings for a running VTT and for removals.
 
 `pdt vtt start` could then check the installed setup before starting, and warn about anything that is not valid. A future `pdt compat` (name to be decided) would print the matrix for the project's module.
 
