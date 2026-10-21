@@ -1,3 +1,15 @@
+## [@mondarth/fvtt-resolver-v0.4.0](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.3.0...@mondarth/fvtt-resolver-v0.4.0) (2026-10-21)
+
+### Features
+
+* **resolver:** apply overrides and core limits ([f6ac7ea](https://github.com/ulenarofmondarth/pdt/commit/f6ac7eab78c662873d6a2a56fd20f5b476d826bb))
+* **resolver:** fetch through a CORS proxy, and document browser use ([b10f523](https://github.com/ulenarofmondarth/pdt/commit/b10f523fb57e63e8404ae8caaa99c1a96ce80a36))
+* **resolver:** read core releases from Foundry's release notes ([99fe7d8](https://github.com/ulenarofmondarth/pdt/commit/99fe7d81008265fc6b805c5390b6453a4e397ea0))
+
+### Bug Fixes
+
+* **resolver:** report releases whose manifest could not be loaded ([00f8ae7](https://github.com/ulenarofmondarth/pdt/commit/00f8ae75561f8bc2eff994849e071d3f9b24642f))
+
 ## [@mondarth/fvtt-resolver-v0.3.0](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.2.0...@mondarth/fvtt-resolver-v0.3.0) (2026-10-21)
 
 ### Features

@@ -1,6 +1,6 @@
 {
   "name": "@mondarth/fvtt-resolver",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Works out which versions of Foundry VTT, game systems and modules can be installed together.",
   "author": "Mark Bools",
   "license": "MIT",
