@@ -255,7 +255,8 @@ Browser support is required, so the sources use only `fetch`, with no Node built
 | GitHub release downloads (`github.com/…/releases/download/…`) | GitHub manifests, and most manifest URLs in Foundry's details files | no: neither the redirect nor `release-assets.githubusercontent.com` sends CORS headers |
 | `raw.githubusercontent.com` | declared manifest URLs | yes, but preflights are refused |
 | GitLab API (`gitlab.com/api/v4`) | GitLab release lists, and release links on the API | yes, with preflights |
-| GitLab release downloads (`/-/releases/…/downloads/…`) | GitLab manifests | no: the redirect sends no CORS headers |
+| GitLab release links' permanent URLs (`/-/releases/…/downloads/…`) | not used | no: they redirect to the link's own URL, without CORS headers |
+| GitLab release links' own URLs, such as the package registry (`/api/v4/projects/<id>/packages/…`) | GitLab manifests | yes, when the link is to GitLab itself; a link elsewhere is as that host allows |
 | Foundry index and details (`r2.foundryvtt.com`) | the listing | only for the origin `https://foundryvtt.com`; preflights are refused |
 | Foundry release notes (`foundryvtt.com`) | core releases | no |
 | Docker Hub | image tags | no |
@@ -350,7 +351,9 @@ The core package (`@mondarth/fvtt-resolver`) contains no I/O at all. The sources
   - **Repository:** found from the package's manifest URLs, through the hints the source set gives each source:
     - *declared* URLs, from a relationship's `manifest` or the caller;
     - *seen* URLs, of the releases earlier sources listed.
-  - **GitLab** recognises `gitlab.com`, or the self-hosted hosts given. A release link matches by its name or by the file in its URL.
+  - **GitLab** recognises `gitlab.com`, or the self-hosted hosts given. A release link matches by its name, or by the file at the end of either of its URLs.
+    - **The manifest is loaded from the link's own `url`,** not its `direct_asset_url`. The latter is a permanent link that redirects to the former, and the redirect sends no CORS headers, so a browser could not follow it.
+    - **API URLs** (`/api/v4/…`), such as links into the package registry, name a project by number, so they give no project to find releases in.
   - **Tokens** are optional.
 
 `manifestUrlSource(http)`

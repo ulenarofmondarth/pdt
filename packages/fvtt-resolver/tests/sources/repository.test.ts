@@ -35,7 +35,13 @@ describe('gitlabProject', () => {
     expect(gitlabProject(url, ['git.example.org'])).toEqual({ host: 'git.example.org', path: 'team/module' });
   });
 
-  it.each(['https://gitlab.com/example/-/raw/main/module.json', 'not a url'])('finds none in %s', url => {
+  // Regression: an API URL, such as a release link's into the package registry, was read as a
+  // project named `api/v4/projects/...`.
+  it.each([
+    'https://gitlab.com/example/-/raw/main/module.json',
+    'https://gitlab.com/api/v4/projects/20418308/packages/generic/midi-qol/v14.6.3/module.json',
+    'not a url',
+  ])('finds none in %s', url => {
     expect(gitlabProject(url)).toBeUndefined();
   });
 });
