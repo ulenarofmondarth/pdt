@@ -246,6 +246,20 @@ describe('formatExplanation, on pub’s examples', () => {
       );
     });
 
+    // Regression: only random derivations reached this case, so coverage passed or failed by chance.
+    it('explains a step with both causes derived first when only the other reads as one sentence', () => {
+      const one = derive('one', given('e1'), given('e2'));
+      const two = derive('two', derive('inner', given('e3'), given('e4')), given('e5'));
+      expect(text(derive('top', one, two))).toBe(
+        [
+          'Because e3 and e4, inner cannot be used.',
+          'And because e5, two cannot be used.',
+          'Because e1 and e2, one cannot be used.',
+          'Thus, top cannot be used. (1)',
+        ].join('\n'),
+      );
+    });
+
     it('refers back to a numbered step beside a given one', () => {
       const shared = derive('shared', given('e1'), given('e2'));
       expect(text(derive('top', derive('left', shared, given('e6')), derive('right', shared, given('e5'))))).toBe(
