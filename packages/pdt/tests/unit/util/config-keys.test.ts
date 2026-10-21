@@ -170,6 +170,8 @@ describe('isSecretKey', () => {
     ['FOUNDRY', 'password'],
     ['FOUNDRY', 'license_key'],
     ['VTT', 'any', 'server', 'admin_key'],
+    ['SOURCES', 'github_token'],
+    ['SOURCES', 'gitlab_token'],
   ])('is true for the secret setting %s.%s', (...key) => {
     expect(isSecretKey(key)).toBe(true);
   });

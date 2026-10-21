@@ -293,6 +293,9 @@ importers:
       '@mondarth/create-fvtt-module':
         specifier: ^0.3.0
         version: 0.3.0(@types/node@24.19.2)
+      '@mondarth/fvtt-resolver':
+        specifier: workspace:*
+        version: link:../fvtt-resolver
       chalk:
         specifier: ^6.0.1
         version: 6.0.1
