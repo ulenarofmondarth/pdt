@@ -166,7 +166,9 @@ function foundryIndexSource(http: HttpClient): ReleaseSource;
 function githubSource(http: HttpClient, options?: { token?: string }): ReleaseSource;
 function gitlabSource(http: HttpClient, options?: { token?: string; hosts?: string[] }): ReleaseSource;
 function manifestUrlSource(http: HttpClient): ReleaseSource;
-function foundryReleaseNotesSource(http: HttpClient): CoreSource; // to come
+function foundryCoreReleases(http: HttpClient): Promise<SourceResult<CoreRelease[]>>;
+/** A fetch through a CORS proxy, for a browser: `{url}` in the template becomes the target, percent-encoded. */
+function proxiedFetch(fetch: typeof globalThis.fetch, proxy: string | ((url: string) => string)): typeof globalThis.fetch;
 
 function buildUniverse(input: {
   requirements: Requirements;

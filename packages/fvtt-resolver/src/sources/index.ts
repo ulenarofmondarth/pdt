@@ -21,6 +21,7 @@ export {
   readReleaseNotes,
   type FoundryReleasesOptions,
 } from './foundry-releases.js';
+export { proxiedFetch, proxyUrlFor, type ProxyUrl } from './proxy.js';
 export { sourceSet, type SourceSet, type SourceSetOptions } from './source-set.js';
 export { githubSource, gitlabSource, type GithubOptions, type GitlabOptions } from './forge.js';
 export { manifestUrlSource } from './manifest-url.js';
