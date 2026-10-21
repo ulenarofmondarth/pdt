@@ -69,6 +69,12 @@
         "destination": "Wohin das Projekt verschoben wird. Das Ziel darf noch nicht existieren, sein übergeordnetes Verzeichnis muss existieren.",
         "stopAllContainers": "Alle laufenden VTTs des Projekts vor dem Verschieben stoppen.",
         "restartAllContainers": "Alle laufenden VTTs des Projekts vor dem Verschieben stoppen und danach wieder starten."
+      },
+      "install": {
+        "description": "Ermittelt die Pakete, die ein VTT braucht, und installiert sie in seine Daten",
+        "dryRun": {
+          "description": "Zeigt, was installiert würde, und installiert nichts."
+        }
       }
     },
     "opt": {
@@ -123,6 +129,16 @@
       "unusable": "Projekt {project} ({root}): kann nicht gelesen werden. {reason}",
       "noProjects": "In {file} sind keine Projekte registriert.",
       "notConfigured": "als gestartet eingetragen, aber nicht mehr konfiguriert, daher nicht abfragbar. Sein Container ist {container}."
+    },
+    "install": {
+      "resolving": "Ermittle, was VTT {vtt} braucht…",
+      "setup": "VTT {vtt}: Foundry VTT {core}, gefunden in {rounds} Runden:",
+      "project": "  {package} {version}: das Modul des Projekts",
+      "keep": "  {package} {version}: bereits installiert",
+      "install": "  {package} {version}: wird installiert",
+      "replace": "  {package} {version}: wird installiert und ersetzt {installed}",
+      "premium": "  {package} {version}: Premium; über Foundry VTT installieren",
+      "dryRun": "Probelauf: nichts wurde installiert."
     }
   },
   "warn": {
@@ -147,6 +163,17 @@
       "noModuleMount": "Das Projekt hat keine ID und wird VTT {vtt} daher nicht als Modul bereitgestellt.",
       "noAccount": "FOUNDRY.username und FOUNDRY.password sind nicht beide gesetzt, daher kann VTT {vtt} nur ein bereits installiertes Foundry VTT verwenden. Setze sie mit pdt config set --user.",
       "notConfiguredToStop": "VTT {vtt} ist als gestartet eingetragen, aber nicht mehr konfiguriert und kann daher nicht gestoppt werden. Stoppe es selbst: docker rm -f {container}"
+    },
+    "install": {
+      "gaps": "Einige Quellen konnten nicht gelesen werden, daher ist die Antwort möglicherweise unvollständig:",
+      "gap": "  {url}: {reason}",
+      "unloaded": "Nur anhand ihres Eintrags geprüft, da ihre Manifeste nicht geladen werden konnten: {packages}",
+      "reason": {
+        "http": "der Server antwortete mit {status}",
+        "network": "der Server war nicht erreichbar",
+        "budget": "das Anfragebudget war aufgebraucht",
+        "invalid": "die Antwort war nicht lesbar"
+      }
     }
   },
   "error": {
@@ -214,6 +241,14 @@
       "missing": "--project {as}: {root} existiert nicht. Wenn das Projekt verschoben wurde, führe darin pdt move aus, oder pdt prune.",
       "notADirectory": "--project {as}: {root} ist kein Verzeichnis.",
       "notAProject": "--project {as}: {root} ist kein PDT-Projekt; es hat kein .pdt-Verzeichnis."
+    },
+    "install": {
+      "dryRunOnly": "Das Installieren ist noch nicht verfügbar. Mit --dry-run wird gezeigt, was installiert würde.",
+      "noSetup": "Kein Setup von VTT {vtt} erfüllt die Anforderungen:",
+      "incomplete": "Die Antwort für VTT {vtt} ist nach {rounds} Runden noch unvollständig. Benötigt: {packages}",
+      "projectUnreadable": "Das Modul des Projekts, {file}, kann nicht gelesen werden: {problems}",
+      "noCore": "Für VTT {vtt} kann kein Build von Foundry VTT {generation} gewählt werden.",
+      "noImage": "es gibt kein {image}-Image dafür"
     }
   },
   "fatal": {
@@ -222,5 +257,59 @@
   },
   "debug": {
     "running": "Geparster Befehl wird ausgeführt: {argv}"
+  },
+  "explain": {
+    "name": {
+      "core": "Foundry VTT",
+      "requirements": "die Anforderungen",
+      "worldSystem": "das System der Welt"
+    },
+    "term": "{name} {versions}",
+    "worldAny": "eine Welt mit einem System",
+    "world": "eine Welt mit {systems}",
+    "system": "{id} {versions}",
+    "fromInclusive": "{version} oder neuer",
+    "fromExclusive": "neuer als {version}",
+    "toInclusive": "{version} oder älter",
+    "toExclusive": "älter als {version}",
+    "betweenInclusive": "{lower} bis {upper}",
+    "betweenUpperExclusive": "{lower} bis ausschließlich {upper}",
+    "betweenLowerExclusive": "nach {lower} bis {upper}",
+    "betweenExclusive": "nach {lower} bis ausschließlich {upper}",
+    "otherThan": "außer {versions}",
+    "otherSystems": "ein anderes System als {systems}",
+    "none": "keine Version",
+    "dependsOn": "{release} hängt von {on} ab",
+    "conflictsWith": "{release} steht im Konflikt mit {on}",
+    "runsIn": "{release} läuft nur in {systems}",
+    "unusable": "{release} gibt keine Kompatibilität mit Foundry VTT an, was die Richtlinie nicht akzeptiert",
+    "excluded": "{release} kann nicht verwendet werden (Überschreibung: {reason})",
+    "excludedWith": "{release} kann nicht mit {on} verwendet werden (Überschreibung: {reason})",
+    "overridden": "{text} (Überschreibung: {reason})",
+    "coreLimit": "{core} kann nicht verwendet werden: {reason}",
+    "requirement": "die Anforderungen verlangen {on}",
+    "pin": "{on} ist festgelegt",
+    "setupNeeds": "ein Setup braucht {what}",
+    "worldSystem": "{system} ist genau dann das System der Welt, wenn es installiert ist",
+    "noVersions": "keine Version von {term} ist verfügbar",
+    "noSystemAny": "kein System ist verfügbar",
+    "noSystem": "kein System in {systems} ist verfügbar",
+    "failed": "die Anforderungen können nicht erfüllt werden",
+    "wanted": "die Anforderungen sind gewünscht",
+    "forbidden": "{term} kann nicht verwendet werden",
+    "needed": "{term} wird benötigt",
+    "needs": "{term} braucht {needed}",
+    "requirementsNeed": "die Anforderungen verlangen {needed}",
+    "incompatible": "{a} kann nicht mit {b} verwendet werden",
+    "either": "entweder {terms} wird benötigt",
+    "ifThen": "wenn {given} verwendet werden, wird {then} benötigt",
+    "because": "Da {a} und {b}, gilt: {conclusion}.",
+    "andBecause": "Und da {a}, gilt: {conclusion}.",
+    "soBecause": "Also, da {a}, gilt: {conclusion}.",
+    "andBecauseBoth": "Und da {a} und {b}, gilt: {conclusion}.",
+    "soBecauseBoth": "Also, da {a} und {b}, gilt: {conclusion}.",
+    "thus": "Somit gilt: {conclusion}.",
+    "sentence": "{text}.",
+    "see": "{phrase} ({number})"
   }
 }

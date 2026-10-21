@@ -69,6 +69,8 @@ export interface CommandContext {
   isPortFree(port: number): Promise<boolean>;
   /** Whether anything answers at a URL. */
   isUrlReachable(url: string): Promise<boolean>;
+  /** Fetches from the network, such as packages' releases. */
+  fetch: typeof globalThis.fetch;
   /** The user pdt runs as, to own the files a VTT writes; absent where users have no numeric ids. */
   owner?: Owner;
 }

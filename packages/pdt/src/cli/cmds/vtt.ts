@@ -1,3 +1,4 @@
+import { createVttInstallCommand } from './vtt_cmds/install.js';
 import { createVttRestartCommand } from './vtt_cmds/restart.js';
 import { createVttStartCommand } from './vtt_cmds/start.js';
 import { createVttStopCommand } from './vtt_cmds/stop.js';
@@ -21,6 +22,7 @@ export function createVttCommand(context: CommandContext): CommandModule {
         .command(anyCommand(createVttStartCommand(context)))
         .command(anyCommand(createVttStopCommand(context)))
         .command(anyCommand(createVttRestartCommand(context)))
+        .command(anyCommand(createVttInstallCommand(context)))
         .demandCommand(1),
 
     /** Never reached: yargs runs a sub-command, or rejects the command line. */

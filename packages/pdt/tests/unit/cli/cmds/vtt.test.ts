@@ -79,6 +79,10 @@ describe('vtt command', () => {
 
       expect(host.start).toHaveBeenCalledOnce();
     });
+
+    test('routes install to the install sub-command', async () => {
+      await expect(parse('vtt install')).resolves.toBe(m['error.install.dryRunOnly']());
+    });
   });
 
   test('logs an error if its own handler is ever reached', async () => {

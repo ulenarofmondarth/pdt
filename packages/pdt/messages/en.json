@@ -69,6 +69,12 @@
         "destination": "Where to move the project to. It must not exist yet; its parent directory must.",
         "stopAllContainers": "Stop every running VTT of the project before moving it.",
         "restartAllContainers": "Stop every running VTT of the project before moving it, and start them again once it has moved."
+      },
+      "install": {
+        "description": "Work out the packages a VTT needs, and install them into its data",
+        "dryRun": {
+          "description": "Show what would be installed, and install nothing."
+        }
       }
     },
     "opt": {
@@ -123,6 +129,16 @@
       "unusable": "Project {project} ({root}): cannot be read. {reason}",
       "noProjects": "No projects are registered in {file}.",
       "notConfigured": "recorded as started but no longer configured, so it cannot be asked about. Its container is {container}."
+    },
+    "install": {
+      "resolving": "Working out what VTT {vtt} needs…",
+      "setup": "VTT {vtt}: Foundry VTT {core}, found in {rounds} rounds:",
+      "project": "  {package} {version}: the project’s module",
+      "keep": "  {package} {version}: installed already",
+      "install": "  {package} {version}: to install",
+      "replace": "  {package} {version}: to install, replacing {installed}",
+      "premium": "  {package} {version}: premium; install it through Foundry VTT",
+      "dryRun": "Dry run: nothing was installed."
     }
   },
   "warn": {
@@ -147,6 +163,17 @@
       "noModuleMount": "The project has no id, so it is not given to VTT {vtt} as a module.",
       "noAccount": "FOUNDRY.username and FOUNDRY.password are not both set, so VTT {vtt} can only use a Foundry VTT it has installed before. Set them with pdt config set --user.",
       "notConfiguredToStop": "VTT {vtt} is recorded as started, but is no longer configured, so it cannot be stopped. Stop it yourself: docker rm -f {container}"
+    },
+    "install": {
+      "gaps": "Some sources could not be read, so the answer may be incomplete:",
+      "gap": "  {url}: {reason}",
+      "unloaded": "Checked only from their listing, as their manifests could not be loaded: {packages}",
+      "reason": {
+        "http": "the server answered {status}",
+        "network": "the server could not be reached",
+        "budget": "the request budget ran out",
+        "invalid": "the answer could not be read"
+      }
     }
   },
   "error": {
@@ -214,6 +241,14 @@
       "missing": "--project {as}: {root} does not exist. If the project has moved, run pdt move in it, or pdt prune.",
       "notADirectory": "--project {as}: {root} is not a directory.",
       "notAProject": "--project {as}: {root} is not a PDT project; it has no .pdt directory."
+    },
+    "install": {
+      "dryRunOnly": "Installing is not available yet. Give --dry-run to see what would be installed.",
+      "noSetup": "No setup of VTT {vtt} meets the requirements:",
+      "incomplete": "The answer for VTT {vtt} is still incomplete after {rounds} rounds. It needs: {packages}",
+      "projectUnreadable": "The project’s module, {file}, cannot be read: {problems}",
+      "noCore": "No build of Foundry VTT {generation} can be chosen for VTT {vtt}.",
+      "noImage": "there is no {image} image for it"
     }
   },
   "fatal": {
@@ -222,5 +257,59 @@
   },
   "debug": {
     "running": "Running parsed command {argv}"
+  },
+  "explain": {
+    "name": {
+      "core": "Foundry VTT",
+      "requirements": "the requirements",
+      "worldSystem": "the world’s system"
+    },
+    "term": "{name} {versions}",
+    "worldAny": "a world with a system",
+    "world": "a world with {systems}",
+    "system": "{id} {versions}",
+    "fromInclusive": "{version} or later",
+    "fromExclusive": "later than {version}",
+    "toInclusive": "{version} or earlier",
+    "toExclusive": "earlier than {version}",
+    "betweenInclusive": "{lower} to {upper}",
+    "betweenUpperExclusive": "{lower} up to but not including {upper}",
+    "betweenLowerExclusive": "after {lower} to {upper}",
+    "betweenExclusive": "after {lower} up to but not including {upper}",
+    "otherThan": "other than {versions}",
+    "otherSystems": "a system other than {systems}",
+    "none": "no version",
+    "dependsOn": "{release} depends on {on}",
+    "conflictsWith": "{release} conflicts with {on}",
+    "runsIn": "{release} runs only in {systems}",
+    "unusable": "{release} declares no Foundry VTT compatibility, which the policy does not accept",
+    "excluded": "{release} cannot be used (override: {reason})",
+    "excludedWith": "{release} cannot be used with {on} (override: {reason})",
+    "overridden": "{text} (override: {reason})",
+    "coreLimit": "{core} cannot be used: {reason}",
+    "requirement": "the requirements need {on}",
+    "pin": "{on} is pinned",
+    "setupNeeds": "a setup needs {what}",
+    "worldSystem": "{system} is the world’s system exactly when it is installed",
+    "noVersions": "no version of {term} is available",
+    "noSystemAny": "no system is available",
+    "noSystem": "no system in {systems} is available",
+    "failed": "the requirements cannot be met",
+    "wanted": "the requirements are wanted",
+    "forbidden": "{term} cannot be used",
+    "needed": "{term} is needed",
+    "needs": "{term} needs {needed}",
+    "requirementsNeed": "the requirements need {needed}",
+    "incompatible": "{a} cannot be used with {b}",
+    "either": "either {terms} is needed",
+    "ifThen": "if {given} are used, then {then} is needed",
+    "because": "Because {a} and {b}, {conclusion}.",
+    "andBecause": "And because {a}, {conclusion}.",
+    "soBecause": "So, because {a}, {conclusion}.",
+    "andBecauseBoth": "And because {a} and {b}, {conclusion}.",
+    "soBecauseBoth": "So, because {a} and {b}, {conclusion}.",
+    "thus": "Thus, {conclusion}.",
+    "sentence": "{text}.",
+    "see": "{phrase} ({number})"
   }
 }

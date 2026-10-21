@@ -35,6 +35,7 @@ export function createCommandContext() {
     createVtt: ReturnType<typeof vi.fn<typeof createVtt>>;
     isPortFree: ReturnType<typeof vi.fn<CommandContext['isPortFree']>>;
     isUrlReachable: ReturnType<typeof vi.fn<CommandContext['isUrlReachable']>>;
+    fetch: ReturnType<typeof vi.fn<CommandContext['fetch']>>;
     sourceOf: ReturnType<typeof vi.fn<CommandContext['sourceOf']>>;
     projectConfig: ReturnType<typeof vi.fn<CommandContext['projectConfig']>>;
     writeConfig: ReturnType<typeof vi.fn<CommandContext['writeConfig']>>;
@@ -63,6 +64,8 @@ export function createCommandContext() {
     createVtt: vi.fn<typeof createVtt>(),
     isPortFree: vi.fn<CommandContext['isPortFree']>(() => Promise.resolve(true)),
     isUrlReachable: vi.fn<CommandContext['isUrlReachable']>(() => Promise.resolve(true)),
+    // Nothing can be reached until a test says what answers.
+    fetch: vi.fn<CommandContext['fetch']>(() => Promise.reject(new TypeError('fetch failed'))),
   };
   return context;
 }

@@ -67,9 +67,64 @@ export type DockerHostSettings = z.output<typeof dockerHostSettings>;
 /** A VTT host's settings, of any type. */
 export type HostSettings = z.output<typeof hostSchema>;
 
+/** A package as the resolver names it: `core`, or `module:<id>` or `system:<id>`. */
+const packageKey = z.string().regex(/^(core|(module|system):[^\s:]+)$/);
+
+/** Bounds as a manifest writes them. */
+const bound = z.string().min(1);
+
+const overrideCommon = {
+  /** The package whose releases it corrects. */
+  package: packageKey,
+  /** The versions it corrects, exactly as the releases give them; every version when not given. */
+  versions: z.array(z.string().min(1)).min(1).optional(),
+  /** Why, shown in explanations that lean on it. */
+  reason: z.string().min(1),
+};
+
+/** A correction to what a package's authors declared (see the resolver's overrides). */
+const overrideSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('exclude'),
+    ...overrideCommon,
+    with: z.object({ package: packageKey, minimum: bound.optional(), maximum: bound.optional() }).optional(),
+  }),
+  z.object({
+    kind: z.literal('compatibility'),
+    ...overrideCommon,
+    compatibility: z.object({
+      minimum: bound.nullable().optional(),
+      verified: bound.nullable().optional(),
+      maximum: bound.nullable().optional(),
+    }),
+  }),
+  z.object({ kind: z.literal('relationship'), ...overrideCommon, drop: packageKey }),
+]);
+
+/** A correction to what a package's authors declared, as configured. */
+export type OverrideSettings = z.output<typeof overrideSchema>;
+
+/** A package id, as in its manifest. */
+const packageId = z.string().regex(/^[^\s:]+$/);
+
+/** What `pdt vtt install` installs besides the project's module, and how. */
+const packagesSettings = z.object({
+  /** The system to install, by id; the one the resolver chooses when not given. */
+  system: packageId.optional(),
+  /** More modules to install, by id. */
+  modules: z.array(packageId).default([]),
+  /** Corrections to what packages' authors declared, each with its reason. */
+  overrides: z.array(overrideSchema).default([]),
+});
+
+/** What `pdt vtt install` installs besides the project's module. */
+export type PackagesSettings = z.output<typeof packagesSettings>;
+
 export const vttSchema = z.object({
   server: serverSchema,
   host: hostSchema,
+  /** What `pdt vtt install` installs besides the project's module. */
+  packages: packagesSettings.optional(),
 });
 
 /** A VTT's settings: its server, and the host it runs on. */

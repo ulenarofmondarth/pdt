@@ -52,6 +52,7 @@
     "@types/node": "^24.19.2",
     "@types/yargs": "^17.0.33",
     "@vitest/coverage-v8": "^5.0.4",
+    "fast-check": "^4.10.2",
     "rimraf": "^6.0.1",
     "rollup-plugin-node-externals": "^9.0.1",
     "tsconfig-paths": "^4.2.0",
