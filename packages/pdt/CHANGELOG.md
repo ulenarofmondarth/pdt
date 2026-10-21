@@ -1,3 +1,11 @@
+## [@mondarth/pdt-v0.4.0](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/pdt-v0.3.0...@mondarth/pdt-v0.4.0) (2026-10-21)
+
+### Features
+
+* **vtt:** find which core builds have an image, with a disk cache ([512e24d](https://github.com/ulenarofmondarth/pdt/commit/512e24d39dff5da84d461e4d73b8c621bc52525e))
+* **vtt:** install a VTT's packages, with a lockfile ([ee95bd8](https://github.com/ulenarofmondarth/pdt/commit/ee95bd83f8471f33e9381a35977391dda195a9a0))
+* **vtt:** work out what a VTT needs with vtt install --dry-run ([1d1e4ea](https://github.com/ulenarofmondarth/pdt/commit/1d1e4eaec699617c399f2c06503836deff3148f0))
+
 ## [0.3.0](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/pdt-v0.2.1...@mondarth/pdt-v0.3.0) (2026-10-20)
 
 ### Features
