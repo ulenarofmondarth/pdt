@@ -197,6 +197,34 @@ describe('resolve', () => {
     expect(summary(resolution)).toEqual({ core: '14.368', system: 'dnd5e@6.0.6', modules: [] });
   });
 
+  describe('a version written with a leading "v"', () => {
+    const socketlib = ['1.1.2', '1.1.3', '1.1.4'].map(version => module('socketlib', version));
+    const requireSocketlib = { require: [{ package: 'module:socketlib' }] };
+
+    it('pins it as the version without, as a lockfile of what Foundry reports may give it', () => {
+      const resolution = resolve(universe(dnd5eOld, ...socketlib), {
+        ...requireSocketlib,
+        pins: [{ package: 'module:socketlib', version: 'v1.1.2' }],
+      });
+      expect(summary(resolution)).toMatchObject({ modules: ['socketlib@1.1.2'] });
+    });
+
+    it('prefers it as the version without', () => {
+      const resolution = resolve(universe(dnd5eOld, ...socketlib), {
+        ...requireSocketlib,
+        prefer: [{ package: 'module:socketlib', version: 'V1.1.3' }],
+      });
+      expect(summary(resolution)).toMatchObject({ modules: ['socketlib@1.1.3'] });
+    });
+
+    it('takes a release written both ways as one version, the first in the universe', () => {
+      // Foundry counts "v1.1.4" newer than any version starting with a digit, so as another version
+      // it would be chosen.
+      const resolution = resolve(universe(dnd5eOld, ...socketlib, module('socketlib', 'v1.1.4')), requireSocketlib);
+      expect(summary(resolution)).toMatchObject({ modules: ['socketlib@1.1.4'] });
+    });
+  });
+
   describe('pre-releases', () => {
     const beta = module('dae', '14.0.19-beta.1');
     const withBeta = universe(midiQol, dnd5eOld, ...support, beta);

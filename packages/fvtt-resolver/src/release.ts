@@ -43,8 +43,15 @@ export interface Release {
   /** The core versions it declares it works with. */
   readonly compatibility: Compatibility;
   readonly relationships: Relationships;
+  /** The manifest URL the release gives: for a loaded release, its manifest's own, often one that gives the newest. */
   readonly manifest?: string;
   readonly download?: string;
+  /**
+   * A manifest URL for this version alone, which keeps giving it when newer versions are released:
+   * one that names the version (see `namesVersion`). Installing from it installs this
+   * version. Missing when no source gives one.
+   */
+  readonly versionManifest?: string;
   /** A premium package: downloading it needs the user's licence. */
   readonly protected: boolean;
   /** Where the manifest was read from, such as its URL or path. */

@@ -5,7 +5,9 @@
  * Each finds a package's repository from its manifest URLs (see {@link SourceHints}), lists the
  * repository's releases (the newest 100), and makes a listed release of each that has the package's
  * manifest attached: `module.json` for a module, `system.json` for a system. A release's version is
- * read from its tag; loading the manifest checks it. Listings from these give no core bounds.
+ * read from its tag; loading the manifest checks it. Listings from these give no core bounds. A
+ * release's zip, when it can tell which file that is, is its `download`: the manifest can be read
+ * from it when the attached one cannot.
  */
 import { z } from 'zod';
 
@@ -25,6 +27,14 @@ interface ForgeRelease {
   readonly files: readonly { readonly name: string; readonly url: string }[];
 }
 
+/** A release's zip: the one named `module.zip` or `system.zip`, or else its only zip. */
+function zipOf(ref: PackageRef, files: ForgeRelease['files']): string | undefined {
+  const zips = files.filter(file => file.name.endsWith('.zip'));
+  const named = zips.find(file => file.name === `${ref.type}.zip`)?.url;
+  const urls = new Set(zips.map(file => file.url));
+  return named ?? (urls.size === 1 ? [...urls][0] : undefined);
+}
+
 /** A listed release of each forge release with the package's manifest attached. */
 function listed(ref: PackageRef, releases: readonly ForgeRelease[], origin: string): Release[] {
   const manifestName = `${ref.type}.json`;
@@ -32,6 +42,7 @@ function listed(ref: PackageRef, releases: readonly ForgeRelease[], origin: stri
     const version = tagVersion(tag);
     const manifest = files.find(file => file.name === manifestName)?.url;
     if (version === undefined || manifest === undefined) return [];
+    const download = zipOf(ref, files);
     return [
       {
         package: ref,
@@ -39,6 +50,7 @@ function listed(ref: PackageRef, releases: readonly ForgeRelease[], origin: stri
         compatibility: {},
         relationships: { requires: [], systems: [], conflicts: [], recommends: [] },
         manifest,
+        ...(download !== undefined && { download }),
         protected: false,
         origin,
         detail: 'listed',

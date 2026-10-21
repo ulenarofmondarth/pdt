@@ -14,6 +14,7 @@ export const packageName = '@mondarth/fvtt-resolver';
 export type { VersionOrder } from './version/order.js';
 export { foundryOrder, isNewerVersion, foundryDisagreements } from './version/foundry.js';
 export { semverOrder } from './version/semver.js';
+export { namesVersion, sameVersion } from './version/same.js';
 export { chooseOrder, type ChosenOrder, type VersionOrderName } from './version/choose.js';
 export { rangeOps, type Bound, type Interval, type Range, type RangeOps } from './range/range.js';
 export {

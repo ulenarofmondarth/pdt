@@ -5,10 +5,13 @@
 import { normaliseManifest } from '../manifest/normalise.js';
 import { packageKey } from '../universe.js';
 import { isNewerVersion } from '../version/foundry.js';
+import { namesVersion, sameVersion, unprefixed } from '../version/same.js';
+import { tagVersion } from './repository.js';
+import { zipManifest } from './zip-manifest.js';
 
 import type { PackageRef, Release } from '../release.js';
 import type { CoreRelease, PackageKey, Universe } from '../universe.js';
-import type { HttpClient } from './http.js';
+import type { Fetched, HttpClient } from './http.js';
 import type { ReleaseSource, SourceGap } from './types.js';
 
 export interface SourceSetOptions {
@@ -61,8 +64,17 @@ export interface SourceSet {
 
 const MANIFEST_SOURCE = 'manifest';
 
-/** A version without a leading `v` or `V`. */
-const bare = (version: string) => version.replace(/^[vV]/, '');
+/**
+ * Whether a manifest's version is that of the release listed: the same version, or the version a
+ * tag gives, for a release listed from a tag such as `release-1.1.4`.
+ */
+const isListedVersion = (manifestVersion: string, listed: string) =>
+  sameVersion(manifestVersion, listed) || tagVersion(manifestVersion) === listed;
+
+/** A release's manifest URL for its version alone: the one it has, or its manifest URL if that names the version. */
+const versionManifestOf = (release: Release): string | undefined =>
+  release.versionManifest ??
+  (release.manifest !== undefined && namesVersion(release.manifest, release.version) ? release.manifest : undefined);
 
 /** Sources working together. */
 export function sourceSet({
@@ -92,7 +104,12 @@ export function sourceSet({
   const possible = ({ compatibility: { minimum } }: Release) =>
     newestCore === undefined || minimum === undefined || !isNewerVersion(minimum, newestCore);
 
-  /** Every release of a package that the sources list, the first source's where they list the same version. */
+  /**
+   * Every release of a package that the sources list, the first source's where they list the same
+   * version, a leading `v` aside. Each takes the first manifest URL for its version alone that any
+   * source gives, so that a listing whose URL gives the newest release still gets a forge's, and
+   * likewise the first zip, from which its manifest can be read if need be.
+   */
   async function list(ref: PackageRef): Promise<Release[]> {
     const key = packageKey(ref);
     known.add(key);
@@ -102,6 +119,9 @@ export function sourceSet({
     // The newest version the listing offers, if it lists the package.
     let newestListed: string | undefined;
     const fromListing = new Set<Release>();
+    // The first manifest URL for each version alone, and the first zip, from any source.
+    const versionManifests = new Map<string, string>();
+    const downloads = new Map<string, string>();
     for (const source of sources) {
       const found = await source.releases(ref, { declared: [...(declared.get(key) ?? [])], seen: [...seen] });
       if (!found.ok) {
@@ -112,15 +132,27 @@ export function sourceSet({
         if (release.manifest !== undefined) seen.add(release.manifest);
         if (source.name === listing) {
           fromListing.add(release);
-          if (newestListed === undefined || isNewerVersion(release.version, newestListed))
+          if (newestListed === undefined || isNewerVersion(unprefixed(release.version), unprefixed(newestListed)))
             newestListed = release.version;
         }
-        if (!versions.has(release.version) && possible(release)) versions.set(release.version, release);
+        const version = unprefixed(release.version);
+        const own = versionManifestOf(release);
+        if (own !== undefined && !versionManifests.has(version)) versionManifests.set(version, own);
+        if (release.download !== undefined && !downloads.has(version)) downloads.set(version, release.download);
+        if (!versions.has(version) && possible(release)) versions.set(version, release);
       }
     }
-    const kept = [...versions.values()].flatMap((release): Release[] => {
-      if (unlisted === 'include' || newestListed === undefined || fromListing.has(release)) return [release];
-      if (!isNewerVersion(release.version, newestListed)) return [release];
+    const kept = [...versions.values()].flatMap((listed): Release[] => {
+      const own = versionManifests.get(unprefixed(listed.version));
+      const download = listed.download ?? downloads.get(unprefixed(listed.version));
+      const release = {
+        ...listed,
+        ...(own !== undefined && { versionManifest: own }),
+        ...(download !== undefined && { download }),
+      };
+      if (unlisted === 'include' || newestListed === undefined || fromListing.has(listed)) return [release];
+      // A version the listing gives without a leading "v" is listed, however the source writes it.
+      if (!isNewerVersion(unprefixed(release.version), unprefixed(newestListed))) return [release];
       return unlisted === 'last' ? [{ ...release, unlisted: true }] : [];
     });
     if (!manifestBounds) return kept;
@@ -137,41 +169,107 @@ export function sourceSet({
     if (release.detail !== 'listed' || minimum !== undefined || verified !== undefined || maximum !== undefined) {
       return release;
     }
-    const read = await loadOne(release);
+    const read = await readListed(release);
     // Only the bounds: the release stays listed, its relationships unknown until it is loaded.
     return read === undefined ? { ...release, loadFailed: true } : { ...release, compatibility: read.compatibility };
   }
 
-  /** Loads one listed release from its manifest, keeping the listing's bounds. */
+  /**
+   * Loads one listed release from its manifest, keeping the listing's bounds, with a manifest URL
+   * for its version alone if one can be found.
+   */
   async function loadOne(release: Release): Promise<Release | undefined> {
-    const key = packageKey(release.package);
-    const gap = (url: string, reason: SourceGap['reason'], status?: number): undefined => {
+    const read = await readListed(release);
+    return read === undefined || read.versionManifest !== undefined ? read : withManifestBeside(read);
+  }
+
+  /**
+   * A loaded release with the manifest beside its download, when that names the version and is of
+   * this release. Releases on GitHub usually attach the manifest beside the zip, so that a release
+   * whose sources give only a URL for the newest still gets its own. What cannot be found here is
+   * not a gap: the release is loaded either way.
+   */
+  async function withManifestBeside(release: Release): Promise<Release> {
+    let beside: string;
+    try {
+      beside = new URL(`${release.package.type}.json`, release.download).href;
+    } catch {
+      return release;
+    }
+    if (!namesVersion(beside, release.version)) return release;
+    const fetched = await http.getJson(beside, { maxAge: Infinity });
+    if (!fetched.ok) return release;
+    const read = normaliseManifest(fetched.value, {
+      origin: beside,
+      type: release.package.type as 'module' | 'system',
+    });
+    if (
+      !read.ok ||
+      read.release.package.id !== release.package.id ||
+      !isListedVersion(read.release.version, release.version)
+    )
+      return release;
+    return { ...release, versionManifest: beside };
+  }
+
+  /**
+   * Reads one listed release from its manifest, keeping the listing's bounds. When the manifest
+   * cannot be fetched or is of another release, and the release's zip is known, its manifest is
+   * read from the zip instead: the manifest the package installs with. The zip read is then its
+   * `download`, whatever the manifest says.
+   */
+  async function readListed(release: Release): Promise<Release | undefined> {
+    const recordGap = ({ url, reason, status }: Omit<SourceGap, 'source'>): undefined => {
       gaps.push({
         source: MANIFEST_SOURCE,
         url,
         reason,
-        package: key,
+        package: packageKey(release.package),
         version: release.version,
         ...(status !== undefined && { status }),
       });
       return undefined;
     };
-    if (release.manifest === undefined || release.package.type === 'world')
-      return gap(release.manifest ?? release.origin, 'invalid');
-    const fetched = await http.getJson(release.manifest, { maxAge: Infinity });
-    if (!fetched.ok) return gap(fetched.gap.url, fetched.gap.reason, fetched.gap.status);
-    const read = normaliseManifest(fetched.value, { origin: release.manifest, type: release.package.type });
-    if (!read.ok || read.release.package.id !== release.package.id) return gap(release.manifest, 'invalid');
-    // A manifest of another version than the one listed is not this release, but a leading "v" is
-    // not another version: Foundry's listing gives `v1.1.4` as `1.1.4`. The release keeps the
-    // listed version, so that it stays the release the solver asked for.
-    if (bare(read.release.version) !== bare(release.version)) return gap(release.manifest, 'invalid');
-    return {
-      ...read.release,
-      version: release.version,
-      ...(release.listing && { listing: release.listing }),
-      ...(release.unlisted === true && { unlisted: true }),
+    const type = release.package.type;
+    if (type === 'world') return recordGap({ url: release.manifest ?? release.origin, reason: 'invalid' });
+
+    /** The release a manifest fetched from `origin` describes, if it is this release. */
+    const described = (fetched: Fetched, origin: string): Fetched<Release> => {
+      if (!fetched.ok) return fetched;
+      const read = normaliseManifest(fetched.value, { origin, type });
+      // A manifest of another version than the one listed is not this release (see isListedVersion).
+      // The release keeps the listed version, so that it stays the release the solver asked for.
+      if (
+        !read.ok ||
+        read.release.package.id !== release.package.id ||
+        !isListedVersion(read.release.version, release.version)
+      )
+        return { ok: false, gap: { url: origin, reason: 'invalid' } };
+      const own = versionManifestOf(release) ?? read.release.versionManifest;
+      return {
+        ok: true,
+        value: {
+          ...read.release,
+          version: release.version,
+          ...(own !== undefined && { versionManifest: own }),
+          ...(release.listing && { listing: release.listing }),
+          ...(release.unlisted === true && { unlisted: true }),
+        },
+      };
     };
+
+    const fromManifest =
+      release.manifest === undefined
+        ? ({ ok: false, gap: { url: release.origin, reason: 'invalid' } } as const)
+        : described(await http.getJson(release.manifest, { maxAge: Infinity }), release.manifest);
+    if (fromManifest.ok) return fromManifest.value;
+    if (release.download !== undefined) {
+      const fromZip = described(await zipManifest(http, release.download, type), release.download);
+      if (fromZip.ok) return { ...fromZip.value, download: release.download };
+      recordGap(fromManifest.gap);
+      return recordGap(fromZip.gap);
+    }
+    return recordGap(fromManifest.gap);
   }
 
   return {

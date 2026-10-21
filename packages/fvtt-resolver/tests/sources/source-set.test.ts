@@ -8,12 +8,13 @@ import { httpClient } from '../../src/sources/http.js';
 import { sourceSet } from '../../src/sources/source-set.js';
 import { makeRelease } from '../helpers.js';
 import { INDEX, details, detailsOf, index, manifest, manifests } from './foundry-data.js';
-import { fakeFetch } from './fake-fetch.js';
+import { fakeFetch, ranged } from './fake-fetch.js';
+import { makeZip } from './zip-builder.js';
 
 import type { Release } from '../../src/release.js';
 import type { ReleaseSource } from '../../src/sources/types.js';
 import type { CoreRelease } from '../../src/universe.js';
-import type { Answer } from './fake-fetch.js';
+import type { Answers } from './fake-fetch.js';
 
 const core: CoreRelease[] = [
   { version: '13.351', generation: 13, channel: 'stable' },
@@ -21,14 +22,14 @@ const core: CoreRelease[] = [
   { version: '12.331', generation: 12, channel: 'stable' },
 ];
 const module = (id: string) => ({ type: 'module' as const, id });
-const answers = (extra: Record<string, Answer> = {}) => ({
+const answers = (extra: Answers = {}) => ({
   [INDEX]: { body: index() },
   ...Object.fromEntries(Object.entries(detailsOf).map(([id, body]) => [details(id), { body }])),
   ...Object.fromEntries(Object.entries(manifests).map(([url, body]) => [url, { body }])),
   ...extra,
 });
 
-function setup(extra: Record<string, Answer> = {}, sources?: (http: ReturnType<typeof httpClient>) => ReleaseSource[]) {
+function setup(extra: Answers = {}, sources?: (http: ReturnType<typeof httpClient>) => ReleaseSource[]) {
   const { fetch, requests } = fakeFetch(answers(extra));
   const http = httpClient({ fetch });
   const set = sourceSet({ sources: sources?.(http) ?? [foundryIndexSource(http, { indexUrl: INDEX })], http, core });
@@ -68,6 +69,22 @@ describe('sourceSet', () => {
     const universe = await set.universe([module('example-lib')]);
     expect(universe.releases.map(r => `${r.version}:${r.origin}`)).toEqual(['2.1.0:own', '1.0.0:own']);
     expect(set.gaps()).toEqual([{ source: 'failing', url: 'x', reason: 'network' }]);
+  });
+
+  it('takes a version one source writes with a leading "v" and another without as one version, the first source’s', async () => {
+    const installed = makeRelease({ id: 'example-lib', version: 'v2.1.0', origin: 'installed' });
+    const { set } = setup({}, http => [fixed('installed', [installed]), foundryIndexSource(http, { indexUrl: INDEX })]);
+    const universe = await set.universe([module('example-lib')]);
+    expect(universe.releases.map(r => `${r.version}:${r.origin}`)).toEqual(['v2.1.0:installed']);
+  });
+
+  it('finds the newest listed version a leading "v" aside, keeping an unlisted release older than it', async () => {
+    const lib = (version: string, origin: string) => makeRelease({ id: 'example-lib', version, origin });
+    // As text, Foundry counts "v1.0.0" newer than "2.0.0", which would make 1.5.0 newer than any listed.
+    const listing = fixed('foundry-index', [lib('v1.0.0', 'listing'), lib('2.0.0', 'listing')]);
+    const { set } = setup({}, () => [listing, fixed('other', [lib('1.5.0', 'other')])]);
+    const universe = await set.universe([module('example-lib')]);
+    expect(universe.releases.map(r => r.version)).toEqual(['v1.0.0', '2.0.0', '1.5.0']);
   });
 
   describe('hints', () => {
@@ -173,7 +190,7 @@ describe('sourceSet', () => {
     });
     const listedOnly = { body: { versions: [{ version: '2.1.0', minimum: '13', manifest: download('v2.1.0') }] } };
 
-    function withForge(extra: Record<string, Answer> = {}, options: { manifestBounds?: boolean } = {}) {
+    function withForge(extra: Answers = {}, options: { manifestBounds?: boolean } = {}) {
       const { fetch, requests } = fakeFetch(
         answers({
           [details('example-lib')]: listedOnly,
@@ -263,7 +280,7 @@ describe('sourceSet', () => {
     };
     const listedOnly = { body: { versions: [{ version: '2.1.0', minimum: '13', manifest: download('v2.1.0') }] } };
 
-    async function versionsWith(unlisted?: 'exclude' | 'last' | 'include', extra: Record<string, Answer> = {}) {
+    async function versionsWith(unlisted?: 'exclude' | 'last' | 'include', extra: Answers = {}) {
       const { fetch } = fakeFetch(answers({ [details('example-lib')]: listedOnly, [githubApi]: github, ...extra }));
       const http = httpClient({ fetch });
       const set = sourceSet({
@@ -338,6 +355,191 @@ describe('sourceSet', () => {
     expect((await set.universe([module('example-lib')])).releases.map(r => r.version)).toEqual(['3.0.0', '2.1.0']);
   });
 
+  describe('version manifests', () => {
+    const githubApi = 'https://api.github.com/repos/example/example-lib/releases?per_page=100';
+    const asset = (tag: string) => `https://github.com/example/example-lib/releases/download/${tag}/module.json`;
+    const latest = 'https://github.com/example/example-lib/releases/latest/download/module.json';
+    const listing = (manifest: string) => ({
+      body: { versions: [{ version: '2.1.0', minimum: '13', manifest }] },
+    });
+    const github = {
+      body: [{ tag_name: 'v2.1.0', assets: [{ name: 'module.json', browser_download_url: asset('v2.1.0') }] }],
+    };
+
+    function withForge(extra: Answers) {
+      const { fetch, requests } = fakeFetch(answers({ [githubApi]: github, ...extra }));
+      const http = httpClient({ fetch });
+      const set = sourceSet({
+        sources: [foundryIndexSource(http, { indexUrl: INDEX }), githubSource(http)],
+        http,
+        core,
+      });
+      return { set, requests };
+    }
+
+    it('takes a version’s own manifest URL from its listing, when the URL names the version', async () => {
+      const { set } = withForge({ [details('example-lib')]: listing(asset('v2.1.0')) });
+      const [lib] = (await set.universe([module('example-lib')])).releases;
+      expect(lib).toMatchObject({ manifest: asset('v2.1.0'), versionManifest: asset('v2.1.0') });
+    });
+
+    it('takes it from another source when the listing’s URL gives the newest release', async () => {
+      const { set } = withForge({ [details('example-lib')]: listing(latest) });
+      const [lib] = (await set.universe([module('example-lib')])).releases;
+      expect(lib).toMatchObject({ origin: details('example-lib'), manifest: latest, versionManifest: asset('v2.1.0') });
+    });
+
+    it('keeps it when loading the release, whatever URL the manifest gives itself', async () => {
+      const { set } = withForge({
+        [details('example-lib')]: listing(latest),
+        [latest]: { body: { id: 'example-lib', version: '2.1.0', manifest: latest } },
+      });
+      const [lib] = (await set.universe([module('example-lib')])).releases;
+      const [loaded] = await set.load([lib as Release]);
+      expect(loaded).toMatchObject({ detail: 'loaded', manifest: latest, versionManifest: asset('v2.1.0') });
+    });
+
+    describe('beside the download', () => {
+      const moving = 'https://example.org/vee/latest.json';
+      const zip = 'https://github.com/o/vee/releases/download/v1.1.4/vee.zip';
+      const beside = 'https://github.com/o/vee/releases/download/v1.1.4/module.json';
+      const listed = makeRelease({ id: 'vee', version: '1.1.4', manifest: moving, detail: 'listed' });
+      const loading = (download: string | undefined, extra: Answers = {}) =>
+        setup({ [moving]: { body: { id: 'vee', version: '1.1.4', manifest: moving, download } }, ...extra });
+
+      it('looks for it beside the download when no source gives one, and checks what it finds', async () => {
+        const { set } = loading(zip, { [beside]: { body: { id: 'vee', version: 'v1.1.4' } } });
+        const [loaded] = await set.load([listed]);
+        expect(loaded).toMatchObject({ detail: 'loaded', versionManifest: beside });
+        expect(set.gaps()).toEqual([]);
+      });
+
+      it.each([
+        ['gives another version', { [beside]: { body: { id: 'vee', version: '1.1.5' } } }],
+        ['is of another package', { [beside]: { body: { id: 'other', version: '1.1.4' } } }],
+        ['cannot be fetched', {}],
+      ])('gives none when what is beside the download %s, and records no gap', async (_, extra) => {
+        const { set } = loading(zip, extra);
+        const [loaded] = await set.load([listed]);
+        expect(loaded).toMatchObject({ detail: 'loaded' });
+        expect(loaded).not.toHaveProperty('versionManifest');
+        expect(set.gaps()).toEqual([]);
+      });
+
+      it.each([
+        [
+          'a download whose folder does not name the version',
+          'https://gitlab.com/o/vee/raw/master/package/vee-v1.1.4.zip',
+        ],
+        ['no download', undefined],
+      ])('does not look for it with %s', async (_, download) => {
+        const { set, requests } = loading(download);
+        const [loaded] = await set.load([listed]);
+        expect(loaded).not.toHaveProperty('versionManifest');
+        expect(requests.map(r => r.url)).toEqual([moving]);
+      });
+
+      it('does not look for it when only taking a release’s bounds from its manifest', async () => {
+        const vee = fixed('own', [listed]);
+        const { set, requests } = setup({ [moving]: { body: { id: 'vee', version: '1.1.4', download: zip } } }, () => [
+          vee,
+        ]);
+        await set.universe([module('vee')]);
+        expect(requests.map(r => r.url)).toEqual([moving]);
+      });
+    });
+  });
+
+  describe('manifests from zips', () => {
+    const githubApi = 'https://api.github.com/repos/example/example-lib/releases?per_page=100';
+    const file = (tag: string, name: string) =>
+      `https://github.com/example/example-lib/releases/download/${tag}/${name}`;
+    const zip = file('v2.1.0', 'module.zip');
+    const listed = file('v2.1.0', 'module.json');
+    const inZip = { id: 'example-lib', version: '2.1.0', compatibility: { minimum: '13', maximum: '14' } };
+    const github = {
+      body: [
+        {
+          tag_name: 'v2.1.0',
+          assets: [
+            { name: 'module.json', browser_download_url: listed },
+            { name: 'module.zip', browser_download_url: zip },
+          ],
+        },
+      ],
+    };
+    const served = ranged(makeZip([{ name: 'example-lib/module.json', content: JSON.stringify(inZip) }]));
+
+    function withForge(extra: Answers, options: { manifestBounds?: boolean } = {}) {
+      const { fetch, requests } = fakeFetch(
+        answers({
+          [details('example-lib')]: { body: { versions: [{ version: '2.1.0', minimum: '13', manifest: listed }] } },
+          [githubApi]: github,
+          ...extra,
+        }),
+      );
+      const http = httpClient({ fetch });
+      const sources = [foundryIndexSource(http, { indexUrl: INDEX }), githubSource(http)];
+      return { set: sourceSet({ sources, http, core, ...options }), requests };
+    }
+
+    it('takes a version’s zip from another source', async () => {
+      const { set } = withForge({});
+      const [lib] = (await set.universe([module('example-lib')])).releases;
+      expect(lib).toMatchObject({ origin: details('example-lib'), download: zip });
+    });
+
+    it.each([
+      ['cannot be fetched', {}],
+      ['is of another version', { [listed]: { body: { id: 'example-lib', version: '2.2.0' } } }],
+    ])('reads the manifest from the zip when the manifest %s, with no gap', async (_, extra) => {
+      const { set } = withForge({ [zip]: served, ...extra });
+      const [lib] = (await set.universe([module('example-lib')])).releases;
+      const [loaded] = await set.load([lib as Release]);
+      expect(loaded).toMatchObject({
+        detail: 'loaded',
+        version: '2.1.0',
+        compatibility: { minimum: '13', maximum: '14' },
+        origin: zip,
+        download: zip,
+      });
+      expect(set.gaps()).toEqual([]);
+    });
+
+    it('records the gaps of both when the zip cannot be read either', async () => {
+      const { set } = withForge({});
+      const [lib] = (await set.universe([module('example-lib')])).releases;
+      expect(await set.load([lib as Release])).toEqual([]);
+      expect(set.gaps()).toEqual([
+        {
+          source: 'manifest',
+          url: listed,
+          reason: 'http',
+          status: 404,
+          package: 'module:example-lib',
+          version: '2.1.0',
+        },
+        { source: 'manifest', url: zip, reason: 'http', status: 404, package: 'module:example-lib', version: '2.1.0' },
+      ]);
+    });
+
+    it('takes a release’s bounds from its zip when its manifest cannot be fetched', async () => {
+      const noBounds = { body: { versions: [{ version: '2.1.0', manifest: listed }] } };
+      const { set } = withForge({ [details('example-lib')]: noBounds, [zip]: served });
+      const universe = await set.universe([module('example-lib')]);
+      expect(universe.releases).toEqual([
+        expect.objectContaining({ detail: 'listed', compatibility: { minimum: '13', maximum: '14' } }),
+      ]);
+      expect(universe.releases[0]).not.toHaveProperty('loadFailed');
+    });
+
+    it('loads a release with no manifest URL from its zip', async () => {
+      const bare = makeRelease({ id: 'example-lib', version: '2.1.0', download: zip, detail: 'listed', origin: 'own' });
+      const { set } = setup({ [zip]: served });
+      expect(await set.load([bare])).toEqual([expect.objectContaining({ detail: 'loaded', origin: zip })]);
+    });
+  });
+
   describe('load', () => {
     it('loads a listed release from its manifest, keeping the listing’s bounds, and lists the packages it names', async () => {
       const { set } = setup();
@@ -354,14 +556,17 @@ describe('sourceSet', () => {
       });
     });
 
-    it('reads a manifest whose version has a leading v as the version listed', async () => {
+    it.each([
+      ['a leading v', 'v1.1.4'],
+      ['the text before the number of the tag it was listed from', 'release-1.1.4'],
+    ])('reads a manifest whose version has %s as the version listed', async (_, version) => {
       const listed = makeRelease({
         id: 'vee',
         version: '1.1.4',
         manifest: 'https://example.org/vee.json',
         detail: 'listed',
       });
-      const { set } = setup({ 'https://example.org/vee.json': { body: { id: 'vee', version: 'v1.1.4' } } });
+      const { set } = setup({ 'https://example.org/vee.json': { body: { id: 'vee', version } } });
       expect((await set.load([listed])).map(r => `${r.version}:${r.detail}`)).toEqual(['1.1.4:loaded']);
     });
 
@@ -406,6 +611,12 @@ describe('sourceSet', () => {
         { url: 'https://example.org/w.json', reason: 'invalid' },
       ],
       [
+        'is a world with no manifest URL',
+        makeRelease({ package: { type: 'world', id: 'w' }, detail: 'listed', origin: 'listing' }),
+        {},
+        { url: 'listing', reason: 'invalid' },
+      ],
+      [
         'has a manifest that cannot be fetched',
         makeRelease({ id: 'x', manifest: 'https://example.org/gone.json', detail: 'listed' }),
         {},
@@ -430,7 +641,7 @@ describe('sourceSet', () => {
         { url: 'https://example.org/latest.json', reason: 'invalid' },
       ],
     ])('records a gap for a release that %s', async (_, release, extra, gap) => {
-      const { set } = setup(extra as Record<string, Answer>);
+      const { set } = setup(extra as Answers);
       expect(await set.load([release])).toEqual([]);
       expect(set.gaps()).toEqual([
         {

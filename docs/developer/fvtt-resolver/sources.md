@@ -107,6 +107,30 @@ For a package, the sources are tried in order:
 4. GitHub or GitLab, for the history the index lacks;
 5. the manifest URL.
 
+### A manifest URL for one version
+
+To install a particular version, Foundry needs a manifest URL that gives that version. The `manifest` a manifest gives itself almost never does: socketlib's, lib-wrapper's and tidy5e-sheet's say `releases/latest/...`, and dnd5e's, dae's and dice-so-nice's point into a branch, such as `raw/master/...`. So each release has a `versionManifest`, when one can be found: a URL that **names the version** (`namesVersion(url, version)`). One of its folders, read as a tag is, must be the version: `releases/download/v1.1.4/module.json`, `/-/releases/v14.0.18/downloads/module.json` or `/-/raw/6.4.4/...`, but not `latest`, `master`, or a branch named for a generation such as dae's `raw/v14`. Naming is a heuristic: an author can still replace a release's files.
+
+The source set takes the first of these that names the version:
+1. **The URL the release was listed with:** Foundry's details file gives one for each version, and it usually names it.
+2. **A URL another source gives for the same version:** monks-tokenbar's listing gives `releases/latest/...` for every version, but GitHub has a `module.json` attached to each tag.
+3. **When loading, the manifest beside the download:** a GitHub release usually attaches the manifest beside the zip, so `releases/download/v1.1.4/module.zip` suggests `releases/download/v1.1.4/module.json`. It costs a request, so it is tried only when the others fail, only for a release being loaded, and only if that URL names the version. What it fetches must be of the same package and version. Not finding one is not a gap.
+
+On 21 October 2026, with every source, this found a URL for socketlib, lib-wrapper, dae, midi-qol, monks-tokenbar and dice-so-nice. times-up got none: its listing, its manifest and its download all point at the `master` branch, and it publishes no GitLab releases.
+
+### Manifests from zips
+
+A package's zip always holds its manifest, as Foundry installs it. So when a release's manifest cannot be fetched, or is of another release, and its zip is known, the manifest is read from the zip instead. The release is loaded as usual, with the zip as its `origin` and its `download`.
+
+- **Where zips come from:** GitHub and GitLab listings give each release's zip as its `download`: the asset named for the type of package (`module.zip`, `system.zip`), or else the release's only zip. A listing that gives no zip, such as Foundry's details file, takes one from another source for the same version.
+- **Without downloading it:** a zip ends with a directory of its files, so `zipManifest(http, url, type)` reads only parts of it. It asks for the first byte, to learn the zip's size, then the end, then the directory if the end did not hold it all, then the manifest. That is three requests, or four for a zip of many files, of under 140 kB in all. GitHub's file storage refuses a range counted from the end of the file, which is why the size comes first. A server that sends the whole zip instead is not read.
+- **Which manifest:** as Foundry does, the `module.json` or `system.json` nearest the top of the zip. It must still be of the package and version listed.
+- **Limits:** the directory up to 8 MB, the manifest up to 1 MB, compressed or not. An encrypted manifest, one not stored or deflated, and a ZIP64 zip are not read.
+- **Kept:** what is read is kept in the cache, as a release's zip does not change. A zip that cannot be read is a gap, recorded with the manifest's.
+- **When:** in loading, and in taking bounds from manifests (`manifestBounds`): only after the manifest has failed, so it costs nothing otherwise.
+
+On 21 October 2026, dae 14.0.10's manifest on GitLab could not be read; its zip's could, giving its bounds and relationships in three requests. dae 13.0.10's could not be read either: the `module.json` in its zip is not valid JSON, so Foundry could not install it. GitHub source archives (`archive/<tag>.zip`) are not read, as their server ignores ranges.
+
 Building is asynchronous and can fail partway: a URL is gone, or a rate limit is hit. Failures do not abort the build. They are recorded in the universe, as "releases of other-module could not be listed: HTTP 404". Explanations can then point at missing information as well as at constraints: "no release of other-module is known that supports core 14 (its releases could not be listed)".
 
 ## Request budget
@@ -285,6 +309,7 @@ Checked with [corsproxy](https://github.com/melihbirim/corsproxy) (commit 6fc411
 - With its defaults, every source works through it: it follows redirects, passes compressed answers through (the index, 8.3 MB, arrives as 731 kB, within its 10 MB limit), and passes `ETag` and `If-None-Match`.
 - It never forwards `Authorization`, so a GitHub token does not reach GitHub, and GitHub's limit of 60 requests an hour applies to the proxy's address, shared by everyone using it. GitLab's `PRIVATE-TOKEN` is forwarded.
 - `ALLOWED_HOSTS`, `RATE_LIMIT_PER_MINUTE` and `DAILY_REQUEST_LIMIT` can each make requests fail partway through a run. The sources load up to eight manifests at a time.
+- For [manifests from zips](#manifests-from-zips), it forwards `Range` and passes on the parts, but does not expose `Content-Range` to the page (by its source; not run). Without the size, the end of a zip is asked for from the end, which GitLab allows and GitHub's file storage refuses: in a browser, GitHub zips cannot be read through it. A proxy that sends `Access-Control-Expose-Headers: Content-Range` can read both.
 
 ### A proxy for a Foundry module
 
@@ -333,6 +358,8 @@ The core package (`@mondarth/fvtt-resolver`) contains no I/O at all. The sources
 
   It works within a request budget (1,000 requests and 8 at once by default), and records a gap rather than throwing. The `Cache` is an interface; `memoryCache()` is one in memory.
 
+  `getBytes(url, range)` fetches part of a file, within the budget but not cached, with the file's size when the server shows it. `remember(key, maxAge, make)` keeps a value made from what was fetched, such as a manifest read from a zip.
+
 `foundryIndexSource(http)`
 : Lists a package's releases from Foundry's index and its details file, as listed releases with the listing's `minimum` and `verified`.
   - **The index** is kept for 5 minutes, and serves stale for up to a day.
@@ -342,7 +369,7 @@ The core package (`@mondarth/fvtt-resolver`) contains no I/O at all. The sources
 : Works the sources together.
   - **`universe(packages)`** lists the packages: each version comes from the first source that lists it, and releases whose `minimum` is newer than every core of interest are left out.
   - **`load(needs)`** is the loader for `resolveInRounds`. It reads each release's manifest and keeps the listing's bounds. It also lists the packages the loaded releases require or run in that are not yet known, so the next round has them.
-  - **A manifest of another version** than the one listed is refused, since a "latest" manifest URL would describe another release. A leading `v` is not another version: socketlib's manifest says `v1.1.4` where the listing says `1.1.4`, and the release keeps the listed version.
+  - **A manifest of another version** than the one listed is refused, since a "latest" manifest URL would describe another release. A leading `v` is not another version: socketlib's manifest says `v1.1.4` where the listing says `1.1.4`, and the release keeps the listed version. Nor is the text before the number of a version listed from a tag: a manifest saying `release-6.0.6` is of the release listed as `6.0.6`.
   - **`gaps()`** gives what could not be fetched or read.
 
 `githubSource(http, { token })` and `gitlabSource(http, { token, hosts })`

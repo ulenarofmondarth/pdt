@@ -92,6 +92,20 @@ These rules have consequences that SemVer does not share:
 
 The first row is why the `prereleases` policy excludes pre-releases by default: under Foundry's order, a beta would otherwise win over its own release.
 
+### One version written two ways
+
+Some packages write their version with a leading `v`. socketlib's manifest says `v1.1.4`, which is what Foundry reports as installed, while Foundry's package listing and the release's tag give `1.1.4`. To Foundry these are different text, and `v1.1.4` even counts as newer than `2.0.0`, since `v` sorts after any digit.
+
+The resolver counts them as **one version**. Wherever it matches a version, a leading `v` or `V` before a digit is ignored:
+
+- a setup given to `check`, and the versions it is checked against bounds with;
+- pins and preferred versions given to `resolve`;
+- the versions named by overrides;
+- releases from different sources, which become one release, the first source's;
+- deciding whether a release is newer than any the listing gives.
+
+A release keeps the version as its source writes it, so a setup may give `1.1.4` for a package installed as `v1.1.4`. A caller comparing the two should use the resolver's `sameVersion`, not compare the text. Any other difference is another version: `1.0` and `1.0.0` stay two versions, as they are to Foundry.
+
 ### A consistent order
 
 Foundry's comparison is not a consistent order. Numeric parts compare as numbers, but a part that mixes digits and text compares as text. So `10a` is newer than `10` (text), `10` than `9` (numbers), and `9` than `10a` (text): a cycle. Checking a version against a bound is still well defined, since it is one comparison. But "newest" needs an order that sorts the same way every time.
@@ -199,7 +213,7 @@ Core limits
 
 `resolve` and `check` take `declarations: { overrides, coreLimits }`. A reason is shown as the caller wrote it, so pdt passes it already translated.
 
-Overrides each name a package, the versions they correct (exactly as the releases give them, or every version), and a reason. There are three kinds:
+Overrides each name a package, the versions they correct (as the releases give them, a leading `v` aside, or every version), and a reason. There are three kinds:
 
 `exclude`
 : The releases cannot be used: at all, or with another package in some versions (`with: { package, minimum?, maximum? }`). Core bounds may name a generation (`"14"`), as in a manifest; other packages' are read as relationship bounds.

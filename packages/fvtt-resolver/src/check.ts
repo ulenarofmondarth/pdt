@@ -10,6 +10,7 @@ import { coreCompatibility, releaseConstraints } from './constraints.js';
 import { withDefaults } from './policy.js';
 import { rangeOps } from './range/range.js';
 import { CORE, chooseOrders, packageKey } from './universe.js';
+import { sameVersion } from './version/same.js';
 
 import type { Availability } from './availability.js';
 import type { Advisory, Constraint, Preference } from './constraints.js';
@@ -84,14 +85,18 @@ export function check(universe: Universe, setup: SetupSpec, options: CheckOption
 
   const wanted = [setup.system, ...(setup.modules ?? [])];
   const releaseOf = ({ package: key, version }: PackageVersion) =>
-    universe.releases.find(release => packageKey(release.package) === key && release.version === version);
+    universe.releases.find(release => packageKey(release.package) === key && sameVersion(release.version, version));
   const releases = wanted.flatMap(spec => {
     const release = releaseOf(spec);
     return release === undefined ? [] : [release];
   });
   const unknown = wanted.filter(spec => releaseOf(spec) === undefined);
 
-  const chosen = new Map<PackageKey, string>([[CORE, setup.core], ...wanted.map(s => [s.package, s.version] as const)]);
+  // Each version as its release writes it, which may differ by a leading "v" from the setup's.
+  const chosen = new Map<PackageKey, string>([
+    [CORE, setup.core],
+    ...wanted.map(s => [s.package, releaseOf(s)?.version ?? s.version] as const),
+  ]);
   /** Whether the setup has a version of a package in a range. */
   const has = (key: PackageKey, range: Range) => {
     const version = chosen.get(key);

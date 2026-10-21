@@ -7,6 +7,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { sameVersion } from '@mondarth/fvtt-resolver';
 import { download } from './download.js';
 import { packageDir } from './plan.js';
 import { extractPackage } from './zip.js';
@@ -26,8 +27,6 @@ export class InstallError extends Error {
     this.name = 'InstallError';
   }
 }
-
-const bare = (version: string) => version.replace(/^[vV]/, '');
 
 /** What a manifest says of itself: its id and version, as text. */
 function identity(manifest: unknown): { id?: unknown; version?: unknown } {
@@ -59,7 +58,7 @@ export async function installPackage(fetch: typeof globalThis.fetch, release: Re
     const { id, version: found } = identity(await extractPackage(zip, ref.type as 'module' | 'system', staging));
     if (id !== ref.id) throw new InstallError('wrong-package', String(id));
     if (typeof found !== 'string' && typeof found !== 'number') throw new InstallError('wrong-version', String(found));
-    if (bare(String(found)) !== bare(version)) throw new InstallError('wrong-version', String(found));
+    if (!sameVersion(String(found), version)) throw new InstallError('wrong-version', String(found));
     if (fs.existsSync(target)) fs.renameSync(target, old);
     fs.renameSync(staging, target);
   } finally {
