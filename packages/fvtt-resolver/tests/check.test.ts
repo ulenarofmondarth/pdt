@@ -84,6 +84,28 @@ describe('check', () => {
     expect(result.unknown).toEqual([]);
   });
 
+  it('finds a version given with a leading "v", as Foundry gives socketlib’s, as the release without', () => {
+    const result = check(everything, midiSetup('5.3.3', ['socketlib@v1.1.3', 'lib-wrapper@1.12.15', 'dae@14.0.18']));
+    expect(result.unknown).toEqual([]);
+    expect(result.valid).toBe(true);
+  });
+
+  it('checks a version given with a leading "v" against bounds as the release’s own version', () => {
+    const user = module('socket-user', '1.0.0', {
+      relationships: relationships({ requires: [related('module', 'socketlib', { maximum: '1.2' })] }),
+    });
+    const result = check(universe(dnd5eOld, user, ...support), {
+      core: '14.368',
+      system: { package: 'system:dnd5e', version: '5.3.3' },
+      modules: [
+        { package: 'module:socket-user', version: '1.0.0' },
+        { package: 'module:socketlib', version: 'v1.1.3' },
+      ],
+    });
+    expect(about(result, 'socket-user').broken).toEqual([]);
+    expect(result.valid).toBe(true);
+  });
+
   it('gives midi-qol on dnd5e 6.0.6 Foundry’s unverified system, which the default policy allows', () => {
     const result = check(everything, midiSetup('6.0.6'));
     expect(result.valid).toBe(true);

@@ -342,7 +342,7 @@ The core package (`@mondarth/fvtt-resolver`) contains no I/O at all. The sources
 : Works the sources together.
   - **`universe(packages)`** lists the packages: each version comes from the first source that lists it, and releases whose `minimum` is newer than every core of interest are left out.
   - **`load(needs)`** is the loader for `resolveInRounds`. It reads each release's manifest and keeps the listing's bounds. It also lists the packages the loaded releases require or run in that are not yet known, so the next round has them.
-  - **A manifest of another version** than the one listed is refused, since a "latest" manifest URL would describe another release. A leading `v` is not another version: socketlib's manifest says `v1.1.4` where the listing says `1.1.4`, and the release keeps the listed version.
+  - **A manifest of another version** than the one listed is refused, since a "latest" manifest URL would describe another release. A leading `v` is not another version: socketlib's manifest says `v1.1.4` where the listing says `1.1.4`, and the release keeps the listed version. Nor is the text before the number of a version listed from a tag: a manifest saying `release-6.0.6` is of the release listed as `6.0.6`.
   - **`gaps()`** gives what could not be fetched or read.
 
 `githubSource(http, { token })` and `gitlabSource(http, { token, hosts })`

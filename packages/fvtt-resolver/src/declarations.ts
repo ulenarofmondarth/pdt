@@ -4,6 +4,7 @@
  * carries a reason, so that an explanation leaning on one can say why it holds.
  */
 import { packageKey } from './universe.js';
+import { sameVersion } from './version/same.js';
 
 import type { Release } from './release.js';
 import type { PackageKey } from './universe.js';
@@ -18,7 +19,7 @@ export interface CoreLimit {
 interface OverrideCommon {
   /** The package whose releases it corrects. */
   readonly package: PackageKey;
-  /** The versions it corrects, exactly as the releases give them; every version when missing. */
+  /** The versions it corrects, as the releases give them, a leading `v` aside; every version when missing. */
   readonly versions?: readonly string[];
   /** Shown to the user as written, so already in their language. */
   readonly reason: string;
@@ -71,7 +72,8 @@ export interface IndexedOverride<O extends Override = Override> {
 export function overridesFor(release: Release, overrides: readonly Override[]): IndexedOverride[] {
   const key = packageKey(release.package);
   return overrides.flatMap((override, index) =>
-    override.package === key && (override.versions === undefined || override.versions.includes(release.version))
+    override.package === key &&
+    (override.versions === undefined || override.versions.some(version => sameVersion(version, release.version)))
       ? [{ index, override }]
       : [],
   );

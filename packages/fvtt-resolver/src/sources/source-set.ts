@@ -5,6 +5,8 @@
 import { normaliseManifest } from '../manifest/normalise.js';
 import { packageKey } from '../universe.js';
 import { isNewerVersion } from '../version/foundry.js';
+import { sameVersion, unprefixed } from '../version/same.js';
+import { tagVersion } from './repository.js';
 
 import type { PackageRef, Release } from '../release.js';
 import type { CoreRelease, PackageKey, Universe } from '../universe.js';
@@ -61,9 +63,6 @@ export interface SourceSet {
 
 const MANIFEST_SOURCE = 'manifest';
 
-/** A version without a leading `v` or `V`. */
-const bare = (version: string) => version.replace(/^[vV]/, '');
-
 /** Sources working together. */
 export function sourceSet({
   sources,
@@ -92,7 +91,10 @@ export function sourceSet({
   const possible = ({ compatibility: { minimum } }: Release) =>
     newestCore === undefined || minimum === undefined || !isNewerVersion(minimum, newestCore);
 
-  /** Every release of a package that the sources list, the first source's where they list the same version. */
+  /**
+   * Every release of a package that the sources list, the first source's where they list the same
+   * version, a leading `v` aside.
+   */
   async function list(ref: PackageRef): Promise<Release[]> {
     const key = packageKey(ref);
     known.add(key);
@@ -112,15 +114,17 @@ export function sourceSet({
         if (release.manifest !== undefined) seen.add(release.manifest);
         if (source.name === listing) {
           fromListing.add(release);
-          if (newestListed === undefined || isNewerVersion(release.version, newestListed))
+          if (newestListed === undefined || isNewerVersion(unprefixed(release.version), unprefixed(newestListed)))
             newestListed = release.version;
         }
-        if (!versions.has(release.version) && possible(release)) versions.set(release.version, release);
+        const version = unprefixed(release.version);
+        if (!versions.has(version) && possible(release)) versions.set(version, release);
       }
     }
     const kept = [...versions.values()].flatMap((release): Release[] => {
       if (unlisted === 'include' || newestListed === undefined || fromListing.has(release)) return [release];
-      if (!isNewerVersion(release.version, newestListed)) return [release];
+      // A version the listing gives without a leading "v" is listed, however the source writes it.
+      if (!isNewerVersion(unprefixed(release.version), unprefixed(newestListed))) return [release];
       return unlisted === 'last' ? [{ ...release, unlisted: true }] : [];
     });
     if (!manifestBounds) return kept;
@@ -163,9 +167,13 @@ export function sourceSet({
     const read = normaliseManifest(fetched.value, { origin: release.manifest, type: release.package.type });
     if (!read.ok || read.release.package.id !== release.package.id) return gap(release.manifest, 'invalid');
     // A manifest of another version than the one listed is not this release, but a leading "v" is
-    // not another version: Foundry's listing gives `v1.1.4` as `1.1.4`. The release keeps the
+    // not another version (Foundry's listing gives `v1.1.4` as `1.1.4`), nor is the text before the
+    // number when the release was listed from a tag such as `release-1.1.4`. The release keeps the
     // listed version, so that it stays the release the solver asked for.
-    if (bare(read.release.version) !== bare(release.version)) return gap(release.manifest, 'invalid');
+    const manifestVersion = read.release.version;
+    if (!sameVersion(manifestVersion, release.version) && tagVersion(manifestVersion) !== release.version) {
+      return gap(release.manifest, 'invalid');
+    }
     return {
       ...read.release,
       version: release.version,
