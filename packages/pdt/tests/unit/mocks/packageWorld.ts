@@ -6,6 +6,7 @@
 import { vi } from 'vitest';
 import { FOUNDRY_PACKAGE_INDEX, FOUNDRY_RELEASE_NOTES } from '@mondarth/fvtt-resolver/sources';
 import { tagsUrl } from '@lib/VTT/coreImages.js';
+import { makeZip } from './zip.js';
 
 /** A release in the made-up world: its manifest, as its author published it. */
 export interface WorldRelease {
@@ -21,6 +22,8 @@ export interface WorldRelease {
 export const DETAILS = 'https://packages.example.org/detail/{id}.json';
 export const manifestUrl = ({ id, version }: Pick<WorldRelease, 'id' | 'version'>) =>
   `https://example.org/${id}/${version}/manifest.json`;
+export const downloadUrl = ({ id, version }: Pick<WorldRelease, 'id' | 'version'>) =>
+  `https://example.org/${id}/${version}/${id}.zip`;
 
 /** The manifest of a release. */
 export function manifestOf(release: WorldRelease) {
@@ -34,7 +37,7 @@ export function manifestOf(release: WorldRelease) {
       systems: (release.systems ?? []).map(id => ({ id, type: 'system' })),
     },
     manifest: `https://example.org/${release.id}/latest/manifest.json`,
-    download: `https://example.org/${release.id}/${release.version}/${release.id}.zip`,
+    download: downloadUrl(release),
     // Premium packages' manifests say so, as their listing does.
     ...(release.premium === true && { protected: true }),
   };
@@ -69,6 +72,14 @@ function releaseNotes(): string {
   return `<html><body><ol class="index-list releases-list">${items.join('')}</ol></body></html>`;
 }
 
+/** A release's zip, its files in a folder of its id, as authors often zip them. */
+export function zipOf(release: WorldRelease): Buffer {
+  return makeZip([
+    { name: `${release.id}/${release.type}.json`, data: JSON.stringify(manifestOf(release)) },
+    { name: `${release.id}/scripts/main.js`, data: `// ${release.id} ${release.version}` },
+  ]);
+}
+
 /** What the made-up services answer, by URL. */
 export function worldAnswers(releases: readonly WorldRelease[] = RELEASES, image = 'felddy/foundryvtt') {
   const answers = new Map<string, unknown>();
@@ -89,7 +100,11 @@ export function worldAnswers(releases: readonly WorldRelease[] = RELEASES, image
         })),
     });
   }
-  for (const r of releases) answers.set(manifestUrl(r), manifestOf(r));
+  for (const r of releases) {
+    answers.set(manifestUrl(r), manifestOf(r));
+    // Premium packages cannot be downloaded without a licence.
+    if (r.premium !== true) answers.set(downloadUrl(r), zipOf(r));
+  }
   for (const generation of new Set(BUILDS.map(b => b.version.split('.')[0]))) {
     const names = BUILDS.filter(b => b.image && b.version.startsWith(`${generation}.`)).map(b => b.version);
     answers.set(tagsUrl(image, `${generation}.`), {
@@ -101,12 +116,13 @@ export function worldAnswers(releases: readonly WorldRelease[] = RELEASES, image
   return answers;
 }
 
-/** A `fetch` over answers: JSON for objects, text for strings, 404 for anything else. */
+/** A `fetch` over answers: bytes for buffers, text for strings, JSON for anything else, 404 when there is none. */
 export function worldFetch(answers: ReadonlyMap<string, unknown> = worldAnswers()) {
   return vi.fn<typeof globalThis.fetch>((input: string | URL | Request) => {
     const url = input instanceof Request ? input.url : String(input);
     const body = answers.get(url);
     if (body === undefined) return Promise.resolve(new Response(null, { status: 404 }));
+    if (Buffer.isBuffer(body)) return Promise.resolve(new Response(new Uint8Array(body), { status: 200 }));
     return Promise.resolve(new Response(typeof body === 'string' ? body : JSON.stringify(body), { status: 200 }));
   });
 }

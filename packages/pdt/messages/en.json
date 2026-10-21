@@ -74,6 +74,9 @@
         "description": "Work out the packages a VTT needs, and install them into its data",
         "dryRun": {
           "description": "Show what would be installed, and install nothing."
+        },
+        "upgrade": {
+          "description": "Choose the newest versions that fit, rather than keeping those the lockfile records."
         }
       }
     },
@@ -138,7 +141,13 @@
       "install": "  {package} {version}: to install",
       "replace": "  {package} {version}: to install, replacing {installed}",
       "premium": "  {package} {version}: premium; install it through Foundry VTT",
-      "dryRun": "Dry run: nothing was installed."
+      "dryRun": "Dry run: nothing was installed.",
+      "remove": "  {package}: to remove",
+      "unneeded": "  {package}: no longer needed",
+      "installing": "Installing {package} {version}…",
+      "removing": "Removing {package}…",
+      "done": "VTT {vtt} is set up: {installed} installed, {removed} removed.",
+      "stopping": "VTT {vtt} is running: stopping it to install."
     }
   },
   "warn": {
@@ -173,7 +182,8 @@
         "network": "the server could not be reached",
         "budget": "the request budget ran out",
         "invalid": "the answer could not be read"
-      }
+      },
+      "restart": "VTT {vtt} is running: restart it for Foundry VTT to load the changes (pdt vtt restart {vtt})."
     }
   },
   "error": {
@@ -243,12 +253,26 @@
       "notAProject": "--project {as}: {root} is not a PDT project; it has no .pdt directory."
     },
     "install": {
-      "dryRunOnly": "Installing is not available yet. Give --dry-run to see what would be installed.",
       "noSetup": "No setup of VTT {vtt} meets the requirements:",
       "incomplete": "The answer for VTT {vtt} is still incomplete after {rounds} rounds. It needs: {packages}",
       "projectUnreadable": "The project’s module, {file}, cannot be read: {problems}",
       "noCore": "No build of Foundry VTT {generation} can be chosen for VTT {vtt}.",
-      "noImage": "there is no {image} image for it"
+      "noImage": "there is no {image} image for it",
+      "running": "VTT {vtt} is running, and its packages.running setting is block. Stop it first (pdt vtt stop {vtt}).",
+      "failed": "{count} packages could not be installed.",
+      "packageFailed": "{package} {version} could not be installed: {reason}",
+      "reason": {
+        "noDownload": "its release gives no download",
+        "wrongPackage": "its zip holds another package ({found})",
+        "wrongVersion": "its zip holds version {found}",
+        "noManifest": "its zip holds no {file}",
+        "unsafeEntry": "its zip holds an unsafe entry ({entry})",
+        "encrypted": "its zip is encrypted",
+        "tooLarge": "it is too large",
+        "http": "the download failed: the server answered {status}",
+        "network": "the download failed: the server could not be reached",
+        "other": "{message}"
+      }
     }
   },
   "fatal": {

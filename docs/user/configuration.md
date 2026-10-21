@@ -99,6 +99,8 @@ Besides its `type`, the `host` can set:
 | `system` | The system to install, by id, such as `dnd5e`. Unless set, the one that suits the project's module best. |
 | `modules` | More modules to install, by id, such as `["dice-so-nice"]`. |
 | `overrides` | Corrections to what packages' authors declared, each with a `reason`. |
+| `running` | What to do when the VTT is running: `auto` (the default) stops it, installs and starts it again; `block` refuses; `warn` installs and says to restart it. |
+| `removal` | What to do with packages the setup no longer needs: `auto` (the default) removes those {{pdt}} installed; `never` removes none; `remove` removes every one, even those installed by hand. |
 
 {{pdt}} chooses each package's version. An override corrects the releases of a `package` (`module:<id>` or `system:<id>`), all of them or the `versions` it lists, and is one of three kinds:
 

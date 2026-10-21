@@ -74,6 +74,9 @@
         "description": "Determina los paquetes que necesita un VTT y los instala en sus datos",
         "dryRun": {
           "description": "Muestra lo que se instalaría, sin instalar nada."
+        },
+        "upgrade": {
+          "description": "Elige las versiones más recientes que encajen, en lugar de mantener las que registra el archivo de bloqueo."
         }
       }
     },
@@ -138,7 +141,13 @@
       "install": "  {package} {version}: por instalar",
       "replace": "  {package} {version}: por instalar, sustituyendo a {installed}",
       "premium": "  {package} {version}: prémium; instálelo desde Foundry VTT",
-      "dryRun": "Prueba: no se ha instalado nada."
+      "dryRun": "Prueba: no se ha instalado nada.",
+      "remove": "  {package}: por eliminar",
+      "unneeded": "  {package}: ya no es necesario",
+      "installing": "Instalando {package} {version}…",
+      "removing": "Eliminando {package}…",
+      "done": "El VTT {vtt} está listo: {installed} instalados, {removed} eliminados.",
+      "stopping": "El VTT {vtt} está en marcha: se detiene para instalar."
     }
   },
   "warn": {
@@ -173,7 +182,8 @@
         "network": "no se pudo contactar con el servidor",
         "budget": "se agotó el presupuesto de peticiones",
         "invalid": "no se pudo leer la respuesta"
-      }
+      },
+      "restart": "El VTT {vtt} está en marcha: reinícielo para que Foundry VTT cargue los cambios (pdt vtt restart {vtt})."
     }
   },
   "error": {
@@ -243,12 +253,26 @@
       "notAProject": "--project {as}: {root} no es un proyecto PDT; no tiene directorio .pdt."
     },
     "install": {
-      "dryRunOnly": "La instalación aún no está disponible. Use --dry-run para ver lo que se instalaría.",
       "noSetup": "Ninguna configuración del VTT {vtt} cumple los requisitos:",
       "incomplete": "La respuesta para el VTT {vtt} sigue incompleta tras {rounds} rondas. Necesita: {packages}",
       "projectUnreadable": "No se puede leer el módulo del proyecto, {file}: {problems}",
       "noCore": "No se puede elegir ninguna compilación de Foundry VTT {generation} para el VTT {vtt}.",
-      "noImage": "no hay ninguna imagen de {image} para ella"
+      "noImage": "no hay ninguna imagen de {image} para ella",
+      "running": "El VTT {vtt} está en marcha y su ajuste packages.running es block. Deténgalo primero (pdt vtt stop {vtt}).",
+      "failed": "No se pudieron instalar {count} paquetes.",
+      "packageFailed": "No se pudo instalar {package} {version}: {reason}",
+      "reason": {
+        "noDownload": "su versión no ofrece ninguna descarga",
+        "wrongPackage": "su zip contiene otro paquete ({found})",
+        "wrongVersion": "su zip contiene la versión {found}",
+        "noManifest": "su zip no contiene ningún {file}",
+        "unsafeEntry": "su zip contiene una entrada insegura ({entry})",
+        "encrypted": "su zip está cifrado",
+        "tooLarge": "es demasiado grande",
+        "http": "la descarga falló: el servidor respondió {status}",
+        "network": "la descarga falló: no se pudo contactar con el servidor",
+        "other": "{message}"
+      }
     }
   },
   "fatal": {
