@@ -145,6 +145,7 @@ export async function main(
     createVtt,
     isPortFree,
     isUrlReachable,
+    fetch: globalThis.fetch,
     ...(context.owner === undefined ? {} : { owner: context.owner }),
   };
 

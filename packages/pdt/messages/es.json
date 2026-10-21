@@ -69,6 +69,12 @@
         "destination": "Adónde mover el proyecto. No debe existir todavía; su directorio padre sí.",
         "stopAllContainers": "Detener todos los VTT del proyecto en ejecución antes de moverlo.",
         "restartAllContainers": "Detener todos los VTT del proyecto en ejecución antes de moverlo, e iniciarlos de nuevo después."
+      },
+      "install": {
+        "description": "Determina los paquetes que necesita un VTT y los instala en sus datos",
+        "dryRun": {
+          "description": "Muestra lo que se instalaría, sin instalar nada."
+        }
       }
     },
     "opt": {
@@ -123,6 +129,16 @@
       "unusable": "Proyecto {project} ({root}): no se puede leer. {reason}",
       "noProjects": "No hay proyectos registrados en {file}.",
       "notConfigured": "consta como iniciado pero ya no está configurado, así que no se puede consultar. Su contenedor es {container}."
+    },
+    "install": {
+      "resolving": "Determinando lo que necesita el VTT {vtt}…",
+      "setup": "VTT {vtt}: Foundry VTT {core}, encontrado en {rounds} rondas:",
+      "project": "  {package} {version}: el módulo del proyecto",
+      "keep": "  {package} {version}: ya instalado",
+      "install": "  {package} {version}: por instalar",
+      "replace": "  {package} {version}: por instalar, sustituyendo a {installed}",
+      "premium": "  {package} {version}: prémium; instálelo desde Foundry VTT",
+      "dryRun": "Prueba: no se ha instalado nada."
     }
   },
   "warn": {
@@ -147,6 +163,17 @@
       "noModuleMount": "El proyecto no tiene id, así que no se le da al VTT {vtt} como módulo.",
       "noAccount": "FOUNDRY.username y FOUNDRY.password no están ambos definidos, así que el VTT {vtt} solo puede usar un Foundry VTT que ya haya instalado. Defínelos con pdt config set --user.",
       "notConfiguredToStop": "El VTT {vtt} consta como iniciado, pero ya no está configurado, así que no se puede detener. Detenlo tú: docker rm -f {container}"
+    },
+    "install": {
+      "gaps": "No se pudieron leer algunas fuentes, así que la respuesta puede estar incompleta:",
+      "gap": "  {url}: {reason}",
+      "unloaded": "Comprobados solo según su ficha, porque no se pudieron cargar sus manifiestos: {packages}",
+      "reason": {
+        "http": "el servidor respondió {status}",
+        "network": "no se pudo contactar con el servidor",
+        "budget": "se agotó el presupuesto de peticiones",
+        "invalid": "no se pudo leer la respuesta"
+      }
     }
   },
   "error": {
@@ -214,6 +241,14 @@
       "missing": "--project {as}: {root} no existe. Si el proyecto se movió, ejecuta pdt move en él, o pdt prune.",
       "notADirectory": "--project {as}: {root} no es un directorio.",
       "notAProject": "--project {as}: {root} no es un proyecto PDT; no tiene directorio .pdt."
+    },
+    "install": {
+      "dryRunOnly": "La instalación aún no está disponible. Use --dry-run para ver lo que se instalaría.",
+      "noSetup": "Ninguna configuración del VTT {vtt} cumple los requisitos:",
+      "incomplete": "La respuesta para el VTT {vtt} sigue incompleta tras {rounds} rondas. Necesita: {packages}",
+      "projectUnreadable": "No se puede leer el módulo del proyecto, {file}: {problems}",
+      "noCore": "No se puede elegir ninguna compilación de Foundry VTT {generation} para el VTT {vtt}.",
+      "noImage": "no hay ninguna imagen de {image} para ella"
     }
   },
   "fatal": {
@@ -222,5 +257,59 @@
   },
   "debug": {
     "running": "Ejecutando el comando analizado: {argv}"
+  },
+  "explain": {
+    "name": {
+      "core": "Foundry VTT",
+      "requirements": "los requisitos",
+      "worldSystem": "el sistema del mundo"
+    },
+    "term": "{name} {versions}",
+    "worldAny": "un mundo con un sistema",
+    "world": "un mundo con {systems}",
+    "system": "{id} {versions}",
+    "fromInclusive": "{version} o posterior",
+    "fromExclusive": "posterior a {version}",
+    "toInclusive": "{version} o anterior",
+    "toExclusive": "anterior a {version}",
+    "betweenInclusive": "de {lower} a {upper}",
+    "betweenUpperExclusive": "de {lower} hasta {upper}, sin incluirla",
+    "betweenLowerExclusive": "después de {lower} hasta {upper}",
+    "betweenExclusive": "después de {lower} hasta {upper}, sin incluirla",
+    "otherThan": "distinta de {versions}",
+    "otherSystems": "un sistema distinto de {systems}",
+    "none": "ninguna versión",
+    "dependsOn": "{release} depende de {on}",
+    "conflictsWith": "{release} entra en conflicto con {on}",
+    "runsIn": "{release} solo funciona en {systems}",
+    "unusable": "{release} no declara compatibilidad con Foundry VTT, lo que la política no acepta",
+    "excluded": "{release} no se puede usar (anulación: {reason})",
+    "excludedWith": "{release} no se puede usar con {on} (anulación: {reason})",
+    "overridden": "{text} (anulación: {reason})",
+    "coreLimit": "{core} no se puede usar: {reason}",
+    "requirement": "los requisitos necesitan {on}",
+    "pin": "{on} está fijado",
+    "setupNeeds": "una configuración necesita {what}",
+    "worldSystem": "{system} es el sistema del mundo exactamente cuando está instalado",
+    "noVersions": "no hay ninguna versión disponible de {term}",
+    "noSystemAny": "no hay ningún sistema disponible",
+    "noSystem": "no hay ningún sistema disponible en {systems}",
+    "failed": "los requisitos no se pueden cumplir",
+    "wanted": "los requisitos se desean",
+    "forbidden": "{term} no se puede usar",
+    "needed": "se necesita {term}",
+    "needs": "{term} necesita {needed}",
+    "requirementsNeed": "los requisitos necesitan {needed}",
+    "incompatible": "{a} no se puede usar con {b}",
+    "either": "se necesita {terms}",
+    "ifThen": "si se usan {given}, se necesita {then}",
+    "because": "Como {a} y {b}, {conclusion}.",
+    "andBecause": "Y como {a}, {conclusion}.",
+    "soBecause": "Así que, como {a}, {conclusion}.",
+    "andBecauseBoth": "Y como {a} y {b}, {conclusion}.",
+    "soBecauseBoth": "Así que, como {a} y {b}, {conclusion}.",
+    "thus": "Por lo tanto, {conclusion}.",
+    "sentence": "{text}.",
+    "see": "{phrase} ({number})"
   }
 }

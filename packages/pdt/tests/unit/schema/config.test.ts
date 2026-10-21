@@ -154,3 +154,50 @@ describe('server schema', () => {
     expect(serverSchema.safeParse(server).success).toBe(false);
   });
 });
+
+describe('a VTT’s packages', () => {
+  const withPackages = (packages: unknown) => ({ ...defaults, VTT: { mod: { ...vttSettings('14'), packages } } });
+
+  test('are optional, and need name nothing', () => {
+    expect(configSchema.parse(withPackages(undefined)).VTT['mod']?.packages).toBeUndefined();
+    expect(configSchema.parse(withPackages({})).VTT['mod']?.packages).toEqual({ modules: [], overrides: [] });
+  });
+
+  test('name a system, modules and overrides of every kind', () => {
+    const packages = {
+      system: 'dnd5e',
+      modules: ['dice-so-nice'],
+      overrides: [
+        {
+          kind: 'exclude',
+          package: 'module:old',
+          versions: ['3.2.0'],
+          with: { package: 'core', minimum: '14' },
+          reason: 'r',
+        },
+        {
+          kind: 'compatibility',
+          package: 'system:dnd5e',
+          compatibility: { maximum: null, verified: '14' },
+          reason: 'r',
+        },
+        { kind: 'relationship', package: 'module:a', drop: 'module:b', reason: 'r' },
+      ],
+    };
+    expect(configSchema.parse(withPackages(packages)).VTT['mod']?.packages).toEqual(packages);
+  });
+
+  test.each([
+    ['a system named as a key', { system: 'system:dnd5e' }],
+    ['a module id with a space', { modules: ['dice so nice'] }],
+    ['an override of a world', { overrides: [{ kind: 'exclude', package: 'world:w', reason: 'r' }] }],
+    ['an override without a reason', { overrides: [{ kind: 'exclude', package: 'module:a' }] }],
+    [
+      'an override of no versions',
+      { overrides: [{ kind: 'exclude', package: 'module:a', versions: [], reason: 'r' }] },
+    ],
+    ['an override of another kind', { overrides: [{ kind: 'pin', package: 'module:a', reason: 'r' }] }],
+  ])('refuse %s', (_, packages) => {
+    expect(configSchema.safeParse(withPackages(packages)).success).toBe(false);
+  });
+});

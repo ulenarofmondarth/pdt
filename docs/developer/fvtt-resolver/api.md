@@ -216,6 +216,15 @@ A running VTT is handled as a setting says: `auto` stops it, installs and starts
 
 It is built in three steps: the wiring (pdt's use of the resolver, the image tags, the disk cache and the tokens); resolving, with `--dry-run` to show the plan; then installing, with the lockfile and the settings for a running VTT and for removals.
 
+As built so far, in `packages/pdt`:
+- `src/lib/install/resolveInstall.ts` works out the setup.
+  - **Core** is pinned to the configured version, and every channel is allowed, since the user chose it. A version naming a generation (`13`) is read from Foundry's release notes as its newest stable build with an image. The image's tags are read only for the configured build, or that generation, so it costs one request.
+  - **The project's module** comes from a local source. The packages it names are listed up front, with the manifest URLs its relationships give as hints, since its release is loaded already and is never passed to `load`.
+  - **Rounds** are limited to 50. Each round goes back at most one release of a package, and an older core can need many: midi-qol on core 13 took 25 rounds on 21 October 2026.
+- `src/lib/install/plan.ts` turns a setup into the plan: keep, install (replacing what is there), premium, or the project's own module. It reads installed versions from the manifests in the VTT's data, ignoring a leading `v`.
+- `src/lib/install/explanationMessages.ts` gives the resolver pdt's messages (`explain.*`, in every locale), joining lists with `Intl.ListFormat`.
+- `src/cli/cmds/vtt_cmds/install.ts` is the command. Without `--dry-run`, it stops before fetching anything.
+
 `pdt vtt start` could then check the installed setup before starting, and warn about anything that is not valid. A future `pdt compat` (name to be decided) would print the matrix for the project's module.
 
 None of this changes the resolver: pdt supplies the adapters, the cache and the file formats, and the resolver stays pure.
