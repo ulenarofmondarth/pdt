@@ -79,6 +79,11 @@ describe('vtt command', () => {
 
       expect(host.start).toHaveBeenCalledOnce();
     });
+
+    test('routes install to the install sub-command', async () => {
+      // The sandbox holds no module.json, so install stops when it reads the project's module.
+      await expect(parse('vtt install --dry-run')).resolves.toContain(path.join(sandbox, 'module.json'));
+    });
   });
 
   test('logs an error if its own handler is ever reached', async () => {

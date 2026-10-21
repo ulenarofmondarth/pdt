@@ -566,13 +566,72 @@ Stops the VTT, as `stop` does, then starts it, as `start` does, so that it runs 
 {command}`vtt init`
 
 :::{note}
-`vtt init` and `vtt install` are planned, and not available yet. For whether a VTT is running, see {ref}`pdt_tlc_status`.
+`vtt init` is planned, and not available yet. For whether a VTT is running, see {ref}`pdt_tlc_status`.
 :::
+
+(pdt_tlc_vtt_install)=
 
 ### vtt install
 
-{command}`vtt install`
+{command}`vtt install [vtt] [--dry-run] [--upgrade]`
 
-Install a configuration of modules. The specification can be captured using EMMA. Can also enforce a set of settings for the installed modules.
+Works out the packages the VTT needs, shows what installing them takes, and installs them into the VTT's data. It installs:
+- the project's module, read from its `module.json`;
+- the system and modules the VTT's `packages` setting names (see {ref}`pdt_conf_vtt_packages`);
+- every module they require, and a system they run in;
+- each at a version that works with the Foundry VTT version the VTT runs. Installing never changes that version.
 
-If {command}`vtt install` is used while the VTT is running it will be stopped, the modules installed, any settings installed, then the VTT will be restarted.
+{{pdt}} finds packages' releases in Foundry VTT's package listing, on GitHub and GitLab, and at the manifest URLs packages declare. What it fetches is kept in your user data directory, under `cache/resolver`, so a second run asks only for what has changed. A GitHub token (`SOURCES.github_token`, see {ref}`pdt_conf_secrets`) raises GitHub's limit of 60 requests an hour.
+
+A version that names a whole generation, such as `13`, means its newest stable build that has an image, as the image's own tag does. A Foundry VTT build with no image to run it in cannot be installed for, and {{pdt}} says so.
+
+```shell
+$ pdt vtt install --dry-run
+Working out what VTT arcane-ledger needs…
+VTT arcane-ledger: Foundry VTT 14.368, found in 3 rounds:
+  dnd5e 5.3.3: to install
+  lib-wrapper 1.13.5.1: to install
+  midi-qol 14.0.15: installed already
+  socketlib 1.1.4: to install, replacing 1.1.3
+  arcane-ledger 0.1.0: the project’s module
+Dry run: nothing was installed.
+```
+
+Each package is downloaded, and extracted as Foundry VTT does: the folder in the zip that holds its manifest is the package. {{pdt}} checks that the zip holds the package and version it expects before putting it in place, so a failed install leaves what was there untouched. A package already there at the version chosen is kept.
+
+A premium package is listed for you to install through Foundry VTT, since downloading it needs your licence.
+
+`--dry-run` shows the plan and changes nothing.
+
+When no setup meets the requirements, {{pdt}} explains why, step by step, and exits with an error:
+
+```text
+No setup of VTT arcane-ledger meets the requirements:
+Because Foundry VTT 14.362 cannot be used: there is no felddy/foundryvtt image for it and Foundry VTT 14.362 is pinned, the requirements cannot be met. (1)
+```
+
+{{pdt}} warns about any source it could not read, naming its URL, and about packages it could check only from their listing because their manifests could not be loaded. The answer may then be incomplete.
+
+#### The lockfile
+
+{{pdt}} records what it installed in each VTT in `.pdt/vtt.lock.json`: the Foundry VTT version, and each package's version, where it was downloaded from, and how it got there (installed by {{pdt}}, there already, premium, or the project's own module). Commit it with the project, so that everyone working on it gets the same setup.
+
+The next install keeps the versions the lockfile records, as long as they still fit: a module the project now needs a newer version of is updated, and the rest stay as they are. `--upgrade` chooses the newest versions that fit instead.
+
+#### Packages no longer needed
+
+The VTT's `packages.removal` setting says what happens to packages the setup no longer needs (see {ref}`pdt_conf_vtt_packages`):
+- `auto` (the default) removes those the lockfile says {{pdt}} installed, and leaves anything you installed yourself;
+- `never` removes nothing, and lists the packages {{pdt}} installed that are no longer needed;
+- `remove` removes every package the setup does not need, even those you installed by hand.
+
+The project's own module is never removed.
+
+#### A running VTT
+
+The VTT's `packages.running` setting says what happens when it is running:
+- `auto` (the default) stops it, installs, and starts it again;
+- `block` refuses to install, until you stop it;
+- `warn` installs, and tells you to restart it so that Foundry VTT loads the changes.
+
+When a package cannot be installed, {{pdt}} says why, installs the rest, records what is there, and exits with an error.

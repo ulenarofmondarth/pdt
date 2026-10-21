@@ -72,8 +72,10 @@ export default defineConfig({
   },
   plugins: [
     paraglideVitePlugin({ project: './project.inlang', outdir: './src/paraglide' }),
-    tsconfigPaths(),
+    // Before the paths: the resolver's path, which points tests and the type check at its source,
+    // must not pull that source into the bundle, which imports the published package instead.
     nodeExternals(),
+    tsconfigPaths(),
     executableEntry(),
   ],
 });

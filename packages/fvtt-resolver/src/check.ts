@@ -2,7 +2,8 @@
  * Check: is this setup valid? For a core release, a system release and module releases, as one
  * world would use them, it gives each release Foundry VTT's verdict, and what the resolver finds:
  * every hard constraint the setup breaks, every preference it misses, and every advisory that
- * applies. The resolver is stricter than Foundry, so a setup Foundry would allow can be invalid.
+ * applies, with the caller's overrides, and whether the caller can run its core. The resolver is
+ * stricter than Foundry, so a setup Foundry would allow can be invalid.
  */
 import { AVAILABILITY, coreAvailability, isUnavailable, withinRelationship } from './availability.js';
 import { coreCompatibility, releaseConstraints } from './constraints.js';
@@ -12,6 +13,7 @@ import { CORE, chooseOrders, packageKey } from './universe.js';
 
 import type { Availability } from './availability.js';
 import type { Advisory, Constraint, Preference } from './constraints.js';
+import type { CoreLimit, Declarations } from './declarations.js';
 import type { Policy } from './policy.js';
 import type { Range } from './range/range.js';
 import type { Release } from './release.js';
@@ -39,21 +41,29 @@ export interface ReleaseCheck {
 }
 
 export interface CheckResult {
-  /** Whether every release is known and no hard constraint is broken. */
+  /** Whether every release is known, no hard constraint is broken, and the caller can run the core. */
   readonly valid: boolean;
   readonly releases: readonly ReleaseCheck[];
   /** The versions in the setup that the universe has no release of, so cannot be checked. */
   readonly unknown: readonly PackageVersion[];
   /**
    * The versions in the setup known only from a listing, so checked without their relationships
-   * or `maximum`. Load them for a full check.
+   * or `maximum`: those not yet loaded, and those whose manifest could not be loaded (`loadFailed`).
+   * Load them for a full check.
    */
   readonly listed: readonly PackageVersion[];
   readonly warnings: readonly OrderWarning[];
+  /** The core limits the setup's core build is under: empty when the caller can run it. */
+  readonly coreLimits: readonly CoreLimit[];
 }
 
 export interface CheckOptions {
   readonly policy?: Partial<Policy>;
+  /**
+   * Overrides and core limits, beyond what the manifests declare. Overrides change what the resolver
+   * finds, not Foundry's verdicts: Foundry knows nothing of them.
+   */
+  readonly declarations?: Declarations;
 }
 
 /**
@@ -69,7 +79,8 @@ export interface CheckOptions {
  */
 export function check(universe: Universe, setup: SetupSpec, options: CheckOptions = {}): CheckResult {
   const policy = withDefaults(options.policy);
-  const orders = chooseOrders(universe, policy);
+  const { overrides = [], coreLimits = [] } = options.declarations ?? {};
+  const orders = chooseOrders(universe, policy, overrides);
 
   const wanted = [setup.system, ...(setup.modules ?? [])];
   const releaseOf = ({ package: key, version }: PackageVersion) =>
@@ -133,7 +144,7 @@ export function check(universe: Universe, setup: SetupSpec, options: CheckOption
   }
 
   const checked = releases.map((release): ReleaseCheck => {
-    const constraints = releaseConstraints(release, { orders, policy });
+    const constraints = releaseConstraints(release, { orders, policy, overrides });
     return {
       release,
       availability: availability(release),
@@ -148,13 +159,15 @@ export function check(universe: Universe, setup: SetupSpec, options: CheckOption
     };
   });
 
+  const limits = coreLimits.filter(limit => limit.version === setup.core);
   return {
-    valid: unknown.length === 0 && checked.every(c => c.broken.length === 0),
+    valid: unknown.length === 0 && limits.length === 0 && checked.every(c => c.broken.length === 0),
     releases: checked,
     unknown,
     listed: releases
       .filter(release => release.detail === 'listed')
       .map(release => ({ package: packageKey(release.package), version: release.version })),
     warnings: orders.warnings,
+    coreLimits: limits,
   };
 }

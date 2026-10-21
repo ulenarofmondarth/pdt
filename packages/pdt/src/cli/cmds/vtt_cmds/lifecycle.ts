@@ -28,7 +28,7 @@ import type VTTServer from '@lib/VTT/VTTServer.js';
 import type { VttSettings } from '@schema/config.js';
 
 /** A VTT of the project a command is run in, ready to start or stop. */
-interface ProjectVtt {
+export interface ProjectVtt {
   name: string;
   settings: VttSettings;
   server: VTTServer;
@@ -79,6 +79,14 @@ export function vttDataDir(userDataDir: string, instance: string): string {
   return path.join(userDataDir, 'vtt', instance);
 }
 
+/** What a VTT of the project runs as on its host (see {@link instanceName}). */
+export function instanceOf(
+  { name, root }: Pick<ProjectVtt, 'name' | 'root'>,
+  { config }: Pick<CommandContext, 'config'>,
+) {
+  return instanceName(config.id ?? path.basename(root), name);
+}
+
 /** The project's `.pdt` directory. @throws {Error} When not in a project */
 function projectData({ paths }: CommandContext): string {
   if (paths.pdtConfigDir === undefined) throw new Error(m['error.notInPdtProject']());
@@ -99,7 +107,7 @@ function projectVtt(context: CommandContext, name: string): ProjectVtt {
 }
 
 /** The VTT a command is for (see {@link chooseVtt}), in the project the command is run in. */
-function chosenVtt(context: CommandContext, given: string | undefined): ProjectVtt {
+export function chosenVtt(context: CommandContext, given: string | undefined): ProjectVtt {
   projectData(context);
   return projectVtt(context, chooseVtt(context, given));
 }
@@ -157,7 +165,7 @@ function mountsFor({ name, server, root }: ProjectVtt, instance: string, context
  */
 async function start(vtt: ProjectVtt, context: CommandContext) {
   const { config, log, out, isPortFree, isUrlReachable, owner } = context;
-  const { name, settings, server, runState, root } = vtt;
+  const { name, settings, server, runState } = vtt;
   const running = runningVtt(runState, name);
   if (running !== undefined) {
     const was = asRecorded(vtt, running, context);
@@ -173,7 +181,7 @@ async function start(vtt: ProjectVtt, context: CommandContext) {
   }
 
   const port = await portFor(vtt, isPortFree);
-  const instance = instanceName(config.id ?? path.basename(root), name);
+  const instance = instanceOf(vtt, context);
   const mounts = mountsFor(vtt, instance, context);
   if (
     settings.server.type === 'foundry' &&
@@ -355,3 +363,19 @@ export async function vttStatuses(context: CommandContext): Promise<VttStatus[]>
   }
   return statuses;
 }
+
+/**
+ * Whether a VTT of the project is running: the project's run state records it, and its host says so.
+ *
+ * @throws {Error} When the host it was started on cannot be reached
+ */
+export async function isVttRunning(vtt: ProjectVtt, context: CommandContext): Promise<boolean> {
+  const record = runningVtt(vtt.runState, vtt.name);
+  if (record === undefined) return false;
+  const was = asRecorded(vtt, record, context);
+  await assertHostAccessible(was);
+  return was.server.host.isRunning(record);
+}
+
+/** Start or stop a VTT of the project already chosen, as `pdt vtt start` and `stop` do. */
+export { start as startProjectVtt, stop as stopProjectVtt };

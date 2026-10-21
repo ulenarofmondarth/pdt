@@ -67,4 +67,10 @@ export interface Release {
    * those fits.
    */
   readonly unlisted?: boolean;
+  /**
+   * A listed release whose manifest could not be loaded, such as when the download failed. It stays
+   * `listed`, with only what the listing gave, and is not asked for again. `resolve` ranks the
+   * releases it can load ahead of it, and `check` reports it as checked from its listing.
+   */
+  readonly loadFailed?: boolean;
 }

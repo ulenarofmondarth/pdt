@@ -163,15 +163,54 @@ describe('resolveInRounds', () => {
     expect(after.releases.find(r => r.package.id === 'lib')?.unlisted).toBe(true);
   });
 
-  it('uses a release as listed when it cannot be loaded, and says so', async () => {
+  it('uses a release as listed when it cannot be loaded, after trying the others, and says so', async () => {
     const { resolution, rounds, unloaded } = await resolveInRounds(universe, requireApp, loader([]).load);
     expect(chosen(resolution)).toEqual(['app@1.0.0', 'lib@2.0.0']);
-    expect(rounds).toBe(2);
+    expect(rounds).toBe(3);
+    expect(unloaded).toEqual([
+      { package: 'module:lib', version: '2.0.0' },
+      { package: 'module:lib', version: '1.0.0' },
+    ]);
+  });
+
+  // Regression: a release that could not be loaded was marked loaded, with no core bounds, so check
+  // found it valid with Foundry's UNKNOWN verdict and did not report it as checked from its listing.
+  it('keeps a release it cannot load listed, marked as failed, so that check reports it', async () => {
+    const { universe: after } = await resolveInRounds(universe, requireApp, loader([]).load);
+    const lib = after.releases.find(r => r.package.id === 'lib' && r.version === '2.0.0');
+    expect(lib).toMatchObject({ detail: 'listed', loadFailed: true });
+    const result = check(after, {
+      core: '14.368',
+      system: { package: 'system:dnd5e', version: '5.3.3' },
+      modules: [
+        { package: 'module:app', version: '1.0.0' },
+        { package: 'module:lib', version: '2.0.0' },
+      ],
+    });
+    expect(result.listed).toEqual([{ package: 'module:lib', version: '2.0.0' }]);
+  });
+
+  it('prefers a release it can load to a newer one it could not', async () => {
+    const lib1 = manifests[1] as Release;
+    const { resolution, rounds, unloaded } = await resolveInRounds(universe, requireApp, loader([lib1]).load);
+    expect(chosen(resolution)).toEqual(['app@1.0.0', 'lib@1.0.0']);
+    expect(rounds).toBe(3);
     expect(unloaded).toEqual([{ package: 'module:lib', version: '2.0.0' }]);
   });
 
+  it('uses a release it could not load when nothing else fits, and does not ask for it again', async () => {
+    const { resolution, rounds } = await resolveInRounds(
+      { core, releases: [dnd5e, app, listed('lib', '2.0.0')] },
+      requireApp,
+      loader([]).load,
+    );
+    expect(chosen(resolution)).toEqual(['app@1.0.0', 'lib@2.0.0']);
+    expect(rounds).toBe(2);
+  });
+
   it('does not count a release the loader returns still listed as loaded', async () => {
-    const { unloaded } = await resolveInRounds(universe, requireApp, loader([listed('lib', '2.0.0')]).load);
+    const lib1 = manifests[1] as Release;
+    const { unloaded } = await resolveInRounds(universe, requireApp, loader([listed('lib', '2.0.0'), lib1]).load);
     expect(unloaded).toEqual([{ package: 'module:lib', version: '2.0.0' }]);
   });
 

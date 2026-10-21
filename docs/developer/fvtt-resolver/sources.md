@@ -72,10 +72,12 @@ The same for packages on GitLab (gitlab.com, or a self-hosted instance named by 
 Foundry has no public API for its releases: its own update check sends the licence. Two public sources together give what pdt needs:
 
 Foundry VTT release notes
-: `https://foundryvtt.com/releases/` lists every build (`Release 14.369`) with its channel (stable, testing, development, prototype). It is an HTML page, so the adapter scrapes it, and must be tested against a saved copy so a layout change fails loudly.
+: `https://foundryvtt.com/releases/` lists every build (`Release 14.369`) with its channel (stable, testing, development, prototype). It is an HTML page, so the adapter scrapes it, and fails loudly when the layout changes.
 
 felddy/foundryvtt images
-: pdt runs Foundry in a container from felddy/foundryvtt, tagged with the core version (`14.368`). The Docker Hub tag list (`https://hub.docker.com/v2/repositories/felddy/foundryvtt/tags`) says which builds have an image. Not every build does: 14.362 has release notes but no image. pdt turns the difference into core limits, each with its reason (see {doc}`domain`).
+: pdt runs Foundry in a container from felddy/foundryvtt, tagged with the core version (`14.368`). The Docker Hub tag list (`https://hub.docker.com/v2/repositories/felddy/foundryvtt/tags`) says which builds have an image. Not every build does: 14.362 has release notes but no image, and neither have generation 14's testing, development and prototype builds, though generation 13's testing builds have. pdt turns the difference into core limits, each with its reason (see {doc}`domain`).
+
+  The list holds thousands of tags (2,941 on 21 October 2026), mostly `sha-…` and dependabot builds, but it can be filtered by name: `?name=14.` gives a generation's tags in one request. pdt keeps only the tags that are exactly a release's version, so that each build has one image tag or none: `14.368` is build 14.368, while `14.368.0`, `14`, `latest` and the rest are ignored.
 
 The second is pdt's concern, not the resolver's: another tool would pass its own limits, or none.
 
@@ -245,18 +247,43 @@ Before building one, ask Foundry to send `Access-Control-Allow-Origin: *` from `
 
 ## Browsers
 
-Browser support is required, so the sources use only `fetch`, with no Node built-ins. Not every server lets a browser read it. Checked on 20 October 2026, with an `Origin` header:
+Browser support is required, so the sources use only `fetch`, with no Node built-ins. Not every server lets a browser read it. Checked on 21 October 2026, with an `Origin` header:
 
-| Server | CORS |
-| --- | --- |
-| GitHub API (`api.github.com`) | yes |
-| GitLab API (`gitlab.com/api/v4`) | yes |
-| GitHub release downloads | no |
-| Foundry index, details and manifests (`r2.foundryvtt.com`) | no |
-| Foundry release notes (`foundryvtt.com`) | no |
-| Docker Hub | no |
+| Server | Used for | CORS |
+| --- | --- | --- |
+| GitHub API (`api.github.com`) | GitHub release lists | yes, with preflights |
+| GitHub release downloads (`github.com/…/releases/download/…`) | GitHub manifests, and most manifest URLs in Foundry's details files | no: neither the redirect nor `release-assets.githubusercontent.com` sends CORS headers |
+| `raw.githubusercontent.com` | declared manifest URLs | yes, but preflights are refused |
+| GitLab API (`gitlab.com/api/v4`) | GitLab release lists, and release links on the API | yes, with preflights |
+| GitLab release downloads (`/-/releases/…/downloads/…`) | GitLab manifests | no: the redirect sends no CORS headers |
+| Foundry index and details (`r2.foundryvtt.com`) | the listing | only for the origin `https://foundryvtt.com`; preflights are refused |
+| Foundry release notes (`foundryvtt.com`) | core releases | no |
+| Docker Hub | image tags | no |
 
-So every adapter takes a `fetch` supplied by the caller. Node passes the global one. A browser tool passes one that goes through its own proxy, reads a mirror that sends CORS headers (see [A shared mirror](#a-shared-mirror)), or builds no universe at all and loads one made elsewhere. The core runs in a browser unchanged. See {doc}`questions`, question 14.
+So every adapter takes a `fetch` supplied by the caller. Node passes the global one. A browser tool passes one that goes through a proxy, reads a mirror that sends CORS headers (see [A shared mirror](#a-shared-mirror)), or builds no universe at all and loads one made elsewhere. The core runs in a browser unchanged. See {doc}`questions`, question 14.
+
+A download that CORS blocks fails as a network error. The release it was for stays listed, marked `loadFailed`, and `check` reports it among the releases checked from their listing (see [Resolving in rounds](resolution.md#resolving-in-rounds)). The gaps name each URL that failed.
+
+### Through a CORS proxy
+
+`proxiedFetch(fetch, proxy)` sends every request through a proxy. `proxy` is a template, such as `https://proxy.example/?url={url}`, in which `{url}` becomes the target, percent-encoded, or a function from the target to the proxy's URL. Encoding matters: unencoded, a GitLab project path's `%2F` is decoded on the way, so GitLab answers 404, and Docker Hub's `&name=14.` ends the proxy's own parameter, so Docker Hub returns every tag unfiltered.
+
+```typescript
+const http = httpClient({ fetch: proxiedFetch(globalThis.fetch, 'https://proxy.example/?url={url}') });
+```
+
+The proxy must follow redirects itself, since release downloads redirect to storage hosts. If it has a list of allowed hosts, the list needs every host the sources reach, and the hosts they redirect to:
+- `r2.foundryvtt.com` and `foundryvtt.com`;
+- `api.github.com`, `github.com`, `release-assets.githubusercontent.com` and `raw.githubusercontent.com`;
+- `gitlab.com`, or the self-hosted GitLab;
+- `hub.docker.com`.
+
+Without `release-assets.githubusercontent.com`, every GitHub release download fails, and so does every manifest Foundry's details files point at GitHub.
+
+Checked with [corsproxy](https://github.com/melihbirim/corsproxy) (commit 6fc4117, run locally) on 21 October 2026:
+- With its defaults, every source works through it: it follows redirects, passes compressed answers through (the index, 8.3 MB, arrives as 731 kB, within its 10 MB limit), and passes `ETag` and `If-None-Match`.
+- It never forwards `Authorization`, so a GitHub token does not reach GitHub, and GitHub's limit of 60 requests an hour applies to the proxy's address, shared by everyone using it. GitLab's `PRIVATE-TOKEN` is forwarded.
+- `ALLOWED_HOSTS`, `RATE_LIMIT_PER_MINUTE` and `DAILY_REQUEST_LIMIT` can each make requests fail partway through a run. The sources load up to eight manifests at a time.
 
 ### A proxy for a Foundry module
 
@@ -332,6 +359,15 @@ The core package (`@mondarth/fvtt-resolver`) contains no I/O at all. The sources
 `localSource(manifests)`
 : The caller's own manifests, read by the caller, such as the working copy of the package under development. Those it cannot read are listed in `problems`.
 
+`foundryCoreReleases(http, { url })`
+: Foundry's builds since version 9, each with its generation and channel, from the release notes. `httpClient` fetches the page with `getText`, which works as `getJson` does.
+  - **Version:** read from each release's link text (`Release 14.368`), not its link: old releases are linked by id (`/releases/8.102` is 0.8.9). Releases before version 9 (`0.8.9`) are skipped, since core versions are `<generation>.<build>`.
+  - **Channel:** the tag after the link, before the next release's (`release-tag stable`).
+  - **Loudly:** a page with no builds, or a build without a channel, is an `invalid` gap, not a shorter list. Either means the layout has changed.
+  - **Kept** for a day, and a stale copy serves for a week when the site cannot be reached.
+
+  `readReleaseNotes(html)` reads a page already fetched.
+
 `sourceSet({ …, manifests, listing, unlisted })`
 : `manifests` declares manifest URLs for packages. `unlisted` decides what happens to releases of a listed package, from other sources, that are newer than the newest the listing offers. midi-qol shows why this needs a choice: its author publishes 14.6.x, 14.0.x and 13.0.x lines on GitLab, while Foundry's listing offers the 14.0.x line.
   - `exclude` (the default): leave them out, as Foundry's users cannot install them from it.
@@ -356,3 +392,5 @@ With GitHub, dnd5e's history grew from the 28 versions Foundry's details list to
 | `include` | GitLab's midi-qol 14.6.0 and dae 14.6.0, with dnd5e 6.0.6 | 8 | 22 |
 
 Without a token, GitHub allows 60 requests an hour; the live checks read `GITHUB_TOKEN`.
+
+The release notes, on 21 October 2026, gave 109 builds since version 9, the newest 14.369: 58 stable, 24 testing, 13 development and 14 prototype.

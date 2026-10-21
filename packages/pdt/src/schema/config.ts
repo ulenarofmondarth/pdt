@@ -67,9 +67,79 @@ export type DockerHostSettings = z.output<typeof dockerHostSettings>;
 /** A VTT host's settings, of any type. */
 export type HostSettings = z.output<typeof hostSchema>;
 
+/** A package as the resolver names it: `core`, or `module:<id>` or `system:<id>`. */
+const packageKey = z.string().regex(/^(core|(module|system):[^\s:]+)$/);
+
+/** Bounds as a manifest writes them. */
+const bound = z.string().min(1);
+
+const overrideCommon = {
+  /** The package whose releases it corrects. */
+  package: packageKey,
+  /** The versions it corrects, exactly as the releases give them; every version when not given. */
+  versions: z.array(z.string().min(1)).min(1).optional(),
+  /** Why, shown in explanations that lean on it. */
+  reason: z.string().min(1),
+};
+
+/** A correction to what a package's authors declared (see the resolver's overrides). */
+const overrideSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('exclude'),
+    ...overrideCommon,
+    with: z.object({ package: packageKey, minimum: bound.optional(), maximum: bound.optional() }).optional(),
+  }),
+  z.object({
+    kind: z.literal('compatibility'),
+    ...overrideCommon,
+    compatibility: z.object({
+      minimum: bound.nullable().optional(),
+      verified: bound.nullable().optional(),
+      maximum: bound.nullable().optional(),
+    }),
+  }),
+  z.object({ kind: z.literal('relationship'), ...overrideCommon, drop: packageKey }),
+]);
+
+/** A correction to what a package's authors declared, as configured. */
+export type OverrideSettings = z.output<typeof overrideSchema>;
+
+/** A package id, as in its manifest. */
+const packageId = z.string().regex(/^[^\s:]+$/);
+
+/** What `pdt vtt install` installs besides the project's module, and how. */
+export const packagesSchema = z.object({
+  /** The system to install, by id; the one the resolver chooses when not given. */
+  system: packageId.optional(),
+  /** More modules to install, by id. */
+  modules: z.array(packageId).default([]),
+  /** Corrections to what packages' authors declared, each with its reason. */
+  overrides: z.array(overrideSchema).default([]),
+  /**
+   * What to do when the VTT is running: `auto` stops it, installs and starts it again; `block`
+   * refuses to install; `warn` installs, and says to restart it.
+   */
+  running: z.enum(['auto', 'block', 'warn']).default('auto'),
+  /**
+   * What to do with packages the setup no longer needs: `auto` removes those pdt installed;
+   * `never` removes none; `remove` removes every one, even those installed by hand.
+   */
+  removal: z.enum(['auto', 'never', 'remove']).default('auto'),
+});
+
+/** What `pdt vtt install` installs besides the project's module. */
+export type PackagesSettings = z.output<typeof packagesSchema>;
+
+/** What `pdt vtt install` installs for a VTT, with the defaults for what its settings leave out. */
+export function vttPackages({ packages }: { packages?: PackagesSettings | undefined }): PackagesSettings {
+  return packages ?? packagesSchema.parse({});
+}
+
 export const vttSchema = z.object({
   server: serverSchema,
   host: hostSchema,
+  /** What `pdt vtt install` installs besides the project's module. */
+  packages: packagesSchema.optional(),
 });
 
 /** A VTT's settings: its server, and the host it runs on. */
@@ -85,6 +155,17 @@ export const foundryAccount = z.object({
 /** The Foundry VTT account, to download and license Foundry VTT with. */
 export type FoundryAccount = z.output<typeof foundryAccount>;
 
+/** Where pdt finds packages' releases, beyond Foundry VTT's own listing. */
+export const packageSources = z.object({
+  /** A GitHub token, for GitHub's higher rate limit when listing releases. */
+  github_token: secret().optional(),
+  /** A GitLab token, for GitLab's releases. */
+  gitlab_token: secret().optional(),
+});
+
+/** Where pdt finds packages' releases. */
+export type PackageSources = z.output<typeof packageSources>;
+
 const npmDebugLevels = z.literal(['error', 'warn', 'info', 'http', 'verbose', 'debug', 'silly']);
 
 export const config = z.object({
@@ -99,6 +180,7 @@ export const config = z.object({
   }),
   VTT: z.record(z.string(), vttSchema),
   FOUNDRY: foundryAccount.optional(),
+  SOURCES: packageSources.optional(),
 });
 
 export type Config = z.infer<typeof config>;

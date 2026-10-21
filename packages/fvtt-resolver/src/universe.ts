@@ -5,6 +5,7 @@
 import { chooseOrder } from './version/choose.js';
 import { foundryDisagreements, foundryOrder } from './version/foundry.js';
 
+import type { Override } from './declarations.js';
 import type { Policy } from './policy.js';
 import type { PackageRef, Release } from './release.js';
 import type { VersionOrder } from './version/order.js';
@@ -62,10 +63,14 @@ export interface Orders {
  * Chooses how each package's versions are ordered.
  *
  * A package is ordered one way throughout, so the order is chosen from all its versions in the
- * universe and every bound that any release places on it. Core is always in Foundry's order,
+ * universe and every bound that any release, or any override, places on it. Core is always in Foundry's order,
  * which for its all-numeric versions is exactly Foundry's.
  */
-export function chooseOrders(universe: Universe, policy: Pick<Policy, 'versionOrder'>): Orders {
+export function chooseOrders(
+  universe: Universe,
+  policy: Pick<Policy, 'versionOrder'>,
+  overrides: readonly Override[] = [],
+): Orders {
   const versions = new Map<PackageKey, string[]>();
   const bounds = new Map<PackageKey, string[]>();
   const add = (map: Map<PackageKey, string[]>, key: PackageKey, version: string | undefined) => {
@@ -81,6 +86,15 @@ export function chooseOrders(universe: Universe, policy: Pick<Policy, 'versionOr
       add(bounds, key, relationship.compatibility.maximum);
       if (!versions.has(key)) versions.set(key, []);
     }
+  }
+
+  // An override's bounds must be readable in the order chosen, as a relationship's must.
+  for (const override of overrides) {
+    if (override.kind !== 'exclude' || override.with === undefined || override.with.package === CORE) continue;
+    const { package: key, minimum, maximum } = override.with;
+    add(bounds, key, minimum);
+    add(bounds, key, maximum);
+    if (!versions.has(key)) versions.set(key, []);
   }
 
   const orders = new Map<PackageKey, VersionOrder>();

@@ -64,6 +64,8 @@ These `paths` are also used during testing (see {doc}`testing`)
 
 The paths are repeated in `vite.config.ts` for use during the build.
 
+`packages/pdt` uses `@mondarth/fvtt-resolver` from the workspace (`"workspace:*"`), and its `tsconfig.json` maps the package and its `/sources` export to the resolver's source. So the type check, the tests, ESLint and the pre-commit hook read the resolver as it is in the working copy, with no build of it first. The build must not: in `vite.config.ts` the externals plugin comes before the paths plugin, so the bundle imports the published package (`import … from "@mondarth/fvtt-resolver/sources"`) rather than copying its source in. {command}`pnpm build` builds the resolver before {program}`pdt`, as {program}`pdt` depends on it, so the built CLI finds it.
+
 ### Version
 
 `pdt --version` reports the version in `packages/pdt/package.json`. `vite.config.ts` reads it when the build (or a test run) starts and writes it into the bundle as `__PDT_VERSION__` (declared in `src/build-constants.d.ts`). Left to itself, yargs would look for a `package.json` above its own installed copy, which finds the right one only by chance of where pnpm puts its packages.

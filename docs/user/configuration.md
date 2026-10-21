@@ -54,6 +54,8 @@ Some settings are secret: passwords, keys and the like. They are kept apart from
 | `FOUNDRY.username`, `FOUNDRY.password` | Your Foundry VTT account, used to download Foundry VTT |
 | `FOUNDRY.license_key` | Your Foundry VTT licence key |
 | `VTT.<name>.server.admin_key` | The administrator password of a VTT's server |
+| `SOURCES.github_token` | A GitHub token, for GitHub's higher rate limit when finding packages' releases |
+| `SOURCES.gitlab_token` | A GitLab token, for packages released on GitLab |
 
 Your Foundry VTT account is the same for every project, so `FOUNDRY` usually belongs in your user secrets file, `secrets.conf` in your user configuration directory (`~/.config/pdt/secrets.conf` on Linux).
 
@@ -85,6 +87,55 @@ Besides its `type`, the `host` can set:
 | `image` | The Docker image to run, without a tag; `felddy/foundryvtt` unless set. The tag is the server's `version`. |
 | `repository` | The registry to pull the image from; Docker Hub unless set. |
 | `socketPath` | The Docker engine's socket; Docker's default unless set. |
+
+(pdt_conf_vtt_packages)=
+
+## A VTT's packages
+
+`VTT.<vtt>.packages` says what {ref}`pdt_tlc_vtt_install` installs besides the project's module. All of it is optional:
+
+| Setting | What it is |
+| --- | --- |
+| `system` | The system to install, by id, such as `dnd5e`. Unless set, the one that suits the project's module best. |
+| `modules` | More modules to install, by id, such as `["dice-so-nice"]`. |
+| `overrides` | Corrections to what packages' authors declared, each with a `reason`. |
+| `running` | What to do when the VTT is running: `auto` (the default) stops it, installs and starts it again; `block` refuses; `warn` installs and says to restart it. |
+| `removal` | What to do with packages the setup no longer needs: `auto` (the default) removes those {{pdt}} installed; `never` removes none; `remove` removes every one, even those installed by hand. |
+
+{{pdt}} chooses each package's version. An override corrects the releases of a `package` (`module:<id>` or `system:<id>`), all of them or the `versions` it lists, and is one of three kinds:
+
+`exclude`
+: The releases cannot be used: at all, or `with` another package in some versions, given as a manifest gives them (`minimum`, `maximum`; for `core`, `"14"` means every build of generation 14).
+
+`compatibility`
+: Foundry VTT bounds (`minimum`, `verified`, `maximum`) in place of the releases' own. `null` removes one.
+
+`relationship`
+: Ignores everything the releases declare about the package in `drop`: a wrong `requires`, `systems` entry or `conflicts`.
+
+```json
+{
+  "VTT": {
+    "arcane-ledger": {
+      "packages": {
+        "system": "dnd5e",
+        "modules": ["dice-so-nice"],
+        "overrides": [
+          {
+            "kind": "exclude",
+            "package": "module:old-helper",
+            "versions": ["3.2.0"],
+            "with": { "package": "core", "minimum": "14" },
+            "reason": "breaks scene loading on 14"
+          }
+        ]
+      }
+    }
+  }
+}
+```
+
+An explanation that leans on an override gives its reason, as "(override: breaks scene loading on 14)".
 
 ## Environment variables
 

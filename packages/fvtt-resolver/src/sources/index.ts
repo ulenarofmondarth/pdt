@@ -1,5 +1,5 @@
 /**
- * The sources of releases: where a universe comes from. Everything here fetches through a `fetch`
+ * The sources of releases and core releases: where a universe comes from. Everything here fetches through a `fetch`
  * the caller gives, so it runs in Node or a browser, and nothing in the core depends on it.
  *
  * @packageDocumentation
@@ -15,6 +15,13 @@ export {
   type RequestBudget,
 } from './http.js';
 export { FOUNDRY_PACKAGE_INDEX, foundryIndexSource, type FoundryIndexOptions } from './foundry-index.js';
+export {
+  FOUNDRY_RELEASE_NOTES,
+  foundryCoreReleases,
+  readReleaseNotes,
+  type FoundryReleasesOptions,
+} from './foundry-releases.js';
+export { proxiedFetch, proxyUrlFor, type ProxyUrl } from './proxy.js';
 export { sourceSet, type SourceSet, type SourceSetOptions } from './source-set.js';
 export { githubSource, gitlabSource, type GithubOptions, type GitlabOptions } from './forge.js';
 export { manifestUrlSource } from './manifest-url.js';
