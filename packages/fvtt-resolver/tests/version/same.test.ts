@@ -1,6 +1,6 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { sameVersion } from '../../src/version/same.js';
+import { namesVersion, sameVersion } from '../../src/version/same.js';
 
 describe('sameVersion', () => {
   it.each([
@@ -29,5 +29,35 @@ describe('sameVersion', () => {
         expect(sameVersion(`${v}${version}`, version)).toBe(true);
       }),
     );
+  });
+});
+
+describe('namesVersion', () => {
+  it.each([
+    ['https://github.com/o/r/releases/download/v1.1.4/module.json', '1.1.4', 'a GitHub release asset'],
+    [
+      'https://github.com/o/r/releases/download/release-6.0.6/system.json',
+      '6.0.6',
+      'a tag with text before its number',
+    ],
+    ['https://gitlab.com/o/r/-/releases/v14.0.18/downloads/module.json', '14.0.18', 'a GitLab release link'],
+    ['https://gitlab.com/o/r/-/jobs/artifacts/6.4.4/raw/dist/module.json', '6.4.4', 'a GitLab job artifact'],
+    ['https://raw.githubusercontent.com/o/r/v1.0.10/module.json', 'v1.0.10', 'a raw file at a tag'],
+    ['https://gitlab.com/api/v4/projects/1/packages/generic/m/release%2F2.0/module.json', '2.0', 'an encoded tag'],
+  ])('finds %s names %s: %s', (url, version) => {
+    expect(namesVersion(url, version)).toBe(true);
+  });
+
+  it.each([
+    ['https://github.com/o/r/releases/latest/download/module.json', '1.1.4', 'the newest release'],
+    ['https://raw.githubusercontent.com/o/r/master/system.json', '6.0.6', 'a branch'],
+    ['https://gitlab.com/o/r/raw/v14/package/module.json', '14.0.18', 'a branch named for a generation'],
+    ['https://github.com/o/r/archive/14.01.zip', '14.01', 'a file named for the version'],
+    ['https://github.com/o/r/releases/download/v1.1.40/module.json', '1.1.4', 'another version'],
+    ['https://example.org/module.json?version=1.1.4', '1.1.4', 'a query'],
+    ['https://example.org/%E0%A4%A/module.json', '1.1.4', 'a segment that cannot be decoded'],
+    ['not a url', '1.1.4', 'something that is not a URL'],
+  ])('finds %s does not name %s: %s', (url, version) => {
+    expect(namesVersion(url, version)).toBe(false);
   });
 });

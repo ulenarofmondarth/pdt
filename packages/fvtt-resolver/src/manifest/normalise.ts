@@ -6,6 +6,7 @@
  * a version Foundry would refuse, or a manifest of another type of package.
  */
 import { z } from 'zod';
+import { namesVersion } from '../version/same.js';
 
 import type { Compatibility } from '../range/compatibility.js';
 import type { PackageType, Relationship, Relationships, Release } from '../release.js';
@@ -261,6 +262,7 @@ export function normaliseManifest(json: unknown, source: ManifestSource): Manife
       relationships,
       ...(manifestUrl && { manifest: manifestUrl }),
       ...(download && { download }),
+      ...(manifestUrl && namesVersion(manifestUrl, version) && { versionManifest: manifestUrl }),
       protected: manifest['protected'] === true,
       origin: source.origin,
       detail: 'loaded',

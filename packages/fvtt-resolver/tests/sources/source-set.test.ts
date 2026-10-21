@@ -354,6 +354,101 @@ describe('sourceSet', () => {
     expect((await set.universe([module('example-lib')])).releases.map(r => r.version)).toEqual(['3.0.0', '2.1.0']);
   });
 
+  describe('version manifests', () => {
+    const githubApi = 'https://api.github.com/repos/example/example-lib/releases?per_page=100';
+    const asset = (tag: string) => `https://github.com/example/example-lib/releases/download/${tag}/module.json`;
+    const latest = 'https://github.com/example/example-lib/releases/latest/download/module.json';
+    const listing = (manifest: string) => ({
+      body: { versions: [{ version: '2.1.0', minimum: '13', manifest }] },
+    });
+    const github = {
+      body: [{ tag_name: 'v2.1.0', assets: [{ name: 'module.json', browser_download_url: asset('v2.1.0') }] }],
+    };
+
+    function withForge(extra: Record<string, Answer>) {
+      const { fetch, requests } = fakeFetch(answers({ [githubApi]: github, ...extra }));
+      const http = httpClient({ fetch });
+      const set = sourceSet({
+        sources: [foundryIndexSource(http, { indexUrl: INDEX }), githubSource(http)],
+        http,
+        core,
+      });
+      return { set, requests };
+    }
+
+    it('takes a version’s own manifest URL from its listing, when the URL names the version', async () => {
+      const { set } = withForge({ [details('example-lib')]: listing(asset('v2.1.0')) });
+      const [lib] = (await set.universe([module('example-lib')])).releases;
+      expect(lib).toMatchObject({ manifest: asset('v2.1.0'), versionManifest: asset('v2.1.0') });
+    });
+
+    it('takes it from another source when the listing’s URL gives the newest release', async () => {
+      const { set } = withForge({ [details('example-lib')]: listing(latest) });
+      const [lib] = (await set.universe([module('example-lib')])).releases;
+      expect(lib).toMatchObject({ origin: details('example-lib'), manifest: latest, versionManifest: asset('v2.1.0') });
+    });
+
+    it('keeps it when loading the release, whatever URL the manifest gives itself', async () => {
+      const { set } = withForge({
+        [details('example-lib')]: listing(latest),
+        [latest]: { body: { id: 'example-lib', version: '2.1.0', manifest: latest } },
+      });
+      const [lib] = (await set.universe([module('example-lib')])).releases;
+      const [loaded] = await set.load([lib as Release]);
+      expect(loaded).toMatchObject({ detail: 'loaded', manifest: latest, versionManifest: asset('v2.1.0') });
+    });
+
+    describe('beside the download', () => {
+      const moving = 'https://example.org/vee/latest.json';
+      const zip = 'https://github.com/o/vee/releases/download/v1.1.4/vee.zip';
+      const beside = 'https://github.com/o/vee/releases/download/v1.1.4/module.json';
+      const listed = makeRelease({ id: 'vee', version: '1.1.4', manifest: moving, detail: 'listed' });
+      const loading = (download: string | undefined, extra: Record<string, Answer> = {}) =>
+        setup({ [moving]: { body: { id: 'vee', version: '1.1.4', manifest: moving, download } }, ...extra });
+
+      it('looks for it beside the download when no source gives one, and checks what it finds', async () => {
+        const { set } = loading(zip, { [beside]: { body: { id: 'vee', version: 'v1.1.4' } } });
+        const [loaded] = await set.load([listed]);
+        expect(loaded).toMatchObject({ detail: 'loaded', versionManifest: beside });
+        expect(set.gaps()).toEqual([]);
+      });
+
+      it.each([
+        ['gives another version', { [beside]: { body: { id: 'vee', version: '1.1.5' } } }],
+        ['is of another package', { [beside]: { body: { id: 'other', version: '1.1.4' } } }],
+        ['cannot be fetched', {}],
+      ])('gives none when what is beside the download %s, and records no gap', async (_, extra) => {
+        const { set } = loading(zip, extra);
+        const [loaded] = await set.load([listed]);
+        expect(loaded).toMatchObject({ detail: 'loaded' });
+        expect(loaded).not.toHaveProperty('versionManifest');
+        expect(set.gaps()).toEqual([]);
+      });
+
+      it.each([
+        [
+          'a download whose folder does not name the version',
+          'https://gitlab.com/o/vee/raw/master/package/vee-v1.1.4.zip',
+        ],
+        ['no download', undefined],
+      ])('does not look for it with %s', async (_, download) => {
+        const { set, requests } = loading(download);
+        const [loaded] = await set.load([listed]);
+        expect(loaded).not.toHaveProperty('versionManifest');
+        expect(requests.map(r => r.url)).toEqual([moving]);
+      });
+
+      it('does not look for it when only taking a release’s bounds from its manifest', async () => {
+        const vee = fixed('own', [listed]);
+        const { set, requests } = setup({ [moving]: { body: { id: 'vee', version: '1.1.4', download: zip } } }, () => [
+          vee,
+        ]);
+        await set.universe([module('vee')]);
+        expect(requests.map(r => r.url)).toEqual([moving]);
+      });
+    });
+  });
+
   describe('load', () => {
     it('loads a listed release from its manifest, keeping the listing’s bounds, and lists the packages it names', async () => {
       const { set } = setup();

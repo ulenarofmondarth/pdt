@@ -32,6 +32,7 @@ describe('@mondarth/fvtt-resolver', () => {
         'isNewerVersion',
         'isUnavailable',
         'looksLikePrerelease',
+        'namesVersion',
         'normaliseManifest',
         'overridesFor',
         'packageKey',
