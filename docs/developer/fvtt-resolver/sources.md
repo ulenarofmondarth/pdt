@@ -247,18 +247,43 @@ Before building one, ask Foundry to send `Access-Control-Allow-Origin: *` from `
 
 ## Browsers
 
-Browser support is required, so the sources use only `fetch`, with no Node built-ins. Not every server lets a browser read it. Checked on 20 October 2026, with an `Origin` header:
+Browser support is required, so the sources use only `fetch`, with no Node built-ins. Not every server lets a browser read it. Checked on 21 October 2026, with an `Origin` header:
 
-| Server | CORS |
-| --- | --- |
-| GitHub API (`api.github.com`) | yes |
-| GitLab API (`gitlab.com/api/v4`) | yes |
-| GitHub release downloads | no |
-| Foundry index, details and manifests (`r2.foundryvtt.com`) | no |
-| Foundry release notes (`foundryvtt.com`) | no |
-| Docker Hub | no |
+| Server | Used for | CORS |
+| --- | --- | --- |
+| GitHub API (`api.github.com`) | GitHub release lists | yes, with preflights |
+| GitHub release downloads (`github.com/…/releases/download/…`) | GitHub manifests, and most manifest URLs in Foundry's details files | no: neither the redirect nor `release-assets.githubusercontent.com` sends CORS headers |
+| `raw.githubusercontent.com` | declared manifest URLs | yes, but preflights are refused |
+| GitLab API (`gitlab.com/api/v4`) | GitLab release lists, and release links on the API | yes, with preflights |
+| GitLab release downloads (`/-/releases/…/downloads/…`) | GitLab manifests | no: the redirect sends no CORS headers |
+| Foundry index and details (`r2.foundryvtt.com`) | the listing | only for the origin `https://foundryvtt.com`; preflights are refused |
+| Foundry release notes (`foundryvtt.com`) | core releases | no |
+| Docker Hub | image tags | no |
 
-So every adapter takes a `fetch` supplied by the caller. Node passes the global one. A browser tool passes one that goes through its own proxy, reads a mirror that sends CORS headers (see [A shared mirror](#a-shared-mirror)), or builds no universe at all and loads one made elsewhere. The core runs in a browser unchanged. See {doc}`questions`, question 14.
+So every adapter takes a `fetch` supplied by the caller. Node passes the global one. A browser tool passes one that goes through a proxy, reads a mirror that sends CORS headers (see [A shared mirror](#a-shared-mirror)), or builds no universe at all and loads one made elsewhere. The core runs in a browser unchanged. See {doc}`questions`, question 14.
+
+A download that CORS blocks fails as a network error. The release it was for stays listed, marked `loadFailed`, and `check` reports it among the releases checked from their listing (see [Resolving in rounds](resolution.md#resolving-in-rounds)). The gaps name each URL that failed.
+
+### Through a CORS proxy
+
+`proxiedFetch(fetch, proxy)` sends every request through a proxy. `proxy` is a template, such as `https://proxy.example/?url={url}`, in which `{url}` becomes the target, percent-encoded, or a function from the target to the proxy's URL. Encoding matters: unencoded, a GitLab project path's `%2F` is decoded on the way, so GitLab answers 404, and Docker Hub's `&name=14.` ends the proxy's own parameter, so Docker Hub returns every tag unfiltered.
+
+```typescript
+const http = httpClient({ fetch: proxiedFetch(globalThis.fetch, 'https://proxy.example/?url={url}') });
+```
+
+The proxy must follow redirects itself, since release downloads redirect to storage hosts. If it has a list of allowed hosts, the list needs every host the sources reach, and the hosts they redirect to:
+- `r2.foundryvtt.com` and `foundryvtt.com`;
+- `api.github.com`, `github.com`, `release-assets.githubusercontent.com` and `raw.githubusercontent.com`;
+- `gitlab.com`, or the self-hosted GitLab;
+- `hub.docker.com`.
+
+Without `release-assets.githubusercontent.com`, every GitHub release download fails, and so does every manifest Foundry's details files point at GitHub.
+
+Checked with [corsproxy](https://github.com/melihbirim/corsproxy) (commit 6fc4117, run locally) on 21 October 2026:
+- With its defaults, every source works through it: it follows redirects, passes compressed answers through (the index, 8.3 MB, arrives as 731 kB, within its 10 MB limit), and passes `ETag` and `If-None-Match`.
+- It never forwards `Authorization`, so a GitHub token does not reach GitHub, and GitHub's limit of 60 requests an hour applies to the proxy's address, shared by everyone using it. GitLab's `PRIVATE-TOKEN` is forwarded.
+- `ALLOWED_HOSTS`, `RATE_LIMIT_PER_MINUTE` and `DAILY_REQUEST_LIMIT` can each make requests fail partway through a run. The sources load up to eight manifests at a time.
 
 ### A proxy for a Foundry module
 
