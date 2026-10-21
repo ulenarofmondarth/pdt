@@ -116,16 +116,30 @@ describe('gitlabSource', () => {
       tag_name: 'v2.0.0',
       assets: { links: [link('v2.0.0', { name: 'module.json', url: 'https://example.org/files/12345' })] },
     },
+    {
+      tag_name: 'v1.5.0',
+      assets: {
+        links: [
+          link('v1.5.0', {
+            url: 'https://example.org/files/67890',
+            direct_asset_url: 'https://gitlab.com/group/example-module/-/releases/v1.5.0/downloads/module.json',
+          }),
+        ],
+      },
+    },
     { tag_name: 'v1.0.0', assets: { links: [link('v1.0.0', { url: 'https://example.org/module.zip' })] } },
   ];
   const projectUrl = 'https://gitlab.com/group/example-module/-/releases/v3.0.0/downloads/module.json';
 
-  it('lists the releases with the manifest linked, by the link’s name or the file in its URL', async () => {
+  // Regression: the manifest was loaded from the link's `direct_asset_url`, which redirects to its
+  // `url` without CORS headers, so a browser could not load it; its `url` is the same file.
+  it('lists the releases with the manifest linked, loading each from the link’s own URL', async () => {
     const { fetch } = fakeFetch({ [GITLAB_RELEASES]: { body: gitlabReleases } });
     const found = await gitlabSource(httpClient({ fetch })).releases(module, declared(projectUrl));
     expect(found.ok && found.value.map(r => [r.version, r.manifest])).toEqual([
-      ['3.0.0', 'https://gitlab.com/group/example-module/-/releases/v3.0.0/downloads/module.json'],
+      ['3.0.0', 'https://gitlab.com/group/example-module/-/raw/v3.0.0/module.json'],
       ['2.0.0', 'https://example.org/files/12345'],
+      ['1.5.0', 'https://example.org/files/67890'],
     ]);
   });
 

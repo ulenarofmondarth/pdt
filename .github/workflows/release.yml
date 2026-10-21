@@ -48,8 +48,8 @@ jobs:
       # npm trusted publishing: pnpm publish exchanges the workflow's OIDC token with npm.
       id-token: write
     outputs:
-      version: ${{ steps.release.outputs.version }}
-      fvtt-resolver-version: ${{ steps.release.outputs.fvtt-resolver-version }}
+      pdt-tag: ${{ steps.release.outputs.pdt-tag }}
+      fvtt-resolver-tag: ${{ steps.release.outputs.fvtt-resolver-tag }}
     steps:
       # The release App is on the rulesets' bypass list, so its token may push to the
       # protected branches. Each token expires within an hour.
@@ -87,7 +87,7 @@ jobs:
   sync-dev:
     name: Bring dev up to date
     needs: release
-    if: needs.release.outputs.version != '' || needs.release.outputs.fvtt-resolver-version != ''
+    if: needs.release.outputs.pdt-tag != '' || needs.release.outputs.fvtt-resolver-tag != ''
     runs-on: ubuntu-latest
     steps:
       # The release App is on the rulesets' bypass list, so its token may push to the
@@ -135,7 +135,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ needs.release.outputs.version != '' && format('@mondarth/pdt-v{0}', needs.release.outputs.version) || github.sha }}
+          ref: ${{ needs.release.outputs.pdt-tag || github.sha }}
       # Built here rather than by docs.yml, so the documentation carries the release's version.
       - uses: ./.github/actions/build-docs
       - uses: actions/configure-pages@v6

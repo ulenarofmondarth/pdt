@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { resolveInRounds } from '../../src/rounds.js';
+import { AVAILABILITY } from '../../src/availability.js';
+import { check } from '../../src/check.js';
 import { githubSource } from '../../src/sources/forge.js';
 import { foundryIndexSource } from '../../src/sources/foundry-index.js';
 import { httpClient } from '../../src/sources/http.js';
@@ -154,6 +156,99 @@ describe('sourceSet', () => {
       `2.1.0:${details('example-lib')}`,
       `2.0.0:${githubApi}`,
     ]);
+  });
+
+  describe('bounds from manifests', () => {
+    const githubApi = 'https://api.github.com/repos/example/example-lib/releases?per_page=100';
+    const download = (tag: string) => `https://github.com/example/example-lib/releases/download/${tag}/module.json`;
+    const tags = ['v2.1.0', 'v2.0.0', 'v1.0.0', 'v0.9.0'];
+    const github = {
+      body: tags.map(tag => ({
+        tag_name: tag,
+        assets: [{ name: 'module.json', browser_download_url: download(tag) }],
+      })),
+    };
+    const manifestOf = (version: string, compatibility: Record<string, string>) => ({
+      body: { id: 'example-lib', version, compatibility },
+    });
+    const listedOnly = { body: { versions: [{ version: '2.1.0', minimum: '13', manifest: download('v2.1.0') }] } };
+
+    function withForge(extra: Record<string, Answer> = {}, options: { manifestBounds?: boolean } = {}) {
+      const { fetch, requests } = fakeFetch(
+        answers({
+          [details('example-lib')]: listedOnly,
+          [githubApi]: github,
+          [download('v2.0.0')]: manifestOf('2.0.0', { minimum: '13', verified: '13', maximum: '13' }),
+          [download('v1.0.0')]: manifestOf('v1.0.0', { minimum: '15' }),
+          ...extra,
+        }),
+      );
+      const http = httpClient({ fetch });
+      const set = sourceSet({
+        sources: [foundryIndexSource(http, { indexUrl: INDEX }), githubSource(http)],
+        http,
+        core,
+        ...options,
+      });
+      return { set, requests };
+    }
+
+    it('takes a forge release’s bounds from its manifest, keeping it listed', async () => {
+      const { set } = withForge();
+      const lib = (await set.universe([module('example-lib')])).releases.find(r => r.version === '2.0.0');
+      expect(lib).toMatchObject({ detail: 'listed', compatibility: { minimum: '13', verified: '13', maximum: '13' } });
+      expect(lib).not.toHaveProperty('listing');
+    });
+
+    it('leaves out a release its manifest says no core of interest can run', async () => {
+      const { set } = withForge();
+      const versions = (await set.universe([module('example-lib')])).releases.map(r => r.version);
+      expect(versions).not.toContain('1.0.0');
+    });
+
+    it('asks only for the manifests of releases with no bounds, and not again when loading them', async () => {
+      const { set, requests } = withForge();
+      const universe = await set.universe([module('example-lib')]);
+      const asked = requests.map(r => r.url);
+      expect(asked).not.toContain(download('v2.1.0'));
+      expect(asked.filter(url => url === download('v2.0.0'))).toHaveLength(1);
+      await set.load(universe.releases.filter(r => r.version === '2.0.0'));
+      expect(requests.map(r => r.url).filter(url => url === download('v2.0.0'))).toHaveLength(1);
+    });
+
+    it('marks a release whose manifest cannot be read, and records why', async () => {
+      const { set } = withForge();
+      const universe = await set.universe([module('example-lib')]);
+      expect(universe.releases.find(r => r.version === '0.9.0')).toMatchObject({ loadFailed: true, compatibility: {} });
+      expect(set.gaps()).toContainEqual(
+        expect.objectContaining({ source: 'manifest', url: download('v0.9.0'), reason: 'http', status: 404 }),
+      );
+    });
+
+    it('gives check Foundry’s verdict for a forge release, rather than UNKNOWN', async () => {
+      const { set } = withForge();
+      const universe = await set.universe([module('example-lib')]);
+      const result = check(
+        {
+          ...universe,
+          releases: [...universe.releases, makeRelease({ package: { type: 'system', id: 'sys' }, version: '1.0.0' })],
+        },
+        {
+          core: '14.368',
+          system: { package: 'system:sys', version: '1.0.0' },
+          modules: [{ package: 'module:example-lib', version: '2.0.0' }],
+        },
+      );
+      const lib = result.releases.find(r => r.release.package.id === 'example-lib');
+      expect(lib?.availability).toBe(AVAILABILITY.REQUIRES_CORE_DOWNGRADE);
+    });
+
+    it('can be turned off', async () => {
+      const { set, requests } = withForge({}, { manifestBounds: false });
+      const universe = await set.universe([module('example-lib')]);
+      expect(universe.releases.find(r => r.version === '2.0.0')?.compatibility).toEqual({});
+      expect(requests.map(r => r.url)).not.toContain(download('v2.0.0'));
+    });
   });
 
   describe('releases newer than the listing offers', () => {

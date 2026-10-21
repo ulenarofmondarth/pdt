@@ -255,7 +255,8 @@ Browser support is required, so the sources use only `fetch`, with no Node built
 | GitHub release downloads (`github.com/…/releases/download/…`) | GitHub manifests, and most manifest URLs in Foundry's details files | no: neither the redirect nor `release-assets.githubusercontent.com` sends CORS headers |
 | `raw.githubusercontent.com` | declared manifest URLs | yes, but preflights are refused |
 | GitLab API (`gitlab.com/api/v4`) | GitLab release lists, and release links on the API | yes, with preflights |
-| GitLab release downloads (`/-/releases/…/downloads/…`) | GitLab manifests | no: the redirect sends no CORS headers |
+| GitLab release links' permanent URLs (`/-/releases/…/downloads/…`) | not used | no: they redirect to the link's own URL, without CORS headers |
+| GitLab release links' own URLs, such as the package registry (`/api/v4/projects/<id>/packages/…`) | GitLab manifests | yes, when the link is to GitLab itself; a link elsewhere is as that host allows |
 | Foundry index and details (`r2.foundryvtt.com`) | the listing | only for the origin `https://foundryvtt.com`; preflights are refused |
 | Foundry release notes (`foundryvtt.com`) | core releases | no |
 | Docker Hub | image tags | no |
@@ -350,7 +351,9 @@ The core package (`@mondarth/fvtt-resolver`) contains no I/O at all. The sources
   - **Repository:** found from the package's manifest URLs, through the hints the source set gives each source:
     - *declared* URLs, from a relationship's `manifest` or the caller;
     - *seen* URLs, of the releases earlier sources listed.
-  - **GitLab** recognises `gitlab.com`, or the self-hosted hosts given. A release link matches by its name or by the file in its URL.
+  - **GitLab** recognises `gitlab.com`, or the self-hosted hosts given. A release link matches by its name, or by the file at the end of either of its URLs.
+    - **The manifest is loaded from the link's own `url`,** not its `direct_asset_url`. The latter is a permanent link that redirects to the former, and the redirect sends no CORS headers, so a browser could not follow it.
+    - **API URLs** (`/api/v4/…`), such as links into the package registry, name a project by number, so they give no project to find releases in.
   - **Tokens** are optional.
 
 `manifestUrlSource(http)`
@@ -375,6 +378,13 @@ The core package (`@mondarth/fvtt-resolver`) contains no I/O at all. The sources
   - `include`: keep them as they are.
 
   Older releases from other sources always fill in the history. A package the listing does not list keeps every release. `listing` names the source whose listing counts: Foundry's index by default.
+
+`sourceSet({ …, manifestBounds })`
+: GitHub's and GitLab's release lists give versions only, and Foundry's details file may leave a version's bounds out. With `manifestBounds` (on by default), a listed release with no core bounds takes them from its manifest when it is listed: `minimum`, `verified` and `maximum`.
+  - **It stays listed:** its relationships are unknown until it is loaded. Loading it later costs no request, since the manifest is kept.
+  - **What it gains:** `check` gives such a release Foundry's real verdict rather than `UNKNOWN`. `resolve` drops releases that need a newer core than any of interest at listing, rather than loading them one round at a time.
+  - **Failure:** a release whose manifest can't be read, or describes another release, is marked `loadFailed`, with a gap.
+  - **Cost:** a request for each such release, once. On 21 October 2026, a first run resolving midi-qol with every source made 226 requests rather than 17, and took 3 rounds rather than 10 with `unlisted: include`. Later runs ask only for new releases' manifests. Turn it off for a tight budget.
 
 ### Live checks
 

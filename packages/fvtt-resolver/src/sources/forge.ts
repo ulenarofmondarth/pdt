@@ -149,9 +149,13 @@ export function gitlabSource(http: HttpClient, { token, hosts = ['gitlab.com'] }
             tag: release.tag_name,
             files: release.assets.links.flatMap(link => {
               // A link's name is a label, which may be the file's name; otherwise the file's name is
-              // the last part of its URL.
-              const url = link.direct_asset_url ?? link.url;
-              return [link.name, url.split('/').at(-1) as string].map(name => ({ name, url }));
+              // the last part of either of its URLs.
+              const fileOf = (url: string) => url.split('/').at(-1) as string;
+              const names = new Set([link.name, fileOf(link.url)]);
+              if (link.direct_asset_url !== undefined) names.add(fileOf(link.direct_asset_url));
+              // The file is loaded from the link's own URL. Its `direct_asset_url` only redirects
+              // there, and the redirect has no CORS headers, so a browser could not follow it.
+              return [...names].map(name => ({ name, url: link.url }));
             }),
           }))
         : undefined;

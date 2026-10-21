@@ -6,5 +6,5 @@ export default packageRelease({
   // pnpm publishes natively; under trusted publishing it authenticates with the workflow's OIDC
   // token and attaches provenance itself.
   publishCmd: 'pnpm publish --no-git-checks',
-  output: 'fvtt-resolver-version',
+  output: 'fvtt-resolver-tag',
 });
