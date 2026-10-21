@@ -1,3 +1,15 @@
+## [@mondarth/fvtt-resolver-v0.3.0](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.2.0...@mondarth/fvtt-resolver-v0.3.0) (2026-10-21)
+
+### Features
+
+* **resolver:** build a universe from Foundry's package index ([6882990](https://github.com/ulenarofmondarth/pdt/commit/6882990f10f9f9a8020ec6199ba508a2413aa4ee))
+* **resolver:** list releases from GitHub, GitLab, manifests and disk ([64f9c95](https://github.com/ulenarofmondarth/pdt/commit/64f9c9506d83bd6778f9c5e35f95e91b9ef1c5d4))
+* **resolver:** resolve in rounds over listed releases ([dac221e](https://github.com/ulenarofmondarth/pdt/commit/dac221e652fda423d75f168d95bd84bd26a46225))
+
+### Bug Fixes
+
+* **resolver:** decide core and the system after the modules ([a33308b](https://github.com/ulenarofmondarth/pdt/commit/a33308b5118f528bcaa33c8994dc6d694ba1f720))
+
 ## [@mondarth/fvtt-resolver-v0.2.0](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.1.0...@mondarth/fvtt-resolver-v0.2.0) (2026-10-20)
 
 ### Features
