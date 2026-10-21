@@ -1,5 +1,5 @@
 /**
- * Fetching JSON politely: from the cache while it is fresh, revalidating with its ETag when it is
+ * Fetching JSON, or text such as an HTML page, politely: from the cache while it is fresh, revalidating with its ETag when it is
  * not, within a budget of requests and a limit on how many run at once, and recording a gap
  * rather than throwing when something cannot be fetched.
  *
@@ -41,16 +41,18 @@ export interface GetOptions {
 }
 
 /** What fetching gave: the value, or a gap without its source, which the source adds. */
-export type Fetched =
-  { readonly ok: true; readonly value: unknown } | { readonly ok: false; readonly gap: Omit<SourceGap, 'source'> };
+export type Fetched<T = unknown> =
+  { readonly ok: true; readonly value: T } | { readonly ok: false; readonly gap: Omit<SourceGap, 'source'> };
 
 export interface HttpClient {
   getJson(url: string, options: GetOptions): Promise<Fetched>;
+  /** Fetches text, such as an HTML page, as `getJson` fetches JSON. */
+  getText(url: string, options: GetOptions): Promise<Fetched<string>>;
   /** How many requests have been made. */
   requests(): number;
 }
 
-/** A client that fetches JSON through a cache, within a budget. */
+/** A client that fetches JSON and text through a cache, within a budget. */
 export function httpClient({
   fetch,
   cache = memoryCache(),
@@ -75,46 +77,54 @@ export function httpClient({
     }
   }
 
+  /** Fetches through the cache, reading a response's body with `read`. */
+  async function get(
+    url: string,
+    { maxAge, staleIfError = 0, key = url, headers: extra = {} }: GetOptions,
+    read: (response: Response) => Promise<unknown>,
+  ): Promise<Fetched> {
+    const cached = await cache.get(key);
+    const age = cached === undefined ? Infinity : now() - cached.storedAt;
+    if (cached !== undefined && age < maxAge) return { ok: true, value: cached.value };
+    const stale = (gap: Omit<SourceGap, 'source'>): Fetched =>
+      cached !== undefined && age < maxAge + staleIfError ? { ok: true, value: cached.value } : { ok: false, gap };
+
+    if (made >= maxRequests)
+      return cached === undefined ? { ok: false, gap: { url, reason: 'budget' } } : { ok: true, value: cached.value };
+    made++;
+
+    let response: Response;
+    try {
+      const headers: Record<string, string> = { ...extra, 'User-Agent': userAgent };
+      if (cached?.etag !== undefined) headers['If-None-Match'] = cached.etag;
+      response = await limited(() => fetch(url, { headers }));
+    } catch {
+      return stale({ url, reason: 'network' });
+    }
+
+    if (response.status === 304 && cached !== undefined) {
+      await cache.set(key, { ...cached, storedAt: now() });
+      return { ok: true, value: cached.value };
+    }
+    if (!response.ok) {
+      const gap = { url, reason: 'http', status: response.status } as const;
+      return response.status >= 500 ? stale(gap) : { ok: false, gap };
+    }
+    let value: unknown;
+    try {
+      value = await read(response);
+    } catch {
+      return { ok: false, gap: { url, reason: 'invalid' } };
+    }
+    const etag = response.headers.get('etag');
+    await cache.set(key, { value, storedAt: now(), ...(etag !== null && { etag }) });
+    return { ok: true, value };
+  }
+
   return {
     requests: () => made,
-
-    async getJson(url, { maxAge, staleIfError = 0, key = url, headers: extra = {} }) {
-      const cached = await cache.get(key);
-      const age = cached === undefined ? Infinity : now() - cached.storedAt;
-      if (cached !== undefined && age < maxAge) return { ok: true, value: cached.value };
-      const stale = (gap: Omit<SourceGap, 'source'>): Fetched =>
-        cached !== undefined && age < maxAge + staleIfError ? { ok: true, value: cached.value } : { ok: false, gap };
-
-      if (made >= maxRequests)
-        return cached === undefined ? { ok: false, gap: { url, reason: 'budget' } } : { ok: true, value: cached.value };
-      made++;
-
-      let response: Response;
-      try {
-        const headers: Record<string, string> = { ...extra, 'User-Agent': userAgent };
-        if (cached?.etag !== undefined) headers['If-None-Match'] = cached.etag;
-        response = await limited(() => fetch(url, { headers }));
-      } catch {
-        return stale({ url, reason: 'network' });
-      }
-
-      if (response.status === 304 && cached !== undefined) {
-        await cache.set(key, { ...cached, storedAt: now() });
-        return { ok: true, value: cached.value };
-      }
-      if (!response.ok) {
-        const gap = { url, reason: 'http', status: response.status } as const;
-        return response.status >= 500 ? stale(gap) : { ok: false, gap };
-      }
-      let value: unknown;
-      try {
-        value = await response.json();
-      } catch {
-        return { ok: false, gap: { url, reason: 'invalid' } };
-      }
-      const etag = response.headers.get('etag');
-      await cache.set(key, { value, storedAt: now(), ...(etag !== null && { etag }) });
-      return { ok: true, value };
-    },
+    getJson: (url, options) => get(url, options, response => response.json()),
+    // The cache holds what `get` read, so text read under a key is text when it is read again.
+    getText: (url, options) => get(url, options, response => response.text()) as Promise<Fetched<string>>,
   };
 }

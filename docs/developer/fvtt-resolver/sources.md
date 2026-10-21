@@ -72,10 +72,12 @@ The same for packages on GitLab (gitlab.com, or a self-hosted instance named by 
 Foundry has no public API for its releases: its own update check sends the licence. Two public sources together give what pdt needs:
 
 Foundry VTT release notes
-: `https://foundryvtt.com/releases/` lists every build (`Release 14.369`) with its channel (stable, testing, development, prototype). It is an HTML page, so the adapter scrapes it, and must be tested against a saved copy so a layout change fails loudly.
+: `https://foundryvtt.com/releases/` lists every build (`Release 14.369`) with its channel (stable, testing, development, prototype). It is an HTML page, so the adapter scrapes it, and fails loudly when the layout changes.
 
 felddy/foundryvtt images
-: pdt runs Foundry in a container from felddy/foundryvtt, tagged with the core version (`14.368`). The Docker Hub tag list (`https://hub.docker.com/v2/repositories/felddy/foundryvtt/tags`) says which builds have an image. Not every build does: 14.362 has release notes but no image. pdt turns the difference into core limits, each with its reason (see {doc}`domain`).
+: pdt runs Foundry in a container from felddy/foundryvtt, tagged with the core version (`14.368`). The Docker Hub tag list (`https://hub.docker.com/v2/repositories/felddy/foundryvtt/tags`) says which builds have an image. Not every build does: 14.362 has release notes but no image, and neither have generation 14's testing, development and prototype builds, though generation 13's testing builds have. pdt turns the difference into core limits, each with its reason (see {doc}`domain`).
+
+  The list holds thousands of tags (2,941 on 21 October 2026), mostly `sha-…` and dependabot builds, but it can be filtered by name: `?name=14.` gives a generation's tags in one request. pdt keeps only the tags that are exactly a release's version, so that each build has one image tag or none: `14.368` is build 14.368, while `14.368.0`, `14`, `latest` and the rest are ignored.
 
 The second is pdt's concern, not the resolver's: another tool would pass its own limits, or none.
 
@@ -332,6 +334,15 @@ The core package (`@mondarth/fvtt-resolver`) contains no I/O at all. The sources
 `localSource(manifests)`
 : The caller's own manifests, read by the caller, such as the working copy of the package under development. Those it cannot read are listed in `problems`.
 
+`foundryCoreReleases(http, { url })`
+: Foundry's builds since version 9, each with its generation and channel, from the release notes. `httpClient` fetches the page with `getText`, which works as `getJson` does.
+  - **Version:** read from each release's link text (`Release 14.368`), not its link: old releases are linked by id (`/releases/8.102` is 0.8.9). Releases before version 9 (`0.8.9`) are skipped, since core versions are `<generation>.<build>`.
+  - **Channel:** the tag after the link, before the next release's (`release-tag stable`).
+  - **Loudly:** a page with no builds, or a build without a channel, is an `invalid` gap, not a shorter list. Either means the layout has changed.
+  - **Kept** for a day, and a stale copy serves for a week when the site cannot be reached.
+
+  `readReleaseNotes(html)` reads a page already fetched.
+
 `sourceSet({ …, manifests, listing, unlisted })`
 : `manifests` declares manifest URLs for packages. `unlisted` decides what happens to releases of a listed package, from other sources, that are newer than the newest the listing offers. midi-qol shows why this needs a choice: its author publishes 14.6.x, 14.0.x and 13.0.x lines on GitLab, while Foundry's listing offers the 14.0.x line.
   - `exclude` (the default): leave them out, as Foundry's users cannot install them from it.
@@ -356,3 +367,5 @@ With GitHub, dnd5e's history grew from the 28 versions Foundry's details list to
 | `include` | GitLab's midi-qol 14.6.0 and dae 14.6.0, with dnd5e 6.0.6 | 8 | 22 |
 
 Without a token, GitHub allows 60 requests an hour; the live checks read `GITHUB_TOKEN`.
+
+The release notes, on 21 October 2026, gave 109 builds since version 9, the newest 14.369: 58 stable, 24 testing, 13 development and 14 prototype.
