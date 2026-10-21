@@ -70,6 +70,22 @@ describe('sourceSet', () => {
     expect(set.gaps()).toEqual([{ source: 'failing', url: 'x', reason: 'network' }]);
   });
 
+  it('takes a version one source writes with a leading "v" and another without as one version, the first source’s', async () => {
+    const installed = makeRelease({ id: 'example-lib', version: 'v2.1.0', origin: 'installed' });
+    const { set } = setup({}, http => [fixed('installed', [installed]), foundryIndexSource(http, { indexUrl: INDEX })]);
+    const universe = await set.universe([module('example-lib')]);
+    expect(universe.releases.map(r => `${r.version}:${r.origin}`)).toEqual(['v2.1.0:installed']);
+  });
+
+  it('finds the newest listed version a leading "v" aside, keeping an unlisted release older than it', async () => {
+    const lib = (version: string, origin: string) => makeRelease({ id: 'example-lib', version, origin });
+    // As text, Foundry counts "v1.0.0" newer than "2.0.0", which would make 1.5.0 newer than any listed.
+    const listing = fixed('foundry-index', [lib('v1.0.0', 'listing'), lib('2.0.0', 'listing')]);
+    const { set } = setup({}, () => [listing, fixed('other', [lib('1.5.0', 'other')])]);
+    const universe = await set.universe([module('example-lib')]);
+    expect(universe.releases.map(r => r.version)).toEqual(['v1.0.0', '2.0.0', '1.5.0']);
+  });
+
   describe('hints', () => {
     /** A source that records the hints it is given, and lists one release with a manifest URL. */
     function recording(name: string, version: string) {
@@ -354,14 +370,17 @@ describe('sourceSet', () => {
       });
     });
 
-    it('reads a manifest whose version has a leading v as the version listed', async () => {
+    it.each([
+      ['a leading v', 'v1.1.4'],
+      ['the text before the number of the tag it was listed from', 'release-1.1.4'],
+    ])('reads a manifest whose version has %s as the version listed', async (_, version) => {
       const listed = makeRelease({
         id: 'vee',
         version: '1.1.4',
         manifest: 'https://example.org/vee.json',
         detail: 'listed',
       });
-      const { set } = setup({ 'https://example.org/vee.json': { body: { id: 'vee', version: 'v1.1.4' } } });
+      const { set } = setup({ 'https://example.org/vee.json': { body: { id: 'vee', version } } });
       expect((await set.load([listed])).map(r => `${r.version}:${r.detail}`)).toEqual(['1.1.4:loaded']);
     });
 

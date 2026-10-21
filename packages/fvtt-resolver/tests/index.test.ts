@@ -41,6 +41,7 @@ describe('@mondarth/fvtt-resolver', () => {
         'releaseConstraints',
         'resolve',
         'resolveInRounds',
+        'sameVersion',
         'semverOrder',
         'universeConstraints',
         'withDefaults',

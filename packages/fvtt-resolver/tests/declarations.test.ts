@@ -61,9 +61,12 @@ describe('overridesFor', () => {
     ]);
   });
 
-  it('matches versions exactly, as the releases give them', () => {
-    const overrides: Override[] = [{ kind: 'exclude', package: 'module:my-module', versions: ['v2.0.0'], reason: 'a' }];
-    expect(overridesFor(release, overrides)).toEqual([]);
+  it('matches versions as the releases give them, with or without a leading "v"', () => {
+    const named = (version: string): Override[] => [
+      { kind: 'exclude', package: 'module:my-module', versions: [version], reason: 'a' },
+    ];
+    expect(overridesFor(release, named('2.0'))).toEqual([]);
+    expect(overridesFor(release, named('v2.0.0'))).toHaveLength(1);
   });
 });
 

@@ -87,7 +87,7 @@ interface Declarations {
   coreLimits?: { version: string; reason: string }[];
 }
 
-/** Each corrects the releases of `package`: the `versions` listed exactly, or every version. */
+/** Each corrects the releases of `package`: the `versions` listed (a leading `v` aside), or every version. */
 type Override = { package: PackageKey; versions?: string[]; reason: string } & (
   /** Unusable: at all, or with `with` in its bounds (core bounds may name a generation). */
   | { kind: 'exclude'; with?: { package: PackageKey; minimum?: string; maximum?: string } }
@@ -139,6 +139,8 @@ type Resolution =
   /** The answer depends on listed releases: load these and resolve again (see Resolution, "Resolving in rounds"). */
   | { ok: false; needs: PackageVersion[]; warnings: OrderWarning[] };
 ```
+
+Versions given to `check`, `pins`, `prefer` and overrides match a release's version with or without a leading `v` (see [One version written two ways](domain.md#one-version-written-two-ways)); `sameVersion(a, b)` gives the same answer to a caller.
 
 A constraint an override declared or changed carries it in its provenance (`override: { index, reason }`), and a core limit reaches the solver as a reason of its own (`{ kind: 'core-limit', version, reason }`), so explanations give their reasons: "my-module 2.0.0 cannot be used (override: it deletes worlds)", "Foundry VTT 14.362 cannot be used: there is no felddy/foundryvtt image for it".
 

@@ -12,6 +12,7 @@ import { rangeOps } from './range/range.js';
 import { solve } from './solver/solver.js';
 import { CORE, chooseOrders, packageKey } from './universe.js';
 import { foundryOrder } from './version/foundry.js';
+import { sameVersion, unprefixed } from './version/same.js';
 import {
   WORLD_SYSTEM,
   splitWorldSystem,
@@ -126,12 +127,12 @@ export function resolve(universe: Universe, requirements: Requirements, options:
   const policy = withDefaults(options.policy);
   const { overrides = [], coreLimits = [] } = options.declarations ?? {};
   const orders = chooseOrders(universe, policy, overrides);
-  const pins = requirements.pins ?? [];
-  const preferred = [...pins, ...(requirements.prefer ?? [])];
+  const preferred = [...(requirements.pins ?? []), ...(requirements.prefer ?? [])];
   const isPreferred = (key: PackageKey, version: string) =>
-    preferred.some(p => p.package === key && p.version === version);
+    preferred.some(p => p.package === key && sameVersion(p.version, version));
 
   // Candidate releases: the first release of each version, without pre-releases unless asked for.
+  // They are kept by their version without a leading "v", so that `v1.1.4` and `1.1.4` are one.
   const releases = new Map<PackageKey, Map<string, Release>>();
   for (const release of universe.releases) {
     const key = packageKey(release.package);
@@ -139,9 +140,14 @@ export function resolve(universe: Universe, requirements: Requirements, options:
     releases.set(key, byVersion);
     const allowed =
       policy.prereleases === 'include' || !looksLikePrerelease(release.version) || isPreferred(key, release.version);
-    if (allowed && !byVersion.has(release.version)) byVersion.set(release.version, release);
+    if (allowed && !byVersion.has(unprefixed(release.version))) byVersion.set(unprefixed(release.version), release);
   }
-  const releaseOf = (key: PackageKey, version: string) => releases.get(key)?.get(version);
+  const releaseOf = (key: PackageKey, version: string) => releases.get(key)?.get(unprefixed(version));
+  // Pins as the universe writes their versions, so that the solver can meet them.
+  const pins = (requirements.pins ?? []).map(pin => ({
+    ...pin,
+    version: releaseOf(pin.package, pin.version)?.version ?? pin.version,
+  }));
   const systems = [...releases.keys()].filter(key => key.startsWith('system:')).sort();
 
   const coreVersions = [
@@ -191,7 +197,10 @@ export function resolve(universe: Universe, requirements: Requirements, options:
         candidates(system).map(version => worldSystemVersion(system.slice('system:'.length), version)),
       );
     }
-    return newestFirst([...(releases.get(key)?.keys() ?? [])], orderOf(key));
+    return newestFirst(
+      [...(releases.get(key)?.values() ?? [])].map(release => release.version),
+      orderOf(key),
+    );
   }
 
   const term = (key: PackageKey, range: Range, positive: boolean): Term => ({ package: key, range, positive });
@@ -324,7 +333,7 @@ export function resolve(universe: Universe, requirements: Requirements, options:
       ? [...releases].flatMap(([key, byVersion]) => {
           const all = [...byVersion.values()];
           if (all.some(release => release.detail === 'loaded')) return [];
-          const [first] = candidates(key).filter(version => loadable(byVersion.get(version)));
+          const [first] = candidates(key).filter(version => loadable(byVersion.get(unprefixed(version))));
           return first === undefined ? [] : [{ package: key, version: first }];
         })
       : [];
