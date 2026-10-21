@@ -37,6 +37,14 @@ export interface SourceSetOptions {
    * - `include`: keep them as they are.
    */
   readonly unlisted?: 'exclude' | 'last' | 'include';
+  /**
+   * Whether a listed release with no core bounds, such as one from GitHub or GitLab, whose release
+   * lists give none, takes them from its manifest when it is listed: `true` by default. It costs a
+   * request for each such release, once, as its manifest is kept; loading it later costs none.
+   * Without them, `check` gives such a release Foundry's `UNKNOWN` verdict, and `resolve` cannot
+   * rule it out before loading it.
+   */
+  readonly manifestBounds?: boolean;
 }
 
 export interface SourceSet {
@@ -64,6 +72,7 @@ export function sourceSet({
   manifests = {},
   listing = 'foundry-index',
   unlisted = 'exclude',
+  manifestBounds = true,
 }: SourceSetOptions): SourceSet {
   const known = new Set<PackageKey>();
   const declared = new Map<PackageKey, Set<string>>(
@@ -109,11 +118,28 @@ export function sourceSet({
         if (!versions.has(release.version) && possible(release)) versions.set(release.version, release);
       }
     }
-    return [...versions.values()].flatMap((release): Release[] => {
+    const kept = [...versions.values()].flatMap((release): Release[] => {
       if (unlisted === 'include' || newestListed === undefined || fromListing.has(release)) return [release];
       if (!isNewerVersion(release.version, newestListed)) return [release];
       return unlisted === 'last' ? [{ ...release, unlisted: true }] : [];
     });
+    if (!manifestBounds) return kept;
+    // With their bounds, releases no core of interest can run are left out, as listed ones are.
+    return (await Promise.all(kept.map(withManifestBounds))).filter(possible);
+  }
+
+  /**
+   * A listed release with no core bounds, with its manifest's. One whose manifest cannot be read is
+   * marked so, as `resolveInRounds` marks one it cannot load, and is not asked for again.
+   */
+  async function withManifestBounds(release: Release): Promise<Release> {
+    const { minimum, verified, maximum } = release.compatibility;
+    if (release.detail !== 'listed' || minimum !== undefined || verified !== undefined || maximum !== undefined) {
+      return release;
+    }
+    const read = await loadOne(release);
+    // Only the bounds: the release stays listed, its relationships unknown until it is loaded.
+    return read === undefined ? { ...release, loadFailed: true } : { ...release, compatibility: read.compatibility };
   }
 
   /** Loads one listed release from its manifest, keeping the listing's bounds. */

@@ -379,6 +379,13 @@ The core package (`@mondarth/fvtt-resolver`) contains no I/O at all. The sources
 
   Older releases from other sources always fill in the history. A package the listing does not list keeps every release. `listing` names the source whose listing counts: Foundry's index by default.
 
+`sourceSet({ …, manifestBounds })`
+: GitHub's and GitLab's release lists give versions only, and Foundry's details file may leave a version's bounds out. With `manifestBounds` (on by default), a listed release with no core bounds takes them from its manifest when it is listed: `minimum`, `verified` and `maximum`.
+  - **It stays listed:** its relationships are unknown until it is loaded. Loading it later costs no request, since the manifest is kept.
+  - **What it gains:** `check` gives such a release Foundry's real verdict rather than `UNKNOWN`. `resolve` drops releases that need a newer core than any of interest at listing, rather than loading them one round at a time.
+  - **Failure:** a release whose manifest can't be read, or describes another release, is marked `loadFailed`, with a gap.
+  - **Cost:** a request for each such release, once. On 21 October 2026, a first run resolving midi-qol with every source made 226 requests rather than 17, and took 3 rounds rather than 10 with `unlisted: include`. Later runs ask only for new releases' manifests. Turn it off for a tight budget.
+
 ### Live checks
 
 `pnpm --filter @mondarth/fvtt-resolver check:live` runs the checks in `tests-live/` against the real services. It is never run in CI. It resolves midi-qol against Foundry's index, and reports the rounds, requests, gaps and setup found. On 20 October 2026, with Foundry's index alone, it took 3 rounds and 11 requests to find:
