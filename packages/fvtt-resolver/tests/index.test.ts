@@ -33,6 +33,7 @@ describe('@mondarth/fvtt-resolver', () => {
         'isUnavailable',
         'looksLikePrerelease',
         'normaliseManifest',
+        'overridesFor',
         'packageKey',
         'packageName',
         'rangeOps',

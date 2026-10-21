@@ -80,11 +80,26 @@ interface Requirements {
   prefer?: { package: PackageKey; version: string }[];
 }
 
+// As built: overrides and core limits. Reasons are shown as written, so already translated.
 interface Declarations {
-  overrides?: Override[]; // extra exclusions, relaxed bounds, each with a reason
+  overrides?: Override[];
+  /** Core builds the caller cannot run, each with its reason ("there is no felddy/foundryvtt image for it"). */
+  coreLimits?: { version: string; reason: string }[];
+}
+
+/** Each corrects the releases of `package`: the `versions` listed exactly, or every version. */
+type Override = { package: PackageKey; versions?: string[]; reason: string } & (
+  /** Unusable: at all, or with `with` in its bounds (core bounds may name a generation). */
+  | { kind: 'exclude'; with?: { package: PackageKey; minimum?: string; maximum?: string } }
+  /** Core bounds in place of the release's (and the listing's): given replaces, `null` removes. */
+  | { kind: 'compatibility'; compatibility: { minimum?: string | null; verified?: string | null; maximum?: string | null } }
+  /** Ignore every relationship naming `drop`. */
+  | { kind: 'relationship'; drop: PackageKey }
+);
+
+// Not built yet.
+interface MatrixDeclarations {
   supportMatrix?: MatrixCell[];
-  /** Core builds the caller cannot run, each with its reason ("no felddy/foundryvtt image"). */
-  coreLimits?: { exclude: string[]; reason: string }[];
 }
 
 interface Policy {
@@ -102,9 +117,10 @@ interface Policy {
 
 // setup: { core: '14.368', system: { package: 'system:dnd5e', version: '5.3.3' }, modules: [...] }
 // CheckResult: valid, and for each release its Foundry availability code and the
-// constraints broken, preferences missed and advisories that apply.
-function check(universe: Universe, setup: SetupSpec, options?: { policy?: Partial<Policy> }): CheckResult;
-function resolve(universe: Universe, requirements: Requirements, options?: { policy?: Partial<Policy> }): Resolution;
+// constraints broken, preferences missed and advisories that apply; and the core limits
+// the setup's core is under. Overrides change what the resolver finds, not Foundry's verdicts.
+function check(universe: Universe, setup: SetupSpec, options?: Options): CheckResult;
+function resolve(universe: Universe, requirements: Requirements, options?: Options): Resolution;
 function matrix(universe: Universe, root: PackageRef, axes: MatrixAxes, options?: Options): Matrix;
 
 interface Options {
@@ -123,6 +139,8 @@ type Resolution =
   /** The answer depends on listed releases: load these and resolve again (see Resolution, "Resolving in rounds"). */
   | { ok: false; needs: PackageVersion[]; warnings: OrderWarning[] };
 ```
+
+A constraint an override declared or changed carries it in its provenance (`override: { index, reason }`), and a core limit reaches the solver as a reason of its own (`{ kind: 'core-limit', version, reason }`), so explanations give their reasons: "my-module 2.0.0 cannot be used (override: it deletes worlds)", "Foundry VTT 14.362 cannot be used: there is no felddy/foundryvtt image for it".
 
 The explanation is the solver's failure: a tree of incompatibilities, each with its provenance. `explain(failure, messages?)` turns it into numbered sentences (`{ text, number? }[]`), with the wording passed in, so pdt can translate it; `explanationText` joins them into lines. `formatExplanation(failure, external, messages?)` does the same for any solver failure, given words for its data.
 

@@ -5,11 +5,13 @@
  * valid. Soft ones (preferences, advisories) decide which valid setup is best, and what is reported.
  * Every constraint carries its provenance, so that an explanation can say where it came from.
  */
+import { overridesFor } from './declarations.js';
 import { coreRange, coreVerifiedRange, relationshipRange } from './range/compatibility.js';
 import { rangeOps } from './range/range.js';
 import { CORE, packageKey } from './universe.js';
 import { foundryOrder } from './version/foundry.js';
 
+import type { CompatibilityOverride, IndexedOverride, Override } from './declarations.js';
 import type { Policy } from './policy.js';
 import type { Compatibility } from './range/compatibility.js';
 import type { Range } from './range/range.js';
@@ -22,13 +24,21 @@ export interface ReleaseRef {
   readonly version: string;
 }
 
-/** Where a constraint came from: a field of a release's manifest, and the policy setting that shaped it, if any. */
+/**
+ * Where a constraint came from: a field of a release's manifest, the policy setting that shaped it,
+ * if any, and the override that declared or changed it, if any.
+ */
 export interface Provenance {
   /** Where the manifest was read from. */
   readonly origin: string;
-  /** The field of the normalised release, such as `compatibility` or `relationships.requires[0]`. */
+  /**
+   * The field of the normalised release, such as `compatibility` or `relationships.requires[0]`, or
+   * the override that declared it, such as `overrides[2]`.
+   */
   readonly field: string;
   readonly policy?: keyof Policy;
+  /** The override that declared the constraint or changed its bounds: its place in the overrides, and its reason. */
+  readonly override?: { readonly index: number; readonly reason: string };
 }
 
 interface Common {
@@ -57,10 +67,10 @@ export interface Choice extends Common {
   readonly options: readonly { readonly on: PackageKey; readonly range: Range }[];
 }
 
-/** `from` cannot be used at all. */
+/** `from` cannot be used at all: it declares no core compatibility and the policy rejects that, or an override says so. */
 export interface Unusable extends Common {
   readonly kind: 'unusable';
-  readonly reason: 'missing-compatibility';
+  readonly reason: 'missing-compatibility' | 'override';
 }
 
 /** If `from` and `on` are both used, a version of `on` in `range` is better. */
@@ -81,10 +91,11 @@ export interface Advisory extends Common {
 
 export type Constraint = Dependency | Exclusion | Choice | Unusable | Preference | Advisory;
 
-/** The order of each package's versions, and the policy, that a release's constraints are built under. */
+/** The order of each package's versions, the policy and the overrides that a release's constraints are built under. */
 export interface ConstraintContext {
   readonly orders: Orders;
   readonly policy: Policy;
+  readonly overrides?: readonly Override[];
 }
 
 /** Every version: the range of a system option whose own range is not enforced. */
@@ -112,32 +123,81 @@ export function coreCompatibility(
   };
 }
 
+/** Compatibility with an override's bounds in place: a bound given replaces, `null` removes. */
+function corrected(compatibility: Compatibility, bounds: CompatibilityOverride['compatibility']): Compatibility {
+  const field = (name: 'minimum' | 'verified' | 'maximum') => {
+    const bound = bounds[name] === undefined ? compatibility[name] : bounds[name];
+    return bound === undefined || bound === null ? {} : { [name]: bound };
+  };
+  return { ...field('minimum'), ...field('verified'), ...field('maximum') };
+}
+
 /**
- * The constraints one release declares, under a policy.
+ * The constraints one release declares, under a policy, as the overrides correct them.
  *
  * @throws When a bound cannot be read in the order given for its package, which
  *   {@link chooseOrders} rules out: the orders do not belong to the release's universe
  */
-export function releaseConstraints(release: Release, { orders, policy }: ConstraintContext): Constraint[] {
+export function releaseConstraints(
+  release: Release,
+  { orders, policy, overrides = [] }: ConstraintContext,
+): Constraint[] {
   const from: ReleaseRef = { package: packageKey(release.package), version: release.version };
-  const provenance = (field: string, setting?: keyof Policy): Provenance => ({
+  const corrections = overridesFor(release, overrides);
+  const provenance = (field: string, setting?: keyof Policy, by?: IndexedOverride): Provenance => ({
     origin: release.origin,
     field,
     ...(setting && { policy: setting }),
+    ...(by && { override: { index: by.index, reason: by.override.reason } }),
   });
   const constraints: Constraint[] = [];
 
-  /** The versions of the related package a relationship admits, read under the policy. */
-  function rangeOf(relationship: Relationship, field: string): Range {
-    const on = packageKey(relationship.package);
-    const range = relationshipRange(orders.orderOf(on), relationship.compatibility, policy.relationshipBounds);
+  /** The versions of `on` that bounds admit, read as a relationship's under the policy. */
+  function boundsRange(on: PackageKey, bounds: Compatibility, field: string): Range {
+    const range = relationshipRange(orders.orderOf(on), bounds, policy.relationshipBounds);
     if (range === undefined)
       throw new Error(`${field} of ${from.package}@${from.version}: a bound on ${on} cannot be read`);
     return range;
   }
+  const rangeOf = (relationship: Relationship, field: string) =>
+    boundsRange(packageKey(relationship.package), relationship.compatibility, field);
 
-  // Core compatibility: the manifest's, or the listing's where the policy prefers it.
-  const { compatibility, fromListing } = coreCompatibility(release, policy);
+  // Overrides that exclude the release: from everything, or from another package's versions.
+  for (const correction of corrections) {
+    const { index, override } = correction;
+    if (override.kind !== 'exclude') continue;
+    const field = `overrides[${index}]`;
+    if (override.with === undefined) {
+      constraints.push({
+        kind: 'unusable',
+        reason: 'override',
+        from,
+        provenance: provenance(field, undefined, correction),
+      });
+      continue;
+    }
+    const { package: on, minimum, maximum } = override.with;
+    const bounds = { ...(minimum !== undefined && { minimum }), ...(maximum !== undefined && { maximum }) };
+    const range = on === CORE ? coreRange(bounds) : boundsRange(on, bounds, field);
+    constraints.push({ kind: 'exclusion', from, on, range, provenance: provenance(field, undefined, correction) });
+  }
+
+  // Relationships an override says to ignore.
+  const dropped = new Set(
+    corrections.flatMap(({ override }) => (override.kind === 'relationship' ? [override.drop] : [])),
+  );
+  const kept = (relationship: Relationship) => !dropped.has(packageKey(relationship.package));
+
+  // Core compatibility: the manifest's, or the listing's where the policy prefers it, as overrides correct it.
+  const listed = coreCompatibility(release, policy);
+  const { fromListing } = listed;
+  let { compatibility } = listed;
+  let coreOverride: IndexedOverride | undefined;
+  for (const correction of corrections) {
+    if (correction.override.kind !== 'compatibility') continue;
+    compatibility = corrected(compatibility, correction.override.compatibility);
+    coreOverride = correction;
+  }
   const coreField = fromListing ? 'listing' : 'compatibility';
   const coreSetting = fromListing ? 'listingCompatibility' : undefined;
   if (
@@ -150,7 +210,7 @@ export function releaseConstraints(release: Release, { orders, policy }: Constra
         kind: 'unusable',
         reason: 'missing-compatibility',
         from,
-        provenance: provenance('compatibility', 'missingCompatibility'),
+        provenance: provenance('compatibility', 'missingCompatibility', coreOverride),
       });
     }
   }
@@ -160,7 +220,7 @@ export function releaseConstraints(release: Release, { orders, policy }: Constra
       from,
       on: CORE,
       range: coreRange(compatibility),
-      provenance: provenance(coreField, coreSetting),
+      provenance: provenance(coreField, coreSetting, coreOverride),
     });
   }
   const verified = coreVerifiedRange(compatibility);
@@ -171,7 +231,7 @@ export function releaseConstraints(release: Release, { orders, policy }: Constra
       from,
       on: CORE,
       range: verified,
-      provenance: provenance(fromListing ? 'listing.verified' : 'compatibility.verified', 'verified'),
+      provenance: provenance(fromListing ? 'listing.verified' : 'compatibility.verified', 'verified', coreOverride),
     });
   }
   if (verified !== undefined && policy.verified === 'require') {
@@ -180,13 +240,13 @@ export function releaseConstraints(release: Release, { orders, policy }: Constra
       from,
       on: CORE,
       range: verified,
-      provenance: provenance(fromListing ? 'listing.verified' : 'compatibility.verified', 'verified'),
+      provenance: provenance(fromListing ? 'listing.verified' : 'compatibility.verified', 'verified', coreOverride),
     });
   }
 
   // Required modules. Foundry checks no other type of requirement.
   for (const [i, relationship] of release.relationships.requires.entries()) {
-    if (relationship.package.type !== 'module') continue;
+    if (relationship.package.type !== 'module' || !kept(relationship)) continue;
     const field = `relationships.requires[${i}]`;
     constraints.push({
       kind: 'dependency',
@@ -198,9 +258,10 @@ export function releaseConstraints(release: Release, { orders, policy }: Constra
   }
 
   // Systems: the id is a hard choice; each entry's range is as the policy says.
-  const systems = release.relationships.systems.map((relationship, i) => {
+  const systems = release.relationships.systems.flatMap((relationship, i) => {
+    if (!kept(relationship)) return [];
     const field = `relationships.systems[${i}]`;
-    return { on: packageKey(relationship.package), range: rangeOf(relationship, field), field };
+    return [{ on: packageKey(relationship.package), range: rangeOf(relationship, field), field }];
   });
   if (systems.length > 0) {
     const required = policy.systemCompatibility === 'require';
@@ -225,6 +286,7 @@ export function releaseConstraints(release: Release, { orders, policy }: Constra
 
   // Conflicts: excluded, or only reported.
   for (const [i, relationship] of release.relationships.conflicts.entries()) {
+    if (!kept(relationship)) continue;
     const field = `relationships.conflicts[${i}]`;
     const on = packageKey(relationship.package);
     const range = rangeOf(relationship, field);
@@ -237,6 +299,7 @@ export function releaseConstraints(release: Release, { orders, policy }: Constra
 
   // Recommendations are reported. Installing them is not built yet.
   for (const [i, relationship] of release.relationships.recommends.entries()) {
+    if (!kept(relationship)) continue;
     const field = `relationships.recommends[${i}]`;
     constraints.push({
       kind: 'advisory',

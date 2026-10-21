@@ -138,7 +138,7 @@ Policy can soften what a manifest declares, so there are also **soft constraints
 | **Preference** | If *R* and *P* are both used, a version of *P* in range *X* is better | my-module 2.0.0 is verified on core 13 (`verified: prefer`) |
 | **Advisory** | Reported, not enforced | my-module 2.0.0 recommends helper-module; or conflicts with other-module, under `conflicts: warn` |
 
-Each constraint carries its **provenance**: the manifest it came from, the field that declared it (such as `relationships.requires[0]`), and the policy setting that shaped it, if any. Project declarations will add their own provenance. Explanations are built from provenance.
+Each constraint carries its **provenance**: the manifest it came from, the field that declared it (such as `relationships.requires[0]`), the policy setting that shaped it, if any, and the override that declared or changed it, if any (see [Overrides and core limits as built](#overrides-and-core-limits-as-built)). Explanations are built from provenance.
 
 `releaseConstraints` builds a release's constraints under a policy, given the order of each package's versions (`chooseOrders`). Since a package is ordered one way throughout, its order is chosen from all its versions in the universe and every bound placed on it.
 
@@ -194,6 +194,25 @@ Pins
 
 Core limits
 : The core builds the caller can actually run, each excluded build with a reason. pdt runs Foundry in a felddy/foundryvtt container, and not every build has an image: 14.362 has release notes but no image. So pdt limits core to the builds with an image, and an explanation can say "core 14.362 is excluded: there is no felddy/foundryvtt image for it". The resolver knows nothing of Docker; the limit is a list and a reason.
+
+### Overrides and core limits as built
+
+`resolve` and `check` take `declarations: { overrides, coreLimits }`. A reason is shown as the caller wrote it, so pdt passes it already translated.
+
+Overrides each name a package, the versions they correct (exactly as the releases give them, or every version), and a reason. There are three kinds:
+
+`exclude`
+: The releases cannot be used: at all, or with another package in some versions (`with: { package, minimum?, maximum? }`). Core bounds may name a generation (`"14"`), as in a manifest; other packages' are read as relationship bounds.
+
+`compatibility`
+: Core bounds in place of the release's own, and of the listing's. A bound given replaces, `null` removes, and one not given is kept.
+
+`relationship`
+: Ignores every relationship of the releases that names a package (`drop`): a wrong `requires`, `systems` entry or `conflicts`.
+
+Constraints an override declares or changes carry it in their provenance, so explanations say "(override: …)". Overrides change what the resolver finds, never Foundry's verdicts in `check`: Foundry knows nothing of them.
+
+A core limit leaves the build a candidate, but the solver is told it cannot be chosen, with the limit's reason. An explanation that rests on it says so: "Foundry VTT 14.362 cannot be used: there is no felddy/foundryvtt image for it". `check` finds a setup on a limited build invalid, and lists the limits in `coreLimits`.
 
 (policy)=
 
