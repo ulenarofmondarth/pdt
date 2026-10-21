@@ -48,7 +48,8 @@ export interface CheckResult {
   readonly unknown: readonly PackageVersion[];
   /**
    * The versions in the setup known only from a listing, so checked without their relationships
-   * or `maximum`. Load them for a full check.
+   * or `maximum`: those not yet loaded, and those whose manifest could not be loaded (`loadFailed`).
+   * Load them for a full check.
    */
   readonly listed: readonly PackageVersion[];
   readonly warnings: readonly OrderWarning[];

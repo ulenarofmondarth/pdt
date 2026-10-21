@@ -75,9 +75,9 @@ export async function resolveInRounds(
         ...current.releases.map(release => {
           const key = keyOfRelease(release);
           if (!needed.has(key) || release.detail !== 'listed') return release;
-          // A release that could not be loaded is used as listed, so that it is not asked for again.
+          // A release that could not be loaded stays listed, marked so that it is not asked for again.
           const found = loaded.get(key);
-          if (found === undefined) return { ...release, detail: 'loaded' as const };
+          if (found === undefined) return { ...release, loadFailed: true };
           // What the listing said stays with the release: its bounds, for the listingCompatibility
           // policy, and whether it offers the release at all.
           const listing = found.listing ?? release.listing;

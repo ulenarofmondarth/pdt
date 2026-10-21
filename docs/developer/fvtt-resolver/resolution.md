@@ -112,7 +112,7 @@ The solver needs a release's manifest to know its relationships, but loading eve
 `resolveInRounds(universe, requirements, load)` runs the rounds.
 - **Loading:** `load` is a function the caller passes in, so the core still does no I/O.
 - **The listing's bounds** stay with each loaded release, for the `listingCompatibility` policy.
-- **A release `load` cannot load** is kept as listed and reported in `unloaded`, so that it is not asked for again.
+- **A release `load` cannot load** stays listed, marked `loadFailed`, and is reported in `unloaded`. It is not asked for again. `resolve` ranks the releases it can still load ahead of it, so a failed download makes it try an older release before settling for what it knows only from the listing. `check` reports it among the releases checked from their listing. Earlier versions marked such a release `loaded` with whatever the listing gave, so a release from a forge, whose listing gives no core bounds, looked like one that declares none: valid, with Foundry's `UNKNOWN` verdict.
 - **Round limit:** after `maxRounds` (10 by default), the last, incomplete answer is returned.
 
 Each round loads at least one new manifest, so the rounds end. The first round typically needs the newest acceptable release of every package; later rounds need only the few releases that conflicts lead the solver back to. In practice it settles in two or three rounds.
