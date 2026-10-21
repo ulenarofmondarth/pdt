@@ -31,7 +31,10 @@ interface Release {
   compatibility: Compatibility; // { minimum?, maximum?, verified? }, as text
   relationships: { requires; systems; conflicts; recommends: Relationship[] };
   download?: string;
+  /** The manifest URL given: for a loaded release, its manifest's own, which usually gives the newest. */
   manifest?: string;
+  /** A manifest URL for this version alone, to install exactly this version from. */
+  versionManifest?: string;
   /** A premium package: downloading it needs the user's licence. */
   protected: boolean;
   /** Where the manifest was read from. */

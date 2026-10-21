@@ -327,6 +327,13 @@ describe('normaliseManifest', () => {
       ]);
     });
 
+    it('gives the manifest URL as the version’s own when it names the version', () => {
+      const own = 'https://github.com/o/r/releases/download/v1.0.0/module.json';
+      expect(release(module({ manifest: own })).versionManifest).toBe(own);
+      const newest = 'https://github.com/o/r/releases/latest/download/module.json';
+      expect(release(module({ manifest: newest }))).not.toHaveProperty('versionManifest');
+    });
+
     it('reads a package as protected only when the manifest says true', () => {
       expect(release(module({ protected: 'yes' })).protected).toBe(false);
       expect(release(module({ protected: true })).protected).toBe(true);

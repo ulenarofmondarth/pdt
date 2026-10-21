@@ -54,13 +54,4 @@ export function gitlabProject(url: string, hosts: readonly string[] = ['gitlab.c
   return path.includes('/') ? { host: parsed.hostname, path } : undefined;
 }
 
-/**
- * The version a release tag names: the tag without what comes before its first digit, so
- * `v1.1.4` and `release-6.0.6` name `1.1.4` and `6.0.6`.
- *
- * @returns The version, or `undefined` when the tag has no digit
- */
-export function tagVersion(tag: string): string | undefined {
-  const start = tag.search(/\d/);
-  return start === -1 ? undefined : tag.slice(start);
-}
+export { tagVersion } from '../version/same.js';

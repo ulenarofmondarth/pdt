@@ -107,6 +107,17 @@ For a package, the sources are tried in order:
 4. GitHub or GitLab, for the history the index lacks;
 5. the manifest URL.
 
+### A manifest URL for one version
+
+To install a particular version, Foundry needs a manifest URL that gives that version. The `manifest` a manifest gives itself almost never does: socketlib's, lib-wrapper's and tidy5e-sheet's say `releases/latest/...`, and dnd5e's, dae's and dice-so-nice's point into a branch, such as `raw/master/...`. So each release has a `versionManifest`, when one can be found: a URL that **names the version** (`namesVersion(url, version)`). One of its folders, read as a tag is, must be the version: `releases/download/v1.1.4/module.json`, `/-/releases/v14.0.18/downloads/module.json` or `/-/raw/6.4.4/...`, but not `latest`, `master`, or a branch named for a generation such as dae's `raw/v14`. Naming is a heuristic: an author can still replace a release's files.
+
+The source set takes the first of these that names the version:
+1. **The URL the release was listed with:** Foundry's details file gives one for each version, and it usually names it.
+2. **A URL another source gives for the same version:** monks-tokenbar's listing gives `releases/latest/...` for every version, but GitHub has a `module.json` attached to each tag.
+3. **When loading, the manifest beside the download:** a GitHub release usually attaches the manifest beside the zip, so `releases/download/v1.1.4/module.zip` suggests `releases/download/v1.1.4/module.json`. It costs a request, so it is tried only when the others fail, only for a release being loaded, and only if that URL names the version. What it fetches must be of the same package and version. Not finding one is not a gap.
+
+On 21 October 2026, with every source, this found a URL for socketlib, lib-wrapper, dae, midi-qol, monks-tokenbar and dice-so-nice. times-up got none: its listing, its manifest and its download all point at the `master` branch, and it publishes no GitLab releases.
+
 Building is asynchronous and can fail partway: a URL is gone, or a rate limit is hit. Failures do not abort the build. They are recorded in the universe, as "releases of other-module could not be listed: HTTP 404". Explanations can then point at missing information as well as at constraints: "no release of other-module is known that supports core 14 (its releases could not be listed)".
 
 ## Request budget
