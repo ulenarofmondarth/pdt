@@ -11,6 +11,6 @@ export default packageRelease({
     'mkdir -p releases',
     'out="$(pwd)/releases" && (cd ../../docs/_build/html && zip -qr "$out/pdt-docs-v${nextRelease.version}.zip" .)',
   ],
-  output: 'version',
+  output: 'pdt-tag',
   githubAssets: [{ path: 'releases/pdt-docs-v*.zip', label: 'Documentation (HTML)' }],
 });
