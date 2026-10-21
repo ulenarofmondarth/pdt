@@ -25,11 +25,14 @@ import type {
   Override,
   PackageKey,
   PackageRef,
+  PackageVersion,
   Policy,
   Release,
   Resolution,
 } from '@mondarth/fvtt-resolver';
 import type { HttpClient, LocalManifest, SourceGap } from '@mondarth/fvtt-resolver/sources';
+import { vttPackages } from '@schema/config.js';
+
 import type { OverrideSettings, PackageSources, VttSettings } from '@schema/config.js';
 
 /** The most rounds of loading: enough to go back through a few dozen releases. */
@@ -45,6 +48,8 @@ export interface InstallQuestion {
   readonly sources?: PackageSources | undefined;
   /** Why a core build without an image cannot be run, in the user's language. */
   readonly noImage: (version: string, image: string) => string;
+  /** Versions to keep where they still fit, such as those the lockfile records. */
+  readonly prefer?: readonly PackageVersion[];
 }
 
 /** What working out a VTT's setup found. */
@@ -154,7 +159,7 @@ export async function resolveInstall(http: HttpClient, question: InstallQuestion
   const { core, limits } = chosen;
 
   const { sources = {}, vtt } = question;
-  const packages = vtt.packages ?? { modules: [], overrides: [] };
+  const packages = vttPackages(vtt);
   const set = sourceSet({
     sources: [
       localSource([question.project]),
@@ -187,7 +192,7 @@ export async function resolveInstall(http: HttpClient, question: InstallQuestion
   ];
   const { resolution, rounds, unloaded } = await resolveInRounds(
     universe,
-    { require, pins: [{ package: CORE, version: core.version }] },
+    { require, pins: [{ package: CORE, version: core.version }], prefer: question.prefer ?? [] },
     set.load,
     {
       policy: { coreChannels: ALL_CHANNELS },

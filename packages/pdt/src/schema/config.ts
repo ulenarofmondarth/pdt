@@ -108,23 +108,38 @@ export type OverrideSettings = z.output<typeof overrideSchema>;
 const packageId = z.string().regex(/^[^\s:]+$/);
 
 /** What `pdt vtt install` installs besides the project's module, and how. */
-const packagesSettings = z.object({
+export const packagesSchema = z.object({
   /** The system to install, by id; the one the resolver chooses when not given. */
   system: packageId.optional(),
   /** More modules to install, by id. */
   modules: z.array(packageId).default([]),
   /** Corrections to what packages' authors declared, each with its reason. */
   overrides: z.array(overrideSchema).default([]),
+  /**
+   * What to do when the VTT is running: `auto` stops it, installs and starts it again; `block`
+   * refuses to install; `warn` installs, and says to restart it.
+   */
+  running: z.enum(['auto', 'block', 'warn']).default('auto'),
+  /**
+   * What to do with packages the setup no longer needs: `auto` removes those pdt installed;
+   * `never` removes none; `remove` removes every one, even those installed by hand.
+   */
+  removal: z.enum(['auto', 'never', 'remove']).default('auto'),
 });
 
 /** What `pdt vtt install` installs besides the project's module. */
-export type PackagesSettings = z.output<typeof packagesSettings>;
+export type PackagesSettings = z.output<typeof packagesSchema>;
+
+/** What `pdt vtt install` installs for a VTT, with the defaults for what its settings leave out. */
+export function vttPackages({ packages }: { packages?: PackagesSettings | undefined }): PackagesSettings {
+  return packages ?? packagesSchema.parse({});
+}
 
 export const vttSchema = z.object({
   server: serverSchema,
   host: hostSchema,
   /** What `pdt vtt install` installs besides the project's module. */
-  packages: packagesSettings.optional(),
+  packages: packagesSchema.optional(),
 });
 
 /** A VTT's settings: its server, and the host it runs on. */

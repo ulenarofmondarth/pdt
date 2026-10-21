@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
-import { installedVersion, installPlan, packageDir } from '@lib/install/plan.js';
+import { installedVersion, installPlan, packageDir, removals } from '@lib/install/plan.js';
 
 import type { Release, Setup } from '@mondarth/fvtt-resolver';
 
@@ -80,5 +80,58 @@ describe('installPlan', () => {
   test('reads a version given as a number', () => {
     install('module', 'x', { id: 'x', version: 2 });
     expect(installedVersion(data, { type: 'module', id: 'x' })).toBe('2');
+  });
+
+  describe('removals', () => {
+    const setup: Setup = {
+      core: '14.368',
+      system: release('system', 'dnd5e', '5.3.3'),
+      modules: [release('module', 'socketlib', '1.1.4')],
+    };
+
+    beforeEach(() => {
+      install('system', 'dnd5e', { version: '5.3.3' });
+      install('module', 'socketlib', { version: '1.1.4' });
+      install('module', 'old-by-pdt', { version: '2.0.0' });
+      install('module', 'by-hand', { version: '1.0.0' });
+      install('system', 'old-system', {});
+      install('module', 'my-module', { version: '0.1.0' });
+      fs.mkdirSync(path.join(data, 'Data', 'modules', '.pdt-staging-x'));
+      fs.writeFileSync(path.join(data, 'Data', 'modules', 'stray.txt'), '');
+    });
+
+    const pdtInstalled = ['module:old-by-pdt', 'module:socketlib', 'system:old-system'];
+    const summary = (mode: 'auto' | 'never' | 'remove') =>
+      removals(setup, data, 'my-module', pdtInstalled, mode).map(r => [
+        `${r.package.type}:${r.package.id}`,
+        r.installed,
+        r.action,
+      ]);
+
+    test('auto removes what pdt installed and the setup no longer needs', () => {
+      expect(summary('auto')).toEqual([
+        ['module:old-by-pdt', '2.0.0', 'remove'],
+        ['system:old-system', undefined, 'remove'],
+      ]);
+    });
+
+    test('never removes anything, but reports what pdt installed', () => {
+      expect(summary('never').map(([key, , action]) => [key, action])).toEqual([
+        ['module:old-by-pdt', 'unneeded'],
+        ['system:old-system', 'unneeded'],
+      ]);
+    });
+
+    test('remove removes everything the setup does not need, but never the project’s module', () => {
+      expect(summary('remove').map(([key]) => key)).toEqual([
+        'module:by-hand',
+        'module:old-by-pdt',
+        'system:old-system',
+      ]);
+    });
+
+    test('finds nothing in a VTT with no packages', () => {
+      expect(removals(setup, path.join(data, 'nowhere'), 'my-module', pdtInstalled, 'remove')).toEqual([]);
+    });
   });
 });

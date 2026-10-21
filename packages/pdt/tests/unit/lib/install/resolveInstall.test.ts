@@ -3,6 +3,7 @@ import { FOUNDRY_RELEASE_NOTES, httpClient } from '@mondarth/fvtt-resolver/sourc
 import { resolveInstall, toOverride } from '@lib/install/resolveInstall.js';
 import { tagsUrl } from '@lib/VTT/coreImages.js';
 import { vttSettings } from '@lib/projectVtt.js';
+import { packagesSchema } from '@schema/config.js';
 import { worldAnswers, worldFetch } from '@tests/unit/mocks/packageWorld.js';
 
 import type { InstallQuestion, InstallResolution } from '@lib/install/resolveInstall.js';
@@ -98,7 +99,7 @@ describe('resolveInstall', () => {
   });
 
   test('installs the system and modules the VTT’s packages name', async () => {
-    const vtt = { packages: { system: 'example-system', modules: ['example-premium'], overrides: [] } };
+    const vtt = { packages: packagesSchema.parse({ system: 'example-system', modules: ['example-premium'] }) };
     const found = await resolveInstall(httpClient({ fetch: worldFetch() }), question('14.363', {}, vtt));
     expect(chosen(found)).toEqual([
       '14.363',
@@ -113,7 +114,7 @@ describe('resolveInstall', () => {
     const overrides: OverrideSettings[] = [
       { kind: 'exclude', package: 'module:example-lib', versions: ['2.0.0'], reason: 'it breaks scenes' },
     ];
-    const vtt = { packages: { modules: [], overrides } };
+    const vtt = { packages: packagesSchema.parse({ overrides }) };
     expect(chosen(await resolveInstall(httpClient({ fetch: worldFetch() }), question('14.363', {}, vtt)))).toContain(
       'example-lib@1.0.0',
     );

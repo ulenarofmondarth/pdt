@@ -81,7 +81,8 @@ describe('vtt command', () => {
     });
 
     test('routes install to the install sub-command', async () => {
-      await expect(parse('vtt install')).resolves.toBe(m['error.install.dryRunOnly']());
+      // The sandbox holds no module.json, so install stops when it reads the project's module.
+      await expect(parse('vtt install --dry-run')).resolves.toContain(path.join(sandbox, 'module.json'));
     });
   });
 

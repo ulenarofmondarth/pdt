@@ -64,3 +64,64 @@ export function installPlan(setup: Setup, dataDir: string, projectId: string): P
     return { release, action: release.protected ? 'premium' : 'install', ...now };
   });
 }
+
+/** What to do with packages the setup no longer needs: the `packages.removal` setting. */
+export type RemovalMode = 'auto' | 'never' | 'remove';
+
+/** A package installed in a VTT that its setup does not need. */
+export interface Removal {
+  readonly package: Release['package'];
+  readonly installed?: string;
+  /** `remove` it, or only report it as `unneeded`. */
+  readonly action: 'remove' | 'unneeded';
+}
+
+/** The packages in a VTT's data directory, leaving out working files and anything that is not a folder. */
+function packagesOnDisk(dataDir: string): Release['package'][] {
+  return (['module', 'system'] as const).flatMap(type => {
+    let names: fs.Dirent[];
+    try {
+      names = fs.readdirSync(path.join(dataDir, 'Data', `${type}s`), { withFileTypes: true });
+    } catch {
+      return [];
+    }
+    return names
+      .filter(entry => entry.isDirectory() && !entry.name.startsWith('.'))
+      .map(entry => ({ type, id: entry.name }));
+  });
+}
+
+/**
+ * The packages installed in a VTT that its setup does not need, and what to do with each.
+ *
+ * - `auto`: remove those the lockfile says pdt installed;
+ * - `never`: remove none, and report those pdt installed;
+ * - `remove`: remove every package the setup does not need, even those installed by hand.
+ *
+ * The project's own module is never removed: the project is given to the VTT as that module.
+ *
+ * @param pdtInstalled - The packages the lockfile says pdt installed, as `module:<id>` or `system:<id>`
+ */
+export function removals(
+  setup: Setup,
+  dataDir: string,
+  projectId: string,
+  pdtInstalled: readonly string[],
+  mode: RemovalMode,
+): Removal[] {
+  const key = ({ type, id }: Release['package']) => `${type}:${id}`;
+  const needed = new Set([setup.system, ...setup.modules].map(release => key(release.package)));
+  needed.add(`module:${projectId}`);
+  const ours = new Set(pdtInstalled);
+  return packagesOnDisk(dataDir)
+    .filter(ref => !needed.has(key(ref)) && (mode === 'remove' || ours.has(key(ref))))
+    .sort((a, b) => key(a).localeCompare(key(b)))
+    .map(ref => {
+      const installed = installedVersion(dataDir, ref);
+      return {
+        package: ref,
+        ...(installed === undefined ? {} : { installed }),
+        action: mode === 'never' ? 'unneeded' : 'remove',
+      };
+    });
+}

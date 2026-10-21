@@ -51,6 +51,7 @@
     "@types/dockerode": "^3.3.35",
     "@types/node": "^24.19.2",
     "@types/yargs": "^17.0.33",
+    "@types/yauzl": "^3.4.0",
     "@vitest/coverage-v8": "^5.0.4",
     "fast-check": "^4.10.2",
     "rimraf": "^6.0.1",
@@ -75,6 +76,7 @@
     "winston": "^3.19.0",
     "yaml": "^2.9.1",
     "yargs": "^18.2.0",
+    "yauzl": "^3.4.0",
     "zod": "^4.6.7"
   }
 }

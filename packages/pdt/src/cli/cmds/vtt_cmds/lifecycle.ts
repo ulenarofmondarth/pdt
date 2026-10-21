@@ -363,3 +363,19 @@ export async function vttStatuses(context: CommandContext): Promise<VttStatus[]>
   }
   return statuses;
 }
+
+/**
+ * Whether a VTT of the project is running: the project's run state records it, and its host says so.
+ *
+ * @throws {Error} When the host it was started on cannot be reached
+ */
+export async function isVttRunning(vtt: ProjectVtt, context: CommandContext): Promise<boolean> {
+  const record = runningVtt(vtt.runState, vtt.name);
+  if (record === undefined) return false;
+  const was = asRecorded(vtt, record, context);
+  await assertHostAccessible(was);
+  return was.server.host.isRunning(record);
+}
+
+/** Start or stop a VTT of the project already chosen, as `pdt vtt start` and `stop` do. */
+export { start as startProjectVtt, stop as stopProjectVtt };

@@ -160,13 +160,20 @@ describe('a VTT’s packages', () => {
 
   test('are optional, and need name nothing', () => {
     expect(configSchema.parse(withPackages(undefined)).VTT['mod']?.packages).toBeUndefined();
-    expect(configSchema.parse(withPackages({})).VTT['mod']?.packages).toEqual({ modules: [], overrides: [] });
+    expect(configSchema.parse(withPackages({})).VTT['mod']?.packages).toEqual({
+      modules: [],
+      overrides: [],
+      running: 'auto',
+      removal: 'auto',
+    });
   });
 
   test('name a system, modules and overrides of every kind', () => {
     const packages = {
       system: 'dnd5e',
       modules: ['dice-so-nice'],
+      running: 'warn',
+      removal: 'never',
       overrides: [
         {
           kind: 'exclude',
@@ -185,6 +192,8 @@ describe('a VTT’s packages', () => {
       ],
     };
     expect(configSchema.parse(withPackages(packages)).VTT['mod']?.packages).toEqual(packages);
+    expect(configSchema.safeParse(withPackages({ running: 'sometimes' })).success).toBe(false);
+    expect(configSchema.safeParse(withPackages({ removal: 'always' })).success).toBe(false);
   });
 
   test.each([
