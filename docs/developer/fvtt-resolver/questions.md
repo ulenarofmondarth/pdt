@@ -46,6 +46,13 @@ Checked against the source of Foundry VTT 14.368 (the server and client code in 
 | How Foundry resolves a dependency given by `id` only | From the installed packages, or the package index. A dependency with a `manifest` URL is fetched from it, which gives the newest release | `base-package.mjs`, `_testRequiredDependencies` |
 | Whether Foundry has a public list of core releases | No API without a licence (its update check sends the licence). The release notes page lists every build with its channel | `dist/core/update.mjs`; foundryvtt.com/releases/ |
 
+Checked against the services themselves, on 21 October 2026:
+
+| Question | Finding | Where |
+| --- | --- | --- |
+| Which builds felddy/foundryvtt has images for | No fixed rule by channel: generation 13's testing builds have images, generation 14's testing, development and prototype builds have none, and some stable builds have none (14.362). So pdt reads the tags rather than assuming | Docker Hub's tag list; see {doc}`sources` |
+| How the release notes link old releases | By id, not version: `/releases/8.102` is 0.8.9. The link text gives the version | foundryvtt.com/releases/ |
+
 Foundry's own checks are partial, and its source says so in `FIXME` comments:
 - a package's availability does not consider its dependencies;
 - a world checks that its required modules suit the core, but not that they are in the required range.
@@ -99,4 +106,3 @@ These came out of the first review and the reading of the source. They concern t
 | Whether the details file lists every version, or only those an author lists on the website. dnd5e shows 28 versions, mostly the last patch of each minor | Whether GitHub is still needed for history |
 | How stable the index format is (it carries `format: 1`) | Breakage of the listing source |
 | Whether GitHub release downloads (where most manifests are) have a rate limit of their own | The request budget for manifests |
-| Which channels felddy/foundryvtt builds images for. Not every build has one: 14.362 has release notes but no image | The core limits pdt applies |
