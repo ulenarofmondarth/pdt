@@ -50,7 +50,7 @@
     "@inlang/paraglide-js": "2.27.0",
     "@types/dockerode": "^3.3.35",
     "@types/node": "^24.19.2",
-    "@types/yargs": "^17.0.33",
+    "@types/yargs": "^17.0.35",
     "@types/yauzl": "^3.4.0",
     "@vitest/coverage-v8": "^5.0.4",
     "fast-check": "^4.10.2",
