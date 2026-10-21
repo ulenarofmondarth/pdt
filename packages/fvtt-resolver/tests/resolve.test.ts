@@ -75,6 +75,8 @@ function leaves(incompatibility: Incompatibility<Reason>): string[] {
       return [`world-system ${reason.system}@${reason.version}`];
     case 'pin':
       return [`pin ${reason.package}@${reason.version}`];
+    case 'core-limit':
+      return [`core-limit ${reason.version}`];
     default:
       return [`${reason.kind} ${reason.package}`];
   }

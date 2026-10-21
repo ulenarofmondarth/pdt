@@ -2,8 +2,8 @@
  * Works out which versions of Foundry VTT, game systems and modules can be installed together.
  *
  * The core so far: how versions are ordered, sets of versions, reading manifests, the constraints
- * releases declare under a policy, resolving them into the best setup, checking a setup, and
- * explaining in words why there is no setup.
+ * releases declare under a policy and the caller's declarations, resolving them into the best
+ * setup, checking a setup, and explaining in words why there is no setup.
  *
  * @packageDocumentation
  */
@@ -43,6 +43,16 @@ export {
   type PackageKey,
   type Universe,
 } from './universe.js';
+export {
+  overridesFor,
+  type CompatibilityOverride,
+  type CoreLimit,
+  type Declarations,
+  type ExcludeOverride,
+  type IndexedOverride,
+  type Override,
+  type RelationshipOverride,
+} from './declarations.js';
 export { resolveInRounds, type RoundsOptions, type RoundsResult } from './rounds.js';
 export {
   coreCompatibility,

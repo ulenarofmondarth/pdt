@@ -2,8 +2,8 @@
  * Resolve: what should be installed. Finds the best setup that meets the requirements: one core
  * release, one system release and the modules needed, as one world would use them.
  *
- * It encodes the universe's releases and their constraints for the solver, which knows nothing of
- * Foundry VTT, and chooses among valid setups by the preferences: pins and preferred versions first,
+ * It encodes the universe's releases, their constraints and the caller's declarations for the
+ * solver, which knows nothing of Foundry VTT, and chooses among valid setups by the preferences: pins and preferred versions first,
  * then versions that more of the releases already chosen prefer, then the newest.
  */
 import { releaseConstraints } from './constraints.js';
@@ -21,6 +21,7 @@ import {
 } from './world-system.js';
 
 import type { Constraint } from './constraints.js';
+import type { Declarations } from './declarations.js';
 import type { Policy } from './policy.js';
 import type { Range } from './range/range.js';
 import type { Release } from './release.js';
@@ -66,7 +67,9 @@ export type Reason =
   /** A release's constraint. */
   | { readonly kind: 'constraint'; readonly constraint: Constraint }
   /** A system release is the world's system, and the world's system is that release. */
-  | { readonly kind: 'world-system'; readonly system: PackageKey; readonly version: string };
+  | { readonly kind: 'world-system'; readonly system: PackageKey; readonly version: string }
+  /** The caller cannot run this core build. */
+  | { readonly kind: 'core-limit'; readonly version: string; readonly reason: string };
 
 /** A valid setup: what to install. */
 export interface Setup {
@@ -90,6 +93,8 @@ export type Resolution =
 
 export interface ResolveOptions {
   readonly policy?: Partial<Policy>;
+  /** Overrides and core limits, beyond what the manifests declare. */
+  readonly declarations?: Declarations;
 }
 
 /** The constraints at the leaves of an explanation. */
@@ -119,7 +124,8 @@ export function looksLikePrerelease(version: string): boolean {
  */
 export function resolve(universe: Universe, requirements: Requirements, options: ResolveOptions = {}): Resolution {
   const policy = withDefaults(options.policy);
-  const orders = chooseOrders(universe, policy);
+  const { overrides = [], coreLimits = [] } = options.declarations ?? {};
+  const orders = chooseOrders(universe, policy, overrides);
   const pins = requirements.pins ?? [];
   const preferred = [...pins, ...(requirements.prefer ?? [])];
   const isPreferred = (key: PackageKey, version: string) =>
@@ -151,7 +157,7 @@ export function resolve(universe: Universe, requirements: Requirements, options:
     const id = `${packageKey(release.package)}@${release.version}`;
     let found = constraintCache.get(id);
     if (found === undefined) {
-      found = releaseConstraints(release, { orders, policy });
+      found = releaseConstraints(release, { orders, policy, overrides });
       constraintCache.set(id, found);
     }
     return found;
@@ -267,8 +273,14 @@ export function resolve(universe: Universe, requirements: Requirements, options:
           },
         ];
       }
-      const release = releaseOf(key, version);
-      if (release === undefined) return [];
+      if (key === CORE) {
+        // A core build the caller cannot run stays a candidate, so that an explanation can say why it is not chosen.
+        return coreLimits
+          .filter(limit => limit.version === version)
+          .map(({ reason }) => ({ terms: [self], data: { kind: 'core-limit', version, reason } as const }));
+      }
+      // Every other version the solver asks about is a candidate, so has a release.
+      const release = releaseOf(key, version) as Release;
       const own = constraintsOf(release).flatMap(constraint => encode(self, constraint));
       if (release.package.type !== 'system') return own;
       return [

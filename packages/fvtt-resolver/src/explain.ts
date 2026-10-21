@@ -54,6 +54,13 @@ export interface ExplanationMessages {
   conflictsWith(release: string, on: string): string;
   runsIn(release: string, systems: string): string;
   unusable(release: string): string;
+  /** An override's reasons: a release that cannot be used at all, or with `on`. */
+  excluded(release: string, reason: string): string;
+  excludedWith(release: string, on: string, reason: string): string;
+  /** A reason that leans on an override that changed a release's bounds. */
+  overridden(text: string, reason: string): string;
+  /** A core build the caller cannot run. */
+  coreLimit(core: string, reason: string): string;
   requirement(on: string): string;
   pin(on: string): string;
   setupNeeds(what: string): string;
@@ -113,6 +120,10 @@ export const englishMessages: ExplanationMessages = {
   conflictsWith: (release, on) => `${release} conflicts with ${on}`,
   runsIn: (release, systems) => `${release} runs only in ${systems}`,
   unusable: release => `${release} declares no Foundry VTT compatibility, which the policy does not accept`,
+  excluded: (release, reason) => `${release} cannot be used (override: ${reason})`,
+  excludedWith: (release, on, reason) => `${release} cannot be used with ${on} (override: ${reason})`,
+  overridden: (text, reason) => `${text} (override: ${reason})`,
+  coreLimit: (core, reason) => `${core} cannot be used: ${reason}`,
   requirement: on => `the requirements need ${on}`,
   pin: on => `${on} is pinned`,
   setupNeeds: what => `a setup needs ${what}`,
@@ -225,6 +236,23 @@ export function describeReason(reason: Reason, messages: ExplanationMessages = e
   const release = (constraint: Constraint) =>
     messages.term(messages.name(constraint.from.package), messages.exactly(constraint.from.version));
 
+  /** What a release declares, in words. */
+  const declared = (constraint: Constraint) => {
+    switch (constraint.kind) {
+      case 'dependency':
+        return messages.dependsOn(release(constraint), package_(constraint.on, constraint.range));
+      case 'exclusion':
+        return messages.conflictsWith(release(constraint), package_(constraint.on, constraint.range));
+      case 'choice':
+        return messages.runsIn(
+          release(constraint),
+          messages.or(constraint.options.map(option => package_(option.on, option.range))),
+        );
+      default:
+        return messages.unusable(release(constraint));
+    }
+  };
+
   switch (reason.kind) {
     case 'requirement':
       return messages.requirement(package_(reason.package, reason.range));
@@ -234,21 +262,18 @@ export function describeReason(reason: Reason, messages: ExplanationMessages = e
       return messages.setupNeeds(reason.package === CORE ? messages.name(CORE) : messages.world());
     case 'world-system':
       return messages.worldSystem(messages.term(messages.name(reason.system), messages.exactly(reason.version)));
+    case 'core-limit':
+      return messages.coreLimit(messages.term(messages.name(CORE), messages.exactly(reason.version)), reason.reason);
     case 'constraint': {
       const { constraint } = reason;
-      switch (constraint.kind) {
-        case 'dependency':
-          return messages.dependsOn(release(constraint), package_(constraint.on, constraint.range));
-        case 'exclusion':
-          return messages.conflictsWith(release(constraint), package_(constraint.on, constraint.range));
-        case 'choice':
-          return messages.runsIn(
-            release(constraint),
-            messages.or(constraint.options.map(option => package_(option.on, option.range))),
-          );
-        default:
-          return messages.unusable(release(constraint));
-      }
+      const override = constraint.provenance.override;
+      if (override === undefined) return declared(constraint);
+      // An override declared the constraint, or changed the bounds the release declared.
+      if (constraint.kind === 'exclusion')
+        return messages.excludedWith(release(constraint), package_(constraint.on, constraint.range), override.reason);
+      if (constraint.kind === 'unusable' && constraint.reason === 'override')
+        return messages.excluded(release(constraint), override.reason);
+      return messages.overridden(declared(constraint), override.reason);
     }
   }
 }
