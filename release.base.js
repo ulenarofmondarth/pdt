@@ -9,7 +9,7 @@ export const bumpVersionCmd = 'pnpm pkg set version=${nextRelease.version}';
  * @typedef {object} PackageRelease
  * @property {string[]} [prepare] Commands that build what the release ships, after the version is set
  * @property {string} [publishCmd] Publishes the package to a registry; packages without one are only tagged
- * @property {string} output The release workflow's output that receives the new version
+ * @property {string} output The release workflow's output that receives the release's tag
  * @property {{ path: string, label: string }[]} [githubAssets] Files attached to the GitHub release
  */
 
@@ -42,8 +42,9 @@ export function packageRelease({ prepare = [], publishCmd, output, githubAssets 
           // Sets the version first, so what is built carries it.
           prepareCmd: [bumpVersionCmd, ...prepare].join(' && '),
           ...(publishCmd === undefined ? {} : { publishCmd }),
-          // Hands the version to the later jobs of the release workflow.
-          successCmd: `echo "${output}=\${nextRelease.version}" >> "$GITHUB_OUTPUT"`,
+          // Hands the release's tag to the later jobs of the release workflow. Not the version:
+          // semantic-release-monorepo gives the whole tag as the version by this step.
+          successCmd: `echo "${output}=\${nextRelease.gitTag}" >> "$GITHUB_OUTPUT"`,
         },
       ],
       [
