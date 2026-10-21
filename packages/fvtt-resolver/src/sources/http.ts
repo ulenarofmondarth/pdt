@@ -1,5 +1,5 @@
 /**
- * Fetching JSON, or text such as an HTML page, politely: from the cache while it is fresh, revalidating with its ETag when it is
+ * Fetching JSON, text such as an HTML page, or part of a file, politely: from the cache while it is fresh, revalidating with its ETag when it is
  * not, within a budget of requests and a limit on how many run at once, and recording a gap
  * rather than throwing when something cannot be fetched.
  *
@@ -40,6 +40,24 @@ export interface GetOptions {
   readonly headers?: Readonly<Record<string, string>>;
 }
 
+/** Part of a file. */
+export interface ByteRange {
+  /** The first byte, from 0; or, when negative, how many bytes to read from the end. */
+  readonly start: number;
+  /** The last byte, included; the end of the file when missing. */
+  readonly end?: number;
+}
+
+/** The bytes of part of a file. */
+export interface FilePart {
+  readonly bytes: Uint8Array;
+  /**
+   * The whole file's size, from the `Content-Range` the server sent, when it can be read: a
+   * browser shows it only if the server exposes it to CORS.
+   */
+  readonly size?: number;
+}
+
 /** What fetching gave: the value, or a gap without its source, which the source adds. */
 export type Fetched<T = unknown> =
   { readonly ok: true; readonly value: T } | { readonly ok: false; readonly gap: Omit<SourceGap, 'source'> };
@@ -48,6 +66,17 @@ export interface HttpClient {
   getJson(url: string, options: GetOptions): Promise<Fetched>;
   /** Fetches text, such as an HTML page, as `getJson` fetches JSON. */
   getText(url: string, options: GetOptions): Promise<Fetched<string>>;
+  /**
+   * Fetches part of a file, such as the end of a zip, within the budget but not cached. A server
+   * that sends the whole file instead is not read, as the file may be large: that is an `invalid`
+   * gap.
+   */
+  getBytes(url: string, range: ByteRange, options?: Pick<GetOptions, 'headers'>): Promise<Fetched<FilePart>>;
+  /**
+   * A value made from what was fetched, such as a manifest read from part of a zip, kept in the
+   * cache under `key` for `maxAge` milliseconds. Only a value made is kept, not a gap.
+   */
+  remember<T>(key: string, maxAge: number, make: () => Promise<Fetched<T>>): Promise<Fetched<T>>;
   /** How many requests have been made. */
   requests(): number;
 }
@@ -121,8 +150,49 @@ export function httpClient({
     return { ok: true, value };
   }
 
+  async function getBytes(
+    url: string,
+    { start, end }: ByteRange,
+    { headers: extra = {} }: Pick<GetOptions, 'headers'> = {},
+  ): Promise<Fetched<FilePart>> {
+    if (made >= maxRequests) return { ok: false, gap: { url, reason: 'budget' } };
+    made++;
+    const range =
+      start < 0 ? `bytes=${String(start)}` : `bytes=${String(start)}-${end === undefined ? '' : String(end)}`;
+    let response: Response;
+    try {
+      response = await limited(() => fetch(url, { headers: { ...extra, Range: range, 'User-Agent': userAgent } }));
+    } catch {
+      return { ok: false, gap: { url, reason: 'network' } };
+    }
+    if (response.status !== 206) {
+      await response.body?.cancel();
+      return {
+        ok: false,
+        gap: response.ok ? { url, reason: 'invalid' } : { url, reason: 'http', status: response.status },
+      };
+    }
+    try {
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      const size = /\/(\d+)$/.exec(response.headers.get('content-range') ?? '')?.[1];
+      return { ok: true, value: { bytes, ...(size !== undefined && { size: Number(size) }) } };
+    } catch {
+      return { ok: false, gap: { url, reason: 'network' } };
+    }
+  }
+
+  async function remember<T>(key: string, maxAge: number, make: () => Promise<Fetched<T>>): Promise<Fetched<T>> {
+    const cached = await cache.get(key);
+    if (cached !== undefined && now() - cached.storedAt < maxAge) return { ok: true, value: cached.value as T };
+    const result = await make();
+    if (result.ok) await cache.set(key, { value: result.value, storedAt: now() });
+    return result;
+  }
+
   return {
     requests: () => made,
+    getBytes,
+    remember,
     getJson: (url, options) => get(url, options, response => response.json()),
     // The cache holds what `get` read, so text read under a key is text when it is read again.
     getText: (url, options) => get(url, options, response => response.text()) as Promise<Fetched<string>>,

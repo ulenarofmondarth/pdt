@@ -37,6 +37,7 @@ describe('githubSource', () => {
           compatibility: {},
           relationships: { requires: [], systems: [], conflicts: [], recommends: [] },
           manifest: asset('v2.0.0').browser_download_url,
+          download: asset('v2.0.0', 'module.zip').browser_download_url,
           protected: false,
           origin: GITHUB_RELEASES,
           detail: 'listed',
@@ -46,6 +47,21 @@ describe('githubSource', () => {
     });
     expect(requests[0]?.headers['Accept']).toBe('application/vnd.github+json');
     expect(requests[0]?.headers['Authorization']).toBeUndefined();
+  });
+
+  it.each([
+    ['the zip named for the type of package', ['other.zip', 'module.zip'], 'module.zip'],
+    ['the only zip', ['example-module-v3.0.0.zip'], 'example-module-v3.0.0.zip'],
+    ['no zip of several, none named for the type of package', ['a.zip', 'b.zip'], undefined],
+    ['no zip when there is none', ['notes.txt'], undefined],
+  ])('gives a release’s download as %s', async (_, names, chosen) => {
+    const release = { tag_name: 'v3.0.0', assets: [asset('v3.0.0'), ...names.map(name => asset('v3.0.0', name))] };
+    const { fetch } = fakeFetch({ [GITHUB_RELEASES]: { body: [release] } });
+    const found = await githubSource(httpClient({ fetch })).releases(
+      module,
+      declared('https://github.com/example/example-module/releases/latest/download/module.json'),
+    );
+    expect(found.ok && found.value[0]?.download).toBe(chosen && asset('v3.0.0', chosen).browser_download_url);
   });
 
   it('finds the repository from the manifests other sources listed too, asking for each repository once', async () => {

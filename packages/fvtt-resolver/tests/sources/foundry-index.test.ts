@@ -4,10 +4,10 @@ import { httpClient } from '../../src/sources/http.js';
 import { INDEX, details, detailsOf, index, manifest } from './foundry-data.js';
 import { fakeFetch } from './fake-fetch.js';
 
-import type { Answer } from './fake-fetch.js';
+import type { Answers } from './fake-fetch.js';
 
 const module = (id: string) => ({ type: 'module' as const, id });
-const answers = (extra: Record<string, Answer> = {}) => ({
+const answers = (extra: Answers = {}) => ({
   [INDEX]: { body: index() },
   ...Object.fromEntries(Object.entries(detailsOf).map(([id, body]) => [details(id), { body }])),
   ...extra,
@@ -93,7 +93,7 @@ describe('foundryIndexSource', () => {
         { url: details('example-module'), reason: 'invalid' },
       ],
     ])('%s', async (_, extra, gap) => {
-      const { fetch } = fakeFetch(answers(extra as Record<string, Answer>));
+      const { fetch } = fakeFetch(answers(extra as Answers));
       const found = await foundryIndexSource(httpClient({ fetch }), { indexUrl: INDEX }).releases(
         module('example-module'),
       );

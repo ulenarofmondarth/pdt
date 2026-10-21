@@ -8,7 +8,9 @@ export { memoryCache, type Cache, type CacheEntry } from './cache.js';
 export {
   DEFAULT_BUDGET,
   httpClient,
+  type ByteRange,
   type Fetched,
+  type FilePart,
   type GetOptions,
   type HttpClient,
   type HttpOptions,
@@ -22,6 +24,7 @@ export {
   type FoundryReleasesOptions,
 } from './foundry-releases.js';
 export { proxiedFetch, proxyUrlFor, type ProxyUrl } from './proxy.js';
+export { MAX_DIRECTORY, MAX_MANIFEST, zipManifest } from './zip-manifest.js';
 export { sourceSet, type SourceSet, type SourceSetOptions } from './source-set.js';
 export { githubSource, gitlabSource, type GithubOptions, type GitlabOptions } from './forge.js';
 export { manifestUrlSource } from './manifest-url.js';
