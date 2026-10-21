@@ -49,4 +49,22 @@ export interface Release {
   readonly protected: boolean;
   /** Where the manifest was read from, such as its URL or path. */
   readonly origin: string;
+  /**
+   * `loaded` when read from its manifest; `listed` when known only from a listing, such as Foundry
+   * VTT's package details, which gives a version's core `minimum` and `verified` but not its
+   * `maximum` or its relationships. A listed release is loaded when the solver needs it.
+   */
+  readonly detail: 'listed' | 'loaded';
+  /**
+   * The core `minimum` and `verified` a listing gives for this version, which its author can edit
+   * after the release. The `listingCompatibility` policy decides whether they win over the
+   * manifest's.
+   */
+  readonly listing?: Compatibility;
+  /**
+   * A release the package's listing does not offer, such as one on GitHub newer than any Foundry
+   * VTT lists. `resolve` ranks every offered version ahead of it, so it is chosen only when none of
+   * those fits.
+   */
+  readonly unlisted?: boolean;
 }

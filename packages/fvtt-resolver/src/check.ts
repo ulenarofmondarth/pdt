@@ -5,7 +5,7 @@
  * applies. The resolver is stricter than Foundry, so a setup Foundry would allow can be invalid.
  */
 import { AVAILABILITY, coreAvailability, isUnavailable, withinRelationship } from './availability.js';
-import { releaseConstraints } from './constraints.js';
+import { coreCompatibility, releaseConstraints } from './constraints.js';
 import { withDefaults } from './policy.js';
 import { rangeOps } from './range/range.js';
 import { CORE, chooseOrders, packageKey } from './universe.js';
@@ -44,6 +44,11 @@ export interface CheckResult {
   readonly releases: readonly ReleaseCheck[];
   /** The versions in the setup that the universe has no release of, so cannot be checked. */
   readonly unknown: readonly PackageVersion[];
+  /**
+   * The versions in the setup known only from a listing, so checked without their relationships
+   * or `maximum`. Load them for a full check.
+   */
+  readonly listed: readonly PackageVersion[];
   readonly warnings: readonly OrderWarning[];
 }
 
@@ -83,7 +88,10 @@ export function check(universe: Universe, setup: SetupSpec, options: CheckOption
   };
 
   const coreOnly = new Map(
-    releases.map(r => [packageKey(r.package), coreAvailability(r.compatibility, setup.core, universe.core)]),
+    releases.map(r => [
+      packageKey(r.package),
+      coreAvailability(coreCompatibility(r, policy).compatibility, setup.core, universe.core),
+    ]),
   );
   const systemRelease = releases.find(release => release.package.type === 'system');
 
@@ -144,6 +152,9 @@ export function check(universe: Universe, setup: SetupSpec, options: CheckOption
     valid: unknown.length === 0 && checked.every(c => c.broken.length === 0),
     releases: checked,
     unknown,
+    listed: releases
+      .filter(release => release.detail === 'listed')
+      .map(release => ({ package: packageKey(release.package), version: release.version })),
     warnings: orders.warnings,
   };
 }

@@ -40,6 +40,7 @@ describe('normaliseManifest', () => {
           download: 'https://github.com/foundryvtt/dnd5e/releases/download/release-6.0.6/dnd5e-release-6.0.6.zip',
           protected: false,
           origin,
+          detail: 'loaded',
         },
         warnings: [],
       });

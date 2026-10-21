@@ -36,7 +36,6 @@ interface Release {
   protected: boolean;
   /** Where the manifest was read from. */
   origin: string;
-  // To come with the sources:
   /** `listed`: known from a listing only; relationships and `maximum` not yet loaded. */
   detail: 'listed' | 'loaded';
   /** Core bounds from Foundry's listing, where they differ from the manifest's. */
@@ -115,12 +114,14 @@ interface Options {
 
 // As built: `setup` is the core version, the system release and the module releases;
 // `failure` is the solver's incompatibility, with its derivation, as the explanation.
-// The install plan, and resolving in rounds (`ok: 'incomplete'`), come with the sources.
+// An incomplete answer is `ok: false` with `needs`, not a third value of `ok`: a string there
+// would be truthy, so `if (result.ok)` would take an incomplete answer for a setup.
+// The install plan comes with the sources.
 type Resolution =
   | { ok: true; setup: Setup; warnings: OrderWarning[] }
   | { ok: false; failure: Incompatibility<Reason>; warnings: OrderWarning[] }
-  /** Listed releases were chosen: load these and resolve again (see Resolution, "Resolving in rounds"). */
-  | { ok: 'incomplete'; needs: ReleaseKey[] };
+  /** The answer depends on listed releases: load these and resolve again (see Resolution, "Resolving in rounds"). */
+  | { ok: false; needs: PackageVersion[]; warnings: OrderWarning[] };
 ```
 
 The explanation is the solver's failure: a tree of incompatibilities, each with its provenance. `explain(failure, messages?)` turns it into numbered sentences (`{ text, number? }[]`), with the wording passed in, so pdt can translate it; `explanationText` joins them into lines. `formatExplanation(failure, external, messages?)` does the same for any solver failure, given words for its data.
@@ -140,12 +141,14 @@ interface CoreSource {
 }
 
 /** Each adapter is made with its options: `fetch`, and a token where the service takes one. */
-function localSource(paths: string[], read: ReadFile): ReleaseSource;
-function foundryIndexSource(options: { fetch: typeof fetch }): ReleaseSource;
-function githubSource(options: { fetch: typeof fetch; token?: string }): ReleaseSource;
-function gitlabSource(options: { fetch: typeof fetch; token?: string }): ReleaseSource;
-function manifestUrlSource(options: { fetch: typeof fetch }): ReleaseSource;
-function foundryReleaseNotesSource(options: { fetch: typeof fetch }): CoreSource;
+// As built, in @mondarth/fvtt-resolver/sources: each source fetches through one httpClient,
+// which takes the fetch, the cache and the request budget.
+function localSource(manifests: { json: unknown; origin: string; type: 'module' | 'system' }[]): ReleaseSource;
+function foundryIndexSource(http: HttpClient): ReleaseSource;
+function githubSource(http: HttpClient, options?: { token?: string }): ReleaseSource;
+function gitlabSource(http: HttpClient, options?: { token?: string; hosts?: string[] }): ReleaseSource;
+function manifestUrlSource(http: HttpClient): ReleaseSource;
+function foundryReleaseNotesSource(http: HttpClient): CoreSource; // to come
 
 function buildUniverse(input: {
   requirements: Requirements;
@@ -157,16 +160,16 @@ function buildUniverse(input: {
 }): Promise<Universe>;
 
 /**
- * The rounds loop, for callers that fetch: resolve, load what was needed, and repeat
- * until the answer is final. It lives with the sources, not in the core.
+ * The rounds loop: resolve, load what was needed, and repeat until the answer is final.
+ * It is in the core, since loading is a function the caller gives (a source's `load`, a cache,
+ * anything); the core itself still does no I/O.
  */
-function resolveWithSources(input: {
-  universe: Universe;
-  requirements: Requirements;
-  sources: ReleaseSource[];
-  options?: Options;
-  maxRounds?: number;
-}): Promise<{ resolution: Resolution; universe: Universe }>;
+function resolveInRounds(
+  universe: Universe,
+  requirements: Requirements,
+  load: (needs: PackageVersion[]) => Promise<Release[]>,
+  options?: { policy?: Partial<Policy>; maxRounds?: number }, // 10 rounds by default
+): Promise<{ resolution: Resolution; universe: Universe; rounds: number; unloaded: PackageVersion[] }>;
 ```
 
 ## How pdt would use it

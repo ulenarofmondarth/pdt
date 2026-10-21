@@ -81,10 +81,29 @@ export interface Setup {
 export type Resolution =
   | { readonly ok: true; readonly setup: Setup; readonly warnings: readonly OrderWarning[] }
   /** The incompatibility that proves there is no valid setup, with its derivation: the explanation. */
-  | { readonly ok: false; readonly failure: Incompatibility<Reason>; readonly warnings: readonly OrderWarning[] };
+  | { readonly ok: false; readonly failure: Incompatibility<Reason>; readonly warnings: readonly OrderWarning[] }
+  /**
+   * Not yet an answer: the answer depends on listed releases, whose manifests are not loaded. Load
+   * them into the universe and resolve again (see `resolveInRounds`).
+   */
+  | { readonly ok: false; readonly needs: readonly PackageVersion[]; readonly warnings: readonly OrderWarning[] };
 
 export interface ResolveOptions {
   readonly policy?: Partial<Policy>;
+}
+
+/** The constraints at the leaves of an explanation. */
+function constraintsIn(incompatibility: Incompatibility<Reason>): Constraint[] {
+  const { cause } = incompatibility;
+  if (cause.kind === 'derived') return [...constraintsIn(cause.conflict), ...constraintsIn(cause.other)];
+  return cause.kind === 'external' && cause.data.kind === 'constraint' ? [cause.data.constraint] : [];
+}
+
+/** Whether an explanation rests on there being no versions of some package. */
+function restsOnNoVersions(incompatibility: Incompatibility<Reason>): boolean {
+  const { cause } = incompatibility;
+  if (cause.kind === 'derived') return restsOnNoVersions(cause.conflict) || restsOnNoVersions(cause.other);
+  return cause.kind === 'no-versions';
 }
 
 /**
@@ -197,6 +216,10 @@ export function resolve(universe: Universe, requirements: Requirements, options:
   const provider: Provider<Reason> = {
     orderOf,
 
+    // Core and the world's system are chosen to suit the modules, so that the modules' preferences
+    // (verified, system ranges) are known when they are decided.
+    decideLast: key => key === CORE || key === WORLD_SYSTEM,
+
     versions(key, decided) {
       const all = candidates(key);
       const score = new Map(all.map(version => [version, preferenceScore(key, version, decided)]));
@@ -204,8 +227,15 @@ export function resolve(universe: Universe, requirements: Requirements, options:
         const named = key === WORLD_SYSTEM ? splitWorldSystem(version) : { system: key, version };
         return isPreferred(named.system, named.version);
       };
+      const unlisted = (version: string) => {
+        const named = key === WORLD_SYSTEM ? splitWorldSystem(version) : { system: key, version };
+        return releaseOf(named.system, named.version)?.unlisted === true;
+      };
       return [...all].sort(
-        (a, b) => Number(pinned(b)) - Number(pinned(a)) || (score.get(b) as number) - (score.get(a) as number),
+        (a, b) =>
+          Number(pinned(b)) - Number(pinned(a)) ||
+          Number(unlisted(a)) - Number(unlisted(b)) ||
+          (score.get(b) as number) - (score.get(a) as number),
       );
     },
 
@@ -255,12 +285,42 @@ export function resolve(universe: Universe, requirements: Requirements, options:
   };
 
   const result = solve(provider, { package: REQUIREMENTS, version: '0' });
-  if (!result.ok) return { ok: false, failure: result.failure, warnings: orders.warnings };
+
+  /** The listed releases among these versions, which must be loaded before the answer is final. */
+  const listedAmong = (versions: readonly PackageVersion[]): PackageVersion[] => {
+    const needs = new Map<string, PackageVersion>();
+    for (const { package: key, version } of versions) {
+      if (releaseOf(key, version)?.detail === 'listed') needs.set(`${key}@${version}`, { package: key, version });
+    }
+    return [...needs.values()];
+  };
+
+  if (!result.ok) {
+    // A failure that leans on a listed release's constraints may not hold once it is loaded.
+    const leaning = constraintsIn(result.failure).map(({ from }) => from);
+    // A failure that rests on there being no versions of something may not hold either: a manifest
+    // can name packages the universe does not have yet. So it also needs the most preferred
+    // listed release of every package with nothing loaded.
+    const unexplored = restsOnNoVersions(result.failure)
+      ? [...releases].flatMap(([key, byVersion]) => {
+          const all = [...byVersion.values()];
+          if (all.some(release => release.detail === 'loaded')) return [];
+          const [first] = candidates(key).filter(version => byVersion.get(version)?.detail === 'listed');
+          return first === undefined ? [] : [{ package: key, version: first }];
+        })
+      : [];
+    const needs = listedAmong([...leaning, ...unexplored]);
+    return needs.length > 0
+      ? { ok: false, needs, warnings: orders.warnings }
+      : { ok: false, failure: result.failure, warnings: orders.warnings };
+  }
 
   const chosen = [...result.versions].flatMap(([key, version]) => {
     const release = releaseOf(key, version);
     return release === undefined ? [] : [release];
   });
+  const needs = listedAmong([...result.versions].map(([key, version]) => ({ package: key, version })));
+  if (needs.length > 0) return { ok: false, needs, warnings: orders.warnings };
   return {
     ok: true,
     setup: {

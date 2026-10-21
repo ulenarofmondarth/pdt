@@ -11,6 +11,7 @@ import { CORE, packageKey } from './universe.js';
 import { foundryOrder } from './version/foundry.js';
 
 import type { Policy } from './policy.js';
+import type { Compatibility } from './range/compatibility.js';
 import type { Range } from './range/range.js';
 import type { Relationship, Release } from './release.js';
 import type { Orders, PackageKey } from './universe.js';
@@ -90,6 +91,28 @@ export interface ConstraintContext {
 const ANY = rangeOps(foundryOrder).any;
 
 /**
+ * The core compatibility a release is judged by: its manifest's, with the listing's `minimum` and
+ * `verified` in their place when the release has them and the `listingCompatibility` policy
+ * prefers them. The `maximum` is always the manifest's, since listings do not give one.
+ */
+export function coreCompatibility(
+  release: Release,
+  policy: Pick<Policy, 'listingCompatibility'>,
+): { compatibility: Compatibility; fromListing: boolean } {
+  const { listing } = release;
+  if (policy.listingCompatibility !== 'prefer' || listing === undefined) {
+    return { compatibility: release.compatibility, fromListing: false };
+  }
+  const { minimum, verified } = listing;
+  if (minimum === undefined && verified === undefined)
+    return { compatibility: release.compatibility, fromListing: false };
+  return {
+    compatibility: { ...release.compatibility, ...(minimum && { minimum }), ...(verified && { verified }) },
+    fromListing: true,
+  };
+}
+
+/**
  * The constraints one release declares, under a policy.
  *
  * @throws When a bound cannot be read in the order given for its package, which
@@ -113,8 +136,10 @@ export function releaseConstraints(release: Release, { orders, policy }: Constra
     return range;
   }
 
-  // Core compatibility.
-  const { compatibility } = release;
+  // Core compatibility: the manifest's, or the listing's where the policy prefers it.
+  const { compatibility, fromListing } = coreCompatibility(release, policy);
+  const coreField = fromListing ? 'listing' : 'compatibility';
+  const coreSetting = fromListing ? 'listingCompatibility' : undefined;
   if (
     compatibility.minimum === undefined &&
     compatibility.maximum === undefined &&
@@ -135,7 +160,7 @@ export function releaseConstraints(release: Release, { orders, policy }: Constra
       from,
       on: CORE,
       range: coreRange(compatibility),
-      provenance: provenance('compatibility'),
+      provenance: provenance(coreField, coreSetting),
     });
   }
   const verified = coreVerifiedRange(compatibility);
@@ -146,7 +171,7 @@ export function releaseConstraints(release: Release, { orders, policy }: Constra
       from,
       on: CORE,
       range: verified,
-      provenance: provenance('compatibility.verified', 'verified'),
+      provenance: provenance(fromListing ? 'listing.verified' : 'compatibility.verified', 'verified'),
     });
   }
   if (verified !== undefined && policy.verified === 'require') {
@@ -155,7 +180,7 @@ export function releaseConstraints(release: Release, { orders, policy }: Constra
       from,
       on: CORE,
       range: verified,
-      provenance: provenance('compatibility.verified', 'verified'),
+      provenance: provenance(fromListing ? 'listing.verified' : 'compatibility.verified', 'verified'),
     });
   }
 

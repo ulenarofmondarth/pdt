@@ -43,6 +43,11 @@ export interface Provider<C> {
    */
   versions(key: PackageKey, decided: ReadonlyMap<PackageKey, string>): readonly string[];
   /**
+   * Whether to decide a package after the others, so that its preferred versions can depend on
+   * theirs. This changes only the order of decisions, not whether a solution is found.
+   */
+  decideLast?(key: PackageKey): boolean;
+  /**
    * What choosing a version brings: its dependencies, exclusions and so on, each as terms that
    * cannot all hold, one of them being the version itself.
    */
@@ -282,13 +287,24 @@ export function solve<C>(provider: Provider<C>, root: { package: PackageKey; ver
    * @returns The package decided on or learned about, or nothing when every package is decided
    */
   function decide(): PackageKey | undefined {
-    let chosen: { key: PackageKey; versions: string[] } | undefined;
+    // A package with no versions left first, to fail early; then those not to be decided last;
+    // then the fewest versions.
+    const rank = (key: PackageKey, versions: readonly string[]) =>
+      versions.length === 0 ? -1 : provider.decideLast?.(key) === true ? 1 : 0;
+    let chosen: { key: PackageKey; versions: string[]; rank: number } | undefined;
     for (const [key, term] of positive) {
       if (decisions.has(key)) continue;
       const ops = opsOf(key);
       const candidates = key === root.package ? [root.version] : provider.versions(key, decisions);
       const versions = candidates.filter(version => ops.contains(term.range, version));
-      if (chosen === undefined || versions.length < chosen.versions.length) chosen = { key, versions };
+      const ranked = rank(key, versions);
+      if (
+        chosen === undefined ||
+        ranked < chosen.rank ||
+        (ranked === chosen.rank && versions.length < chosen.versions.length)
+      ) {
+        chosen = { key, versions, rank: ranked };
+      }
     }
     if (chosen === undefined) return undefined;
 

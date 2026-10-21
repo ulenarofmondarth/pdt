@@ -53,6 +53,7 @@ const requireMidi = { require: [{ package: 'module:midi-qol' }] };
 
 /** What a resolution chose, as `id@version`, or the reasons at the leaves of its explanation. */
 function summary(resolution: Resolution) {
+  if ('needs' in resolution) return { needs: resolution.needs.map(n => `${n.package}@${n.version}`) };
   if (!resolution.ok) return { leaves: leaves(resolution.failure) };
   const { setup } = resolution;
   return {
@@ -85,6 +86,49 @@ describe('resolve', () => {
       core: '14.368',
       system: 'dnd5e@5.3.3',
       modules: ['dae@14.0.18', 'lib-wrapper@1.12.15', 'midi-qol@14.0.15', 'socketlib@1.1.3'],
+    });
+  });
+
+  it('decides the system after the modules, so that their preferences count, even when the system has fewer versions', () => {
+    // Three versions of the module, two of dnd5e: by fewest versions alone, the system would be
+    // decided first, before the module could prefer one.
+    const versions = ['1.0.0', '1.1.0', '1.2.0'].map(version =>
+      module('picky', version, {
+        relationships: relationships({
+          systems: [related('system', 'dnd5e', { minimum: '5.0.0', maximum: '5.9.99' })],
+        }),
+      }),
+    );
+    expect(
+      summary(resolve(universe(...versions, dnd5eOld, dnd5eNew), { require: [{ package: 'module:picky' }] })),
+    ).toMatchObject({
+      system: 'dnd5e@5.3.3',
+      modules: ['picky@1.2.0'],
+    });
+  });
+
+  describe('unlisted releases', () => {
+    const lib = (version: string, unlisted = false) => module('lib', version, unlisted ? { unlisted: true } : {});
+
+    it('chooses a listed version over a newer unlisted one', () => {
+      const found = resolve(universe(dnd5eOld, lib('3.0.0', true), lib('2.0.0')), {
+        require: [{ package: 'module:lib' }],
+      });
+      expect(summary(found)).toMatchObject({ modules: ['lib@2.0.0'] });
+    });
+
+    it('chooses an unlisted version when no listed one fits', () => {
+      const atLeast3 = rangeOps(foundryOrder).between({ version: '3', inclusive: true }, undefined);
+      const found = resolve(universe(dnd5eOld, lib('3.0.0', true), lib('2.0.0')), {
+        require: [{ package: 'module:lib', range: atLeast3 }],
+      });
+      expect(summary(found)).toMatchObject({ modules: ['lib@3.0.0'] });
+    });
+
+    it('ranks an unlisted system after the listed ones', () => {
+      expect(summary(resolve(universe({ ...dnd5eNew, unlisted: true }, dnd5eOld), {}))).toMatchObject({
+        system: 'dnd5e@5.3.3',
+      });
     });
   });
 
