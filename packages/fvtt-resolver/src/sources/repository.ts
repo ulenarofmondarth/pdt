@@ -47,6 +47,8 @@ export function gitlabProject(url: string, hosts: readonly string[] = ['gitlab.c
   const parsed = parse(url);
   if (parsed === undefined || !hosts.includes(parsed.hostname)) return undefined;
   const segments = parsed.pathname.split('/').filter(s => s !== '');
+  // An API URL, such as a release link's into the package registry, names a project by number.
+  if (segments[0] === 'api') return undefined;
   const end = segments.findIndex(segment => GITLAB_STOPS.has(segment));
   const path = (end === -1 ? segments : segments.slice(0, end)).join('/');
   return path.includes('/') ? { host: parsed.hostname, path } : undefined;
