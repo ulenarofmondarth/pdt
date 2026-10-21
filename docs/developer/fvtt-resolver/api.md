@@ -225,14 +225,14 @@ As built so far, in `packages/pdt`:
   - **Core** is pinned to the configured version, and every channel is allowed, since the user chose it. A version naming a generation (`13`) is read from Foundry's release notes as its newest stable build with an image. The image's tags are read only for the configured build, or that generation, so it costs one request.
   - **The project's module** comes from a local source. The packages it names are listed up front, with the manifest URLs its relationships give as hints, since its release is loaded already and is never passed to `load`.
   - **Rounds** are limited to 50. Each round goes back at most one release of a package, and an older core can need many: midi-qol on core 13 took 25 rounds on 21 October 2026.
-- `src/lib/install/plan.ts` turns a setup into the plan: keep, install (replacing what is there), premium, or the project's own module. It reads installed versions from the manifests in the VTT's data, ignoring a leading `v`.
+- `src/lib/install/plan.ts` turns a setup into the plan: keep, install (replacing what is there), premium, or the project's own module. It reads installed versions from the manifests in the VTT's data, and matches them with the resolver's `sameVersion`, which ignores a leading `v`.
 - `src/lib/install/explanationMessages.ts` gives the resolver pdt's messages (`explain.*`, in every locale), joining lists with `Intl.ListFormat`.
 - `src/cli/cmds/vtt_cmds/install.ts` is the command.
 
 Installing (I3):
 - `src/lib/install/download.ts` downloads a zip within a size limit (1 GB).
 - `src/lib/install/zip.ts` extracts it with yauzl. Like Foundry, it takes the folder holding the manifest nearest the top as the package. It refuses entries outside the target, links, encrypted entries, and zips that unpack to more than 2 GB.
-- `src/lib/install/apply.ts` installs into a working folder beside the package (`.pdt-staging-<id>`). It checks the extracted manifest's id and version, ignoring a leading `v`, then swaps the folders, so a failure leaves the old package untouched.
+- `src/lib/install/apply.ts` installs into a working folder beside the package (`.pdt-staging-<id>`). It checks the extracted manifest's id and version, matching the version with `sameVersion`, then swaps the folders, so a failure leaves the old package untouched.
 - `src/lib/install/lockfile.ts` reads and writes `.pdt/vtt.lock.json` (format 1): per VTT, the core and each package's version, download and source (`pdt`, `present`, `premium`, `project`). A lockfile that can't be read is ignored.
 - **The lockfile's versions are passed as preferences, not pins.** A pin is a requirement, so a pinned package the project no longer needs would still be installed, and a dependency that now needs a newer version would make resolution fail. Preferences keep the recorded versions where they still fit. `--upgrade` drops them.
 - `removals` in `src/lib/install/plan.ts` applies the `packages.removal` setting. Only `auto` and `never` look at the lockfile's `pdt` entries.

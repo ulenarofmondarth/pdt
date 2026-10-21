@@ -9,6 +9,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { sameVersion } from '@mondarth/fvtt-resolver';
 
 import type { Release, Setup } from '@mondarth/fvtt-resolver';
 
@@ -49,8 +50,6 @@ export function installedVersion(dataDir: string, ref: Release['package']): stri
   }
 }
 
-const bare = (version: string) => version.replace(/^[vV]/, '');
-
 /** The plan for installing a setup into a VTT's data directory: its system first, then its modules by id. */
 export function installPlan(setup: Setup, dataDir: string, projectId: string): PlanEntry[] {
   const modules = [...setup.modules].sort((a, b) => a.package.id.localeCompare(b.package.id));
@@ -59,8 +58,7 @@ export function installPlan(setup: Setup, dataDir: string, projectId: string): P
     const installed = installedVersion(dataDir, release.package);
     const now = installed === undefined ? {} : { installed };
     // Manifests may write a version with a leading `v` that their listing leaves out.
-    if (installed !== undefined && bare(installed) === bare(release.version))
-      return { release, action: 'keep', ...now };
+    if (installed !== undefined && sameVersion(installed, release.version)) return { release, action: 'keep', ...now };
     return { release, action: release.protected ? 'premium' : 'install', ...now };
   });
 }
