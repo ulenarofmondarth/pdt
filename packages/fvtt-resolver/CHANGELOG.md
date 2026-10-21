@@ -1,3 +1,14 @@
+## [@mondarth/fvtt-resolver-v0.6.0](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.5.0...@mondarth/fvtt-resolver-v0.6.0) (2026-10-21)
+
+### Features
+
+* **resolver:** give each release a manifest URL for its version ([f5ac7d2](https://github.com/ulenarofmondarth/pdt/commit/f5ac7d29eecb78a243c56b5bcd5d784d474ea6bc))
+* **resolver:** read a release's manifest from its zip as a last resort ([86760f0](https://github.com/ulenarofmondarth/pdt/commit/86760f00126197775da89c5160aaabf32ee73d5e))
+
+### Bug Fixes
+
+* **resolver:** match versions with or without a leading v ([591a747](https://github.com/ulenarofmondarth/pdt/commit/591a7472709e04da8c94a3239421b6a0042b8f36))
+
 ## [@mondarth/fvtt-resolver-v0.5.0](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.4.0...@mondarth/fvtt-resolver-v0.5.0) (2026-10-21)
 
 ### Features
