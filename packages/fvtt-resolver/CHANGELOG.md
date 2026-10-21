@@ -1,3 +1,13 @@
+## [@mondarth/fvtt-resolver-v0.5.0](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.4.0...@mondarth/fvtt-resolver-v0.5.0) (2026-10-21)
+
+### Features
+
+* **resolver:** take listed releases' missing bounds from manifests ([defab08](https://github.com/ulenarofmondarth/pdt/commit/defab08d7104372c0f2f39b83d44bcbd47b7966f))
+
+### Bug Fixes
+
+* **resolver:** load GitLab manifests from each link's own URL ([ae8b716](https://github.com/ulenarofmondarth/pdt/commit/ae8b7161fb33d03930dad5e97cdaa90bd8ec59ee))
+
 ## [@mondarth/fvtt-resolver-v0.4.0](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.3.0...@mondarth/fvtt-resolver-v0.4.0) (2026-10-21)
 
 ### Features
