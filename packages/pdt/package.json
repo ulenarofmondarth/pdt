@@ -65,7 +65,7 @@
   },
   "dependencies": {
     "@inquirer/prompts": "^8.7.3",
-    "@mondarth/create-fvtt-module": "^0.3.0",
+    "@mondarth/create-fvtt-module": "^0.4.2",
     "@mondarth/fvtt-resolver": "workspace:*",
     "chalk": "^6.0.1",
     "classic-level": "^3.0.0",
