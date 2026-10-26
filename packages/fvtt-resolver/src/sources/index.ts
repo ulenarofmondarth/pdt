@@ -5,6 +5,7 @@
  * @packageDocumentation
  */
 export { memoryCache, type Cache, type CacheEntry } from './cache.js';
+export { catalogueSource, type Catalogue, type CatalogueOptions, type CatalogueUniverse } from './catalogue.js';
 export {
   DEFAULT_BUDGET,
   httpClient,

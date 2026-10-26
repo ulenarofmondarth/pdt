@@ -97,6 +97,8 @@ These came out of the first review and the reading of the source. They concern t
     - whether Foundry would send `Access-Control-Allow-Origin: *` from its package files.
 
     Are the refresher and its intervals acceptable, and is the mirror worth starting as a project of its own?
+
+    As built: the [Foundry VTT package catalogue](https://github.com/Mondarth/fvtt-package-catalogue), read by `catalogueSource` and asked first by `sourceSet` (see [As built](sources.md#as-built)). The direct sources remain the fallback.
 16. **Premium downloads.** Premium manifests are public, so the resolver can include premium packages in a resolution. Downloading them needs the user's licence (Foundry's `/_api/packages/auth`). Proposal: an install plan marks them "install through Foundry VTT", and pdt does not download them for now.
 
 ## Still to verify
