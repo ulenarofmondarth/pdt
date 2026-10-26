@@ -4,12 +4,6 @@
 
 * **resolver:** ask the package catalogue first for a universe ([f14eecb](https://github.com/ulenarofmondarth/pdt/commit/f14eecbc63995ecdb157919db92782ab77aad26f))
 
-## [@mondarth/fvtt-resolver-v0.7.0](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.6.0...@mondarth/fvtt-resolver-v0.7.0) (2026-10-26)
-
-### Features
-
-* **resolver:** ask the package catalogue first for a universe ([f14eecb](https://github.com/ulenarofmondarth/pdt/commit/f14eecbc63995ecdb157919db92782ab77aad26f))
-
 ## [@mondarth/fvtt-resolver-v0.6.0](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.5.0...@mondarth/fvtt-resolver-v0.6.0) (2026-10-21)
 
 ### Features
