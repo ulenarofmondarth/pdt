@@ -11,8 +11,9 @@ import { INDEX, details, detailsOf, index, manifest, manifests } from './foundry
 import { fakeFetch, ranged } from './fake-fetch.js';
 import { makeZip } from './zip-builder.js';
 
-import type { Release } from '../../src/release.js';
-import type { ReleaseSource } from '../../src/sources/types.js';
+import type { PackageRef, Relationship, Release } from '../../src/release.js';
+import type { Catalogue, CatalogueUniverse } from '../../src/sources/catalogue.js';
+import type { ReleaseSource, SourceGap, SourceResult } from '../../src/sources/types.js';
 import type { CoreRelease } from '../../src/universe.js';
 import type { Answers } from './fake-fetch.js';
 
@@ -675,5 +676,149 @@ describe('sourceSet', () => {
     });
     expect(rounds).toBe(3);
     expect(set.gaps()).toEqual([]);
+  });
+});
+
+describe('sourceSet, with a catalogue', () => {
+  const lib: Relationship = {
+    package: module('lib'),
+    compatibility: {},
+    manifest: 'https://example.org/lib/module.json',
+  };
+  const held = makeRelease({
+    id: 'held',
+    version: '1.0.0',
+    relationships: { requires: [lib], systems: [], conflicts: [], recommends: [] },
+  });
+  const libRelease = makeRelease({ id: 'lib', version: '2.0.0' });
+
+  /** A catalogue that holds these releases and says what it does not hold, or fails. */
+  function catalogueOf(found: SourceResult<Omit<CatalogueUniverse, 'core' | 'asOf'>>): Catalogue & {
+    asked: PackageRef[][];
+  } {
+    const asked: PackageRef[][] = [];
+    return {
+      name: 'catalogue',
+      asked,
+      universe: packages => {
+        asked.push([...packages]);
+        return Promise.resolve(found.ok ? { ok: true, value: { ...found.value, core: [], asOf: null } } : found);
+      },
+    };
+  }
+
+  /** A source that records what it is asked, and knows these releases. */
+  function recording(releases: Release[]) {
+    const asked: { ref: PackageRef; declared: readonly string[] }[] = [];
+    const source: ReleaseSource = {
+      name: 'recording',
+      releases: (ref, hints) => {
+        asked.push({ ref, declared: hints?.declared ?? [] });
+        return Promise.resolve({ ok: true, value: releases.filter(r => r.package.id === ref.id) });
+      },
+    };
+    return { source, asked };
+  }
+
+  function setUp(catalogue: Catalogue, releases: Release[] = []) {
+    const { fetch } = fakeFetch({});
+    const http = httpClient({ fetch });
+    const { source, asked } = recording(releases);
+    return { set: sourceSet({ sources: [source], http, core, catalogue }), asked };
+  }
+
+  it('takes what the catalogue holds from it alone, and the sources only for what it does not', async () => {
+    const catalogue = catalogueOf({
+      ok: true,
+      value: { releases: [held, libRelease], gaps: [], pending: [module('new')] },
+    });
+    const fresh = makeRelease({ id: 'new', version: '0.1.0' });
+    const { set, asked } = setUp(catalogue, [fresh]);
+    const universe = await set.universe([module('held'), module('new')]);
+    expect(universe.releases).toEqual([held, libRelease, fresh]);
+    expect(universe.core).toEqual(core);
+    expect(catalogue.asked).toEqual([[module('held'), module('new')]]);
+    expect(asked.map(({ ref }) => ref.id)).toEqual(['new']);
+  });
+
+  it('lists what it does not hold that its releases need, with the manifests they declare', async () => {
+    const catalogue = catalogueOf({ ok: true, value: { releases: [held], gaps: [], pending: [module('lib')] } });
+    const { set, asked } = setUp(catalogue, [libRelease]);
+    expect((await set.universe([module('held')])).releases).toEqual([held, libRelease]);
+    expect(asked).toEqual([{ ref: module('lib'), declared: ['https://example.org/lib/module.json'] }]);
+  });
+
+  it('does not list a world it does not hold', async () => {
+    const catalogue = catalogueOf({
+      ok: true,
+      value: { releases: [], gaps: [], pending: [{ type: 'world', id: 'w' }] },
+    });
+    const { set, asked } = setUp(catalogue);
+    await set.universe([{ type: 'world', id: 'w' }]);
+    expect(asked).toEqual([]);
+  });
+
+  it("keeps the catalogue's gaps", async () => {
+    const gap: SourceGap = {
+      source: 'github',
+      url: 'https://api.github.com/x',
+      reason: 'budget',
+      package: 'module:held',
+    };
+    const { set } = setUp(catalogueOf({ ok: true, value: { releases: [held], gaps: [gap], pending: [] } }));
+    await set.universe([module('held')]);
+    expect(set.gaps()).toEqual([gap]);
+  });
+
+  it('leaves out its releases that no core of interest can run, as the sources’', async () => {
+    const tooNew = makeRelease({ id: 'held', version: '9.0.0', compatibility: { minimum: '99' } });
+    const { set } = setUp(catalogueOf({ ok: true, value: { releases: [held, tooNew], gaps: [], pending: [] } }));
+    expect((await set.universe([module('held')])).releases).toEqual([held]);
+  });
+
+  it('asks the sources for every package when the catalogue fails, recording why', async () => {
+    const gap: SourceGap = { source: 'catalogue', url: 'https://c/api/v1/universe', reason: 'network' };
+    const { set, asked } = setUp(catalogueOf({ ok: false, gap }), [held]);
+    expect((await set.universe([module('held')])).releases).toEqual([held]);
+    expect(asked.map(({ ref }) => ref.id)).toEqual(['held']);
+    expect(set.gaps()).toEqual([gap]);
+  });
+
+  it('does not ask the catalogue for no packages', async () => {
+    const catalogue = catalogueOf({ ok: true, value: { releases: [], gaps: [], pending: [] } });
+    const { set } = setUp(catalogue);
+    expect((await set.universe([])).releases).toEqual([]);
+    expect(catalogue.asked).toEqual([]);
+  });
+
+  it('does not list again, when loading, a package the catalogue gave, even one that gave no releases', async () => {
+    const listed = makeRelease({
+      id: 'other',
+      version: '1.0.0',
+      manifest: 'https://example.org/other.json',
+      detail: 'listed',
+    });
+    const catalogue = catalogueOf({ ok: true, value: { releases: [held], gaps: [], pending: [] } });
+    const { fetch } = fakeFetch({
+      'https://example.org/other.json': {
+        body: {
+          id: 'other',
+          version: '1.0.0',
+          relationships: {
+            requires: [
+              { id: 'held', type: 'module' },
+              { id: 'empty', type: 'module' },
+            ],
+          },
+        },
+      },
+    });
+    const http = httpClient({ fetch });
+    const { source, asked } = recording([]);
+    const set = sourceSet({ sources: [source], http, core, catalogue });
+    await set.universe([module('held'), module('empty')]);
+    const loaded = await set.load([listed]);
+    expect(loaded.map(r => `${r.package.id}:${r.detail}`)).toEqual(['other:loaded']);
+    expect(asked).toEqual([]);
   });
 });

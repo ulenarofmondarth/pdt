@@ -216,6 +216,12 @@ A single mirror shared by every user would reduce requests further (see [A share
 
 A mirror is a central cache: a separate project, not part of this one, that keeps Foundry's package data and serves it to everyone. To the resolver it is one more source, an adapter whose only option is the mirror's URL. The core and the other adapters do not change, and no user needs the mirror.
 
+:::{note}
+**As built:** the [Foundry VTT package catalogue](https://github.com/Mondarth/fvtt-package-catalogue) is such a mirror, though a server with a database rather than static files: it crawls a package when it is first asked for, with everything its releases require or run in, and keeps them up to date. `catalogueSource` reads it (see [As built](#as-built)). Its format is its own contract, `@mondarth/fvtt-package-catalogue-contract`, whose types are the resolver's.
+
+It is not quite "one more source": `sourceSet` asks every source for every package, so a mirror among them would save nothing. `sourceSet` asks it first instead, and the other sources only for what it does not hold.
+:::
+
 ### What it would give
 
 Politeness
@@ -385,6 +391,16 @@ The core package (`@mondarth/fvtt-resolver`) contains no I/O at all. The sources
 
 `manifestUrlSource(http)`
 : Reads the release a *declared* manifest URL describes, already loaded. It never reads the URLs other sources listed, since those are one per version, and reading them all would spend the request budget.
+
+`catalogueSource({ url, key, fetch, client })`
+: Asks the [catalogue](#a-shared-mirror) for the universe of some packages: `POST {url}/api/v1/universe`, with the key in `X-API-Key` and the client, such as `EMMA/0.7.0`, in `X-Catalogue-Client`. Not a source of its own, but `sourceSet`'s `catalogue` option.
+  - **One request** for up to 1,000 packages, more for more, gives every release of each, loaded, and of every package their releases require or run in, all the way down, with Foundry's builds and the catalogue's own gaps.
+  - **`pending`:** the packages it does not hold yet. It crawls them once asked, so they are held the next time.
+  - **Checked:** the answer is read with the contract's `UniverseResponse`. An error answer is an `http` gap, an unreachable catalogue a `network` gap, and an answer the contract refuses an `invalid` one, all from `catalogue`.
+  - **Outside the budget:** it fetches with its own `fetch`, not through the `httpClient`, as its answers are not cached: the catalogue keeps its own data fresh.
+
+`sourceSet({ …, catalogue })`
+: With a catalogue, `universe(packages)` asks it first. What it holds comes from it alone, still left out by `core` like any release; the sources list only what it does not hold (worlds aside), with the manifests its releases declare as hints. A package it gave is known, so `load` does not list it again. When the catalogue fails, its gap is recorded and the sources list every package, as without one. `unlisted` and `manifestBounds` do not change what it gives: it decides those itself.
 
 `localSource(manifests)`
 : The caller's own manifests, read by the caller, such as the working copy of the package under development. Those it cannot read are listed in `problems`.
