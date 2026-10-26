@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { AVAILABILITY } from '../src/availability.js';
 import { check } from '../src/check.js';
 import { normaliseManifest } from '../src/manifest/normalise.js';
@@ -8,6 +8,19 @@ import { makeRelease } from './helpers.js';
 import type { CheckResult, SetupSpec } from '../src/check.js';
 import type { Relationship, Release } from '../src/release.js';
 import type { CoreRelease, Universe } from '../src/universe.js';
+
+// The pairwise comparison behind the order warnings, watched: a check must not need it.
+const disagreements = vi.hoisted(() => ({ calls: 0 }));
+vi.mock('../src/version/foundry.js', async importOriginal => {
+  const actual = await importOriginal<typeof import('../src/version/foundry.js')>();
+  return {
+    ...actual,
+    foundryDisagreements: (versions: readonly string[]) => {
+      disagreements.calls++;
+      return actual.foundryDisagreements(versions);
+    },
+  };
+});
 
 function fixture(name: string, type: 'module' | 'system'): Release {
   const json: unknown = JSON.parse(fs.readFileSync(new URL(`fixtures/manifests/${name}`, import.meta.url), 'utf8'));
@@ -277,5 +290,58 @@ describe('check', () => {
       check(universe(dnd5eOld, ...odd), { core: '14.368', system: { package: 'system:dnd5e', version: '5.3.3' } })
         .warnings,
     ).toEqual([{ code: 'foundry-disagreement', package: 'module:odd', pairs: [['9', '10a']] }]);
+  });
+});
+
+describe('check, in a universe of many versions', () => {
+  // A universe as the package catalogue gives one: every version of every package, each loaded with what it requires.
+  const PACKAGES = 60;
+  const VERSIONS = 100;
+  const releases = Array.from({ length: PACKAGES }, (_, p) =>
+    Array.from({ length: VERSIONS }, (_, v) =>
+      makeRelease({
+        id: `m${String(p)}`,
+        version: `${String(Math.floor(v / 10))}.${String(v % 10)}.0`,
+        compatibility: { minimum: '13', verified: '14' },
+        relationships: {
+          requires: [
+            { package: { type: 'module', id: `m${String((p + 1) % PACKAGES)}` }, compatibility: { minimum: '1.0.0' } },
+          ],
+          systems: [],
+          conflicts: [],
+          recommends: [],
+        },
+      }),
+    ),
+  ).flat();
+  const universe: Universe = { core: [{ version: '14.368', generation: 14, channel: 'stable' }], releases };
+  const setup: SetupSpec = {
+    core: '14.368',
+    system: { package: 'module:m0', version: '9.9.0' },
+    modules: Array.from({ length: PACKAGES - 1 }, (_, i) => ({
+      package: `module:m${String(i + 1)}`,
+      version: '9.9.0',
+    })),
+  };
+
+  // Regression: each check compared every pair of each package's versions for the order warnings, which it does not
+  // need, so a catalogue-sized universe took most of a second a check, and EMMA makes one for each version it shows.
+  it('does not compare every pair of versions to judge a setup', () => {
+    disagreements.calls = 0;
+    const result = check(universe, setup);
+    expect(result.valid).toBe(true);
+    expect(disagreements.calls).toBe(0);
+    // Read, the warnings are worked out once, for each package.
+    expect(result.warnings).toEqual([]);
+    expect(result.warnings).toEqual([]);
+    expect(disagreements.calls).toBe(PACKAGES);
+  });
+
+  it('still gives the order warnings when they are read', () => {
+    const odd = [makeRelease({ id: 'odd', version: '9' }), makeRelease({ id: 'odd', version: '10a' })];
+    const result = check({ ...universe, releases: [...releases, ...odd] }, setup);
+    expect(result.warnings).toEqual([{ code: 'foundry-disagreement', package: 'module:odd', pairs: [['9', '10a']] }]);
+    // And the same each time.
+    expect(result.warnings).toBe(result.warnings);
   });
 });
