@@ -172,6 +172,11 @@ function githubSource(http: HttpClient, options?: { token?: string }): ReleaseSo
 function gitlabSource(http: HttpClient, options?: { token?: string; hosts?: string[] }): ReleaseSource;
 function manifestUrlSource(http: HttpClient): ReleaseSource;
 function foundryCoreReleases(http: HttpClient): Promise<SourceResult<CoreRelease[]>>;
+/**
+ * The Foundry VTT package catalogue, asked first by `sourceSet({ …, catalogue })`: the whole universe of some packages
+ * in one request, with what it does not hold yet as `pending`.
+ */
+function catalogueSource(options: { url: string; key: string; fetch: typeof globalThis.fetch; client?: string }): Catalogue;
 /** A fetch through a CORS proxy, for a browser: `{url}` in the template becomes the target, percent-encoded. */
 function proxiedFetch(fetch: typeof globalThis.fetch, proxy: string | ((url: string) => string)): typeof globalThis.fetch;
 

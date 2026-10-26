@@ -53,14 +53,15 @@
   },
   "devDependencies": {
     "@types/node": "^24.19.2",
-    "@vitest/coverage-v8": "^5.0.4",
+    "@vitest/coverage-v8": "^5.0.5",
     "fast-check": "^4.10.2",
-    "rimraf": "^6.0.1",
+    "rimraf": "^6.1.3",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "typescript7": "npm:typescript@^7.0.2",
-    "vitest": "^5.0.4"
+    "vitest": "^5.0.5"
   },
   "dependencies": {
+    "@mondarth/fvtt-package-catalogue-contract": "^0.2.0",
     "zod": "^4.6.7"
   }
 }

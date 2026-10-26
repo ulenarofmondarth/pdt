@@ -11,6 +11,7 @@ import { zipManifest } from './zip-manifest.js';
 
 import type { PackageRef, Release } from '../release.js';
 import type { CoreRelease, PackageKey, Universe } from '../universe.js';
+import type { Catalogue } from './catalogue.js';
 import type { Fetched, HttpClient } from './http.js';
 import type { ReleaseSource, SourceGap } from './types.js';
 
@@ -48,6 +49,14 @@ export interface SourceSetOptions {
    * rule it out before loading it.
    */
   readonly manifestBounds?: boolean;
+  /**
+   * A catalogue to ask first (see `catalogueSource`), which gives a package's every release, loaded, and those of
+   * what they require and run in, all the way down, in one request. The packages it holds come from it alone, and
+   * are not listed again when loading; the sources are asked only for those it does not hold yet, or for every
+   * package when it fails, which is a gap. Its releases are left out by `core` as the sources' are; what `unlisted`
+   * and `manifestBounds` decide, it decides for itself.
+   */
+  readonly catalogue?: Catalogue;
 }
 
 export interface SourceSet {
@@ -85,6 +94,7 @@ export function sourceSet({
   listing = 'foundry-index',
   unlisted = 'exclude',
   manifestBounds = true,
+  catalogue,
 }: SourceSetOptions): SourceSet {
   const known = new Set<PackageKey>();
   const declared = new Map<PackageKey, Set<string>>(
@@ -272,10 +282,40 @@ export function sourceSet({
     return recordGap(fromManifest.gap);
   }
 
+  /**
+   * What the catalogue holds of some packages, and the packages left for the sources to list: those it does not hold,
+   * worlds aside, or all of them when there is no catalogue or it fails. A package it holds is known, even with no
+   * releases; the manifests its releases declare are hints for listing the others.
+   */
+  async function fromCatalogue(
+    packages: readonly PackageRef[],
+  ): Promise<{ held: Release[]; rest: readonly PackageRef[] }> {
+    if (catalogue === undefined || packages.length === 0) return { held: [], rest: packages };
+    const found = await catalogue.universe(packages);
+    if (!found.ok) {
+      gaps.push(found.gap);
+      return { held: [], rest: packages };
+    }
+    const pending = new Set(found.value.pending.map(packageKey));
+    for (const ref of packages) if (!pending.has(packageKey(ref))) known.add(packageKey(ref));
+    for (const release of found.value.releases) {
+      known.add(packageKey(release.package));
+      for (const { package: ref, manifest } of [...release.relationships.requires, ...release.relationships.systems]) {
+        declare(packageKey(ref), manifest);
+      }
+    }
+    gaps.push(...found.value.gaps);
+    return {
+      held: found.value.releases.filter(possible),
+      rest: found.value.pending.filter(ref => ref.type !== 'world' && !known.has(packageKey(ref))),
+    };
+  }
+
   return {
     async universe(packages) {
-      const releases = await Promise.all(packages.map(list));
-      return { core, releases: releases.flat() };
+      const { held, rest } = await fromCatalogue(packages);
+      const releases = await Promise.all(rest.map(list));
+      return { core, releases: [...held, ...releases.flat()] };
     },
 
     async load(needs) {
