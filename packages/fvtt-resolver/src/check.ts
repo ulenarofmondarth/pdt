@@ -172,7 +172,10 @@ export function check(universe: Universe, setup: SetupSpec, options: CheckOption
     listed: releases
       .filter(release => release.detail === 'listed')
       .map(release => ({ package: packageKey(release.package), version: release.version })),
-    warnings: orders.warnings,
+    // Read only when wanted: working them out is most of a check's cost in a large universe.
+    get warnings() {
+      return orders.warnings;
+    },
     coreLimits: limits,
   };
 }
