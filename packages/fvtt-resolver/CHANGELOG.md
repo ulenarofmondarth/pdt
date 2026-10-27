@@ -1,3 +1,13 @@
+## [@mondarth/fvtt-resolver-v0.8.0](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.7.0...@mondarth/fvtt-resolver-v0.8.0) (2026-10-27)
+
+### Features
+
+* **resolver:** give the packages the catalogue says cannot be had ([751ae98](https://github.com/ulenarofmondarth/pdt/commit/751ae98882762760aff836d414264b5270bb60af))
+
+### Bug Fixes
+
+* **resolver:** work out the order warnings only when they are read ([b6b67ec](https://github.com/ulenarofmondarth/pdt/commit/b6b67ec9d16960920619c24e679571b230725176))
+
 ## [@mondarth/fvtt-resolver-v0.7.0](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.6.0...@mondarth/fvtt-resolver-v0.7.0) (2026-10-26)
 
 ### Features
