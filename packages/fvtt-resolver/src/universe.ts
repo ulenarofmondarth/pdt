@@ -74,7 +74,10 @@ export function chooseOrders(
   const versions = new Map<PackageKey, string[]>();
   const bounds = new Map<PackageKey, string[]>();
   const add = (map: Map<PackageKey, string[]>, key: PackageKey, version: string | undefined) => {
-    if (version !== undefined) map.set(key, [...(map.get(key) ?? []), version]);
+    if (version === undefined) return;
+    const listed = map.get(key);
+    if (listed === undefined) map.set(key, [version]);
+    else listed.push(version);
   };
 
   for (const release of universe.releases) {
@@ -98,17 +101,30 @@ export function chooseOrders(
   }
 
   const orders = new Map<PackageKey, VersionOrder>();
-  const warnings: OrderWarning[] = [];
+  const unreadable = new Map<PackageKey, readonly string[]>();
   for (const [key, packageVersions] of versions) {
-    const { order, unreadable } = chooseOrder(policy.versionOrder, [...packageVersions, ...(bounds.get(key) ?? [])]);
-    orders.set(key, order);
-    if (unreadable.length > 0) warnings.push({ code: 'semver-unreadable', package: key, versions: unreadable });
-    const pairs = order === foundryOrder ? foundryDisagreements(packageVersions) : [];
-    if (pairs.length > 0) warnings.push({ code: 'foundry-disagreement', package: key, pairs });
+    const chosen = chooseOrder(policy.versionOrder, [...packageVersions, ...(bounds.get(key) ?? [])]);
+    orders.set(key, chosen.order);
+    if (chosen.unreadable.length > 0) unreadable.set(key, chosen.unreadable);
   }
 
+  // The warnings compare every pair of each package's versions, which a universe with every version of many
+  // packages makes slow, and `check` hands them on without reading them: so they are worked out when first read.
+  let warnings: readonly OrderWarning[] | undefined;
   return {
     orderOf: key => orders.get(key) ?? foundryOrder,
-    warnings,
+    get warnings() {
+      warnings ??= [...versions].flatMap(([key, packageVersions]): OrderWarning[] => {
+        const found: OrderWarning[] = [];
+        const versionsUnreadable = unreadable.get(key);
+        if (versionsUnreadable !== undefined) {
+          found.push({ code: 'semver-unreadable', package: key, versions: versionsUnreadable });
+        }
+        const pairs = orders.get(key) === foundryOrder ? foundryDisagreements(packageVersions) : [];
+        if (pairs.length > 0) found.push({ code: 'foundry-disagreement', package: key, pairs });
+        return found;
+      });
+      return warnings;
+    },
   };
 }

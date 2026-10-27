@@ -19,7 +19,7 @@ import {
 
 import type { PackageRef, Release } from '../release.js';
 import type { CoreRelease } from '../universe.js';
-import type { SourceGap, SourceResult } from './types.js';
+import type { SourceGap, SourceResult, UnavailablePackage } from './types.js';
 
 export interface CatalogueOptions {
   /** Where the catalogue is, such as `https://catalogue.example/`; the API is under `api/v1/` there. */
@@ -42,6 +42,8 @@ export interface CatalogueUniverse {
   readonly gaps: SourceGap[];
   /** The packages asked for or needed that it does not hold yet: it fetches them, for next time. */
   readonly pending: PackageRef[];
+  /** The packages asked for or needed that cannot be had, and why: none of their releases are given. */
+  readonly unavailable: UnavailablePackage[];
   /** The oldest time a package it holds was brought up to date, as an ISO 8601 time; null if never. */
   readonly asOf: string | null;
 }
@@ -114,6 +116,7 @@ function joined(parts: readonly UniverseResponse[]): CatalogueUniverse {
   const core = new Map<string, CoreRelease>();
   const releases = new Map<string, Release>();
   const pending = new Map<string, PackageRef>();
+  const unavailable = new Map<string, UnavailablePackage>();
   const gaps: SourceGap[] = [];
   let asOf: string | null | undefined;
   for (const part of parts) {
@@ -122,6 +125,7 @@ function joined(parts: readonly UniverseResponse[]): CatalogueUniverse {
       releases.set(`${packageKey(release.package)}@${release.version}`, release);
     }
     for (const ref of part.pending) pending.set(packageKey(ref), ref);
+    for (const gone of part.unavailable) unavailable.set(packageKey(gone.package), gone);
     gaps.push(...part.gaps);
     asOf = asOf === undefined || asOf === null || part.asOf === null || part.asOf < asOf ? part.asOf : asOf;
   }
@@ -132,6 +136,7 @@ function joined(parts: readonly UniverseResponse[]): CatalogueUniverse {
     releases: [...releases.values()],
     gaps,
     pending: [...pending.values()].filter(ref => !held.has(packageKey(ref))),
+    unavailable: [...unavailable.values()],
     asOf: asOf ?? null,
   };
 }
