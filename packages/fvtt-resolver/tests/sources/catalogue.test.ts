@@ -42,6 +42,8 @@ describe('catalogueSource', () => {
         releases: [makeRelease({ id: 'a', version: '1.0.0' })],
         gaps: [],
         pending: [],
+        // A catalogue that predates it names none.
+        unavailable: [],
         asOf: '2026-10-25T12:00:00.000Z',
       },
     });
@@ -72,7 +74,7 @@ describe('catalogueSource', () => {
     const { fetch } = fetchAnswering();
     expect(await catalogueSource({ url: URL_BASE, key: 'k', fetch }).universe([])).toEqual({
       ok: true,
-      value: { core: [], releases: [], gaps: [], pending: [], asOf: null },
+      value: { core: [], releases: [], gaps: [], pending: [], unavailable: [], asOf: null },
     });
     expect(fetch).not.toHaveBeenCalled();
   });
@@ -84,6 +86,7 @@ describe('catalogueSource', () => {
         Response.json(
           answer({
             pending: [module('x')],
+            unavailable: [{ package: module('gone'), reason: 'gone', note: 'Deleted' }],
             gaps: [{ source: 's', url: 'u', reason: 'http' }],
             asOf: '2026-10-25T12:00:00.000Z',
           }),
@@ -96,6 +99,10 @@ describe('catalogueSource', () => {
               releases: [makeRelease({ id: 'b', version: '2.0.0' })],
             },
             pending: [module('x'), module('y')],
+            unavailable: [
+              { package: module('gone'), reason: 'gone', note: 'Deleted' },
+              { package: module('old'), reason: 'archived' },
+            ],
             asOf: '2026-10-25T09:00:00.000Z',
           }),
         ),
@@ -110,6 +117,11 @@ describe('catalogueSource', () => {
         releases: [makeRelease({ id: 'a', version: '1.0.0' }), makeRelease({ id: 'b', version: '2.0.0' })],
         gaps: [{ source: 's', url: 'u', reason: 'http' }],
         pending: [module('x'), module('y')],
+        // Each once, however many parts named it.
+        unavailable: [
+          { package: module('gone'), reason: 'gone', note: 'Deleted' },
+          { package: module('old'), reason: 'archived' },
+        ],
         // The oldest of the parts'.
         asOf: '2026-10-25T09:00:00.000Z',
       },

@@ -692,8 +692,10 @@ describe('sourceSet, with a catalogue', () => {
   });
   const libRelease = makeRelease({ id: 'lib', version: '2.0.0' });
 
-  /** A catalogue that holds these releases and says what it does not hold, or fails. */
-  function catalogueOf(found: SourceResult<Omit<CatalogueUniverse, 'core' | 'asOf'>>): Catalogue & {
+  /** A catalogue that holds these releases and says what it does not hold, and none it cannot have unless told, or fails. */
+  function catalogueOf(
+    found: SourceResult<Omit<CatalogueUniverse, 'core' | 'asOf' | 'unavailable'> & Partial<CatalogueUniverse>>,
+  ): Catalogue & {
     asked: PackageRef[][];
   } {
     const asked: PackageRef[][] = [];
@@ -702,7 +704,9 @@ describe('sourceSet, with a catalogue', () => {
       asked,
       universe: packages => {
         asked.push([...packages]);
-        return Promise.resolve(found.ok ? { ok: true, value: { ...found.value, core: [], asOf: null } } : found);
+        return Promise.resolve(
+          found.ok ? { ok: true, value: { unavailable: [], ...found.value, core: [], asOf: null } } : found,
+        );
       },
     };
   }
@@ -820,5 +824,59 @@ describe('sourceSet, with a catalogue', () => {
     const loaded = await set.load([listed]);
     expect(loaded.map(r => `${r.package.id}:${r.detail}`)).toEqual(['other:loaded']);
     expect(asked).toEqual([]);
+  });
+
+  it('gives the packages the catalogue says cannot be had, and looks for them nowhere else', async () => {
+    const archived = { package: module('babonus'), reason: 'archived' as const };
+    const gone = { package: module('lost'), reason: 'gone' as const, note: 'Its repository was deleted' };
+    const catalogue = catalogueOf({
+      ok: true,
+      value: { releases: [held], gaps: [], pending: [module('lib')], unavailable: [archived, gone] },
+    });
+    const { set, asked } = setUp(catalogue, [libRelease]);
+    expect(set.unavailable()).toEqual([]);
+    await set.universe([module('held'), module('babonus'), module('lost')]);
+    expect(set.unavailable()).toEqual([archived, gone]);
+    expect(asked.map(({ ref }) => ref.id)).toEqual(['lib']);
+  });
+
+  it('keeps each package that cannot be had once, across universes', async () => {
+    const archived = { package: module('babonus'), reason: 'archived' as const };
+    const catalogue = catalogueOf({
+      ok: true,
+      value: { releases: [], gaps: [], pending: [], unavailable: [archived] },
+    });
+    const { set } = setUp(catalogue);
+    await set.universe([module('babonus')]);
+    await set.universe([module('babonus')]);
+    expect(set.unavailable()).toEqual([archived]);
+  });
+
+  it('does not list, when loading, a package the catalogue says cannot be had', async () => {
+    const listed = makeRelease({
+      id: 'other',
+      version: '1.0.0',
+      manifest: 'https://example.org/other.json',
+      detail: 'listed',
+    });
+    const catalogue = catalogueOf({
+      ok: true,
+      value: { releases: [], gaps: [], pending: [], unavailable: [{ package: module('babonus'), reason: 'archived' }] },
+    });
+    const { fetch } = fakeFetch({
+      'https://example.org/other.json': {
+        body: { id: 'other', version: '1.0.0', relationships: { requires: [{ id: 'babonus', type: 'module' }] } },
+      },
+    });
+    const { source, asked } = recording([]);
+    const set = sourceSet({ sources: [source], http: httpClient({ fetch }), core, catalogue });
+    await set.universe([module('babonus')]);
+    await set.load([listed]);
+    expect(asked).toEqual([]);
+  });
+
+  it('knows of none that cannot be had without a catalogue', () => {
+    const { fetch } = fakeFetch({});
+    expect(sourceSet({ sources: [], http: httpClient({ fetch }), core }).unavailable()).toEqual([]);
   });
 });

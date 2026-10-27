@@ -37,4 +37,4 @@ export {
   type GithubRepository,
   type GitlabProject,
 } from './repository.js';
-export type { ReleaseSource, SourceGap, SourceHints, SourceResult } from './types.js';
+export type { ReleaseSource, SourceGap, SourceHints, SourceResult, UnavailablePackage } from './types.js';

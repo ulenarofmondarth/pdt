@@ -8,3 +8,4 @@ allowBuilds:
   ssh2: false
 minimumReleaseAgeExclude:
   - '@mondarth/create-fvtt-module@0.3.0'
+  - '@mondarth/fvtt-package-catalogue-contract@0.3.0'

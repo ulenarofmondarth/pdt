@@ -260,8 +260,8 @@ importers:
   packages/fvtt-resolver:
     dependencies:
       '@mondarth/fvtt-package-catalogue-contract':
-        specifier: ^0.2.0
-        version: 0.2.0
+        specifier: ^0.3.0
+        version: 0.3.0
       zod:
         specifier: ^4.6.7
         version: 4.6.7
@@ -970,8 +970,8 @@ packages:
     engines: {node: '>=24'}
     hasBin: true
 
-  '@mondarth/fvtt-package-catalogue-contract@0.2.0':
-    resolution: {integrity: sha512-9IQHQ0DZ9jHy/iQIySoy3cZRe+XyNtK5MiBbeFkYxDMlGHSF5rcSdO4y4OZwyEpKl1bVVPslDbBgwfdjTgBdLg==}
+  '@mondarth/fvtt-package-catalogue-contract@0.3.0':
+    resolution: {integrity: sha512-scwRUBIuysOwWQGh+eytqQ1Eo0nvRMgcaxDnAs9AdAq0og4u25kMayVnl+6JWioiwV9W58G/y3fIGfdK34O5Sg==}
     engines: {node: '>=24'}
 
   '@napi-rs/wasm-runtime@1.2.5':
@@ -4975,7 +4975,7 @@ snapshots:
     transitivePeerDependencies:
       - '@types/node'
 
-  '@mondarth/fvtt-package-catalogue-contract@0.2.0':
+  '@mondarth/fvtt-package-catalogue-contract@0.3.0':
     dependencies:
       zod: 4.6.7
 
