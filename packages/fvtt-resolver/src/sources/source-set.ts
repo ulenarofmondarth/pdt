@@ -13,7 +13,7 @@ import type { PackageRef, Release } from '../release.js';
 import type { CoreRelease, PackageKey, Universe } from '../universe.js';
 import type { Catalogue } from './catalogue.js';
 import type { Fetched, HttpClient } from './http.js';
-import type { ReleaseSource, SourceGap } from './types.js';
+import type { ReleaseSource, SourceGap, UnavailablePackage } from './types.js';
 
 export interface SourceSetOptions {
   /** The sources, in order: where two list the same version, the first is used. */
@@ -69,6 +69,11 @@ export interface SourceSet {
   load(needs: readonly Release[]): Promise<Release[]>;
   /** What could not be fetched or read so far. */
   gaps(): readonly SourceGap[];
+  /**
+   * The packages the catalogue says cannot be had, so far: they have no releases, and are not
+   * looked for elsewhere. A caller should leave them out of what it resolves, and may say why.
+   */
+  unavailable(): readonly UnavailablePackage[];
 }
 
 const MANIFEST_SOURCE = 'manifest';
@@ -104,6 +109,7 @@ export function sourceSet({
     if (url !== undefined) declared.set(key, new Set([...(declared.get(key) ?? []), url]));
   };
   const gaps: SourceGap[] = [];
+  const unavailable = new Map<PackageKey, UnavailablePackage>();
   const newestCore = core
     .map(c => c.version)
     .reduce<string | undefined>(
@@ -298,6 +304,11 @@ export function sourceSet({
     }
     const pending = new Set(found.value.pending.map(packageKey));
     for (const ref of packages) if (!pending.has(packageKey(ref))) known.add(packageKey(ref));
+    // Known, so that no source looks for them, nor for them when a release loaded later needs them.
+    for (const gone of found.value.unavailable) {
+      known.add(packageKey(gone.package));
+      unavailable.set(packageKey(gone.package), gone);
+    }
     for (const release of found.value.releases) {
       known.add(packageKey(release.package));
       for (const { package: ref, manifest } of [...release.relationships.requires, ...release.relationships.systems]) {
@@ -333,5 +344,6 @@ export function sourceSet({
     },
 
     gaps: () => [...gaps],
+    unavailable: () => [...unavailable.values()],
   };
 }

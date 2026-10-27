@@ -174,7 +174,8 @@ function manifestUrlSource(http: HttpClient): ReleaseSource;
 function foundryCoreReleases(http: HttpClient): Promise<SourceResult<CoreRelease[]>>;
 /**
  * The Foundry VTT package catalogue, asked first by `sourceSet({ …, catalogue })`: the whole universe of some packages
- * in one request, with what it does not hold yet as `pending`.
+ * in one request, with what it does not hold yet as `pending`, and what cannot be had, and why, as `unavailable`
+ * (which the set then gives as `unavailable()`).
  */
 function catalogueSource(options: { url: string; key: string; fetch: typeof globalThis.fetch; client?: string }): Catalogue;
 /** A fetch through a CORS proxy, for a browser: `{url}` in the template becomes the target, percent-encoded. */

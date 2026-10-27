@@ -23,6 +23,18 @@ export interface SourceGap {
   readonly version?: string;
 }
 
+/**
+ * A package that cannot be had, as the catalogue knows: `archived`, Foundry VTT's listing of it is
+ * archived, so its Setup screen no longer offers it; `gone`, its files are no longer there. It has
+ * no releases, and is not looked for elsewhere.
+ */
+export interface UnavailablePackage {
+  readonly package: PackageRef;
+  readonly reason: 'archived' | 'gone';
+  /** More of why, in words. */
+  readonly note?: string;
+}
+
 export type SourceResult<T> =
   { readonly ok: true; readonly value: T } | { readonly ok: false; readonly gap: SourceGap };
 
