@@ -64,7 +64,7 @@
     "vitest": "^5.0.5"
   },
   "dependencies": {
-    "@inquirer/prompts": "^8.7.3",
+    "@inquirer/prompts": "^8.7.4",
     "@mondarth/create-fvtt-module": "^0.4.2",
     "@mondarth/fvtt-resolver": "workspace:*",
     "chalk": "^6.0.1",
