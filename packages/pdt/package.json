@@ -47,7 +47,7 @@
   "keywords": [],
   "description": "A CLI tool supporting development of FoundryVTT packages.",
   "devDependencies": {
-    "@inlang/paraglide-js": "2.29.1",
+    "@inlang/paraglide-js": "2.29.2",
     "@types/dockerode": "^4.0.2",
     "@types/node": "^24.19.2",
     "@types/yargs": "^17.0.35",
