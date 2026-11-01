@@ -36,10 +36,14 @@ export function tagVersion(tag: string): string | undefined {
  * Whether a URL names a version: one of its path's folders or files, read as a tag is, is the
  * version. A release's own files are found this way, such as
  * `releases/download/v1.1.4/module.json`, where `releases/latest/...` or a branch such as
- * `raw/master/...` gives whatever is newest.
+ * `raw/master/...` gives whatever is newest. A manifest named for its version counts too, read
+ * without its `.json`: Foundry VTT's own listing gives a premium package's versions as
+ * `packages-public/<id>/module-6.1.0.json`, where `packages-public/<id>/module.json` gives the
+ * newest.
  *
- * It is a heuristic: a URL that names a version may still be changed by its author, and a file
- * named for a version (`archive/1.1.4.zip`) is not counted, as the extension is part of its name.
+ * It is a heuristic: a URL that names a version may still be changed by its author, and any other
+ * file named for a version (`archive/1.1.4.zip`) is not counted, as the extension is part of its
+ * name.
  */
 export function namesVersion(url: string, version: string): boolean {
   let path: string;
@@ -48,7 +52,10 @@ export function namesVersion(url: string, version: string): boolean {
   } catch {
     return false;
   }
-  return path.split('/').some(segment => {
+  const segments = path.split('/');
+  const file = path.slice(path.lastIndexOf('/') + 1);
+  if (file.endsWith('.json')) segments.push(file.slice(0, -'.json'.length));
+  return segments.some(segment => {
     try {
       return tagVersion(decodeURIComponent(segment)) === unprefixed(version);
     } catch {
