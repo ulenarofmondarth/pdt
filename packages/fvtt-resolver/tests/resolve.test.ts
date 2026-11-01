@@ -289,6 +289,23 @@ describe('resolve', () => {
         leaves: ['module:bare@1.0.0 unusable', 'no-versions module:bare', 'requirement module:bare'],
       });
     });
+
+    it('refuses a release with no manifest of its own when the policy requires one, unless it is installed', () => {
+      const bare = makeRelease({ id: 'bare', version: '1.0.0', origin: 'bare', compatibility: { minimum: '14' } });
+      const requirements = { require: [{ package: 'module:bare' }] };
+      const policy = { versionManifest: 'require' } as const;
+      const system = { package: 'system:dnd5e', version: '5.3.3' };
+      expect(
+        summary(resolve(universe(dnd5eOld, bare), requirements, { policy, declarations: { installed: [system] } })),
+      ).toEqual({
+        leaves: ['module:bare@1.0.0 unusable', 'no-versions module:bare', 'requirement module:bare'],
+      });
+      const installed = resolve(universe(dnd5eOld, bare), requirements, {
+        policy,
+        declarations: { installed: [system, { package: 'module:bare', version: '1.0.0' }] },
+      });
+      expect(installed.ok).toBe(true);
+    });
   });
 
   describe('systems', () => {

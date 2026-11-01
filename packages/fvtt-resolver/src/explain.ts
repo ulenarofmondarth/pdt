@@ -54,6 +54,8 @@ export interface ExplanationMessages {
   conflictsWith(release: string, on: string): string;
   runsIn(release: string, systems: string): string;
   unusable(release: string): string;
+  /** A release found, but with no manifest URL of its own to install it from. */
+  missingManifest(release: string): string;
   /** An override's reasons: a release that cannot be used at all, or with `on`. */
   excluded(release: string, reason: string): string;
   excludedWith(release: string, on: string, reason: string): string;
@@ -120,6 +122,8 @@ export const englishMessages: ExplanationMessages = {
   conflictsWith: (release, on) => `${release} conflicts with ${on}`,
   runsIn: (release, systems) => `${release} runs only in ${systems}`,
   unusable: release => `${release} declares no Foundry VTT compatibility, which the policy does not accept`,
+  missingManifest: release =>
+    `${release} was found, but no manifest URL for that version could be, so it cannot be installed`,
   excluded: (release, reason) => `${release} cannot be used (override: ${reason})`,
   excludedWith: (release, on, reason) => `${release} cannot be used with ${on} (override: ${reason})`,
   overridden: (text, reason) => `${text} (override: ${reason})`,
@@ -249,7 +253,9 @@ export function describeReason(reason: Reason, messages: ExplanationMessages = e
           messages.or(constraint.options.map(option => package_(option.on, option.range))),
         );
       default:
-        return messages.unusable(release(constraint));
+        return constraint.kind === 'unusable' && constraint.reason === 'missing-manifest'
+          ? messages.missingManifest(release(constraint))
+          : messages.unusable(release(constraint));
     }
   };
 

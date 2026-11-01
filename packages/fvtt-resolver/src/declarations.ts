@@ -57,9 +57,26 @@ export interface RelationshipOverride extends OverrideCommon {
 
 export type Override = ExcludeOverride | CompatibilityOverride | RelationshipOverride;
 
+/** A version the caller has installed. */
+export interface InstalledVersion {
+  readonly package: PackageKey;
+  readonly version: string;
+}
+
 export interface Declarations {
   readonly overrides?: readonly Override[];
   readonly coreLimits?: readonly CoreLimit[];
+  /**
+   * The versions installed, which need no manifest URL to be had: under `versionManifest:
+   * require`, they may be chosen without one.
+   */
+  readonly installed?: readonly InstalledVersion[];
+}
+
+/** Whether a release is among the versions installed, a leading `v` aside. */
+export function isInstalled(release: Release, installed: readonly InstalledVersion[]): boolean {
+  const key = packageKey(release.package);
+  return installed.some(({ package: on, version }) => on === key && sameVersion(version, release.version));
 }
 
 /** An override with its place in the declarations, which provenance records. */

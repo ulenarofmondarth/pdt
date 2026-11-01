@@ -405,6 +405,10 @@ describe('describeReason', () => {
       constraint({ kind: 'unusable', reason: 'missing-compatibility' }),
       'midi-qol 14.0.15 declares no Foundry VTT compatibility, which the policy does not accept',
     ],
+    [
+      constraint({ kind: 'unusable', reason: 'missing-manifest' }),
+      'midi-qol 14.0.15 was found, but no manifest URL for that version could be, so it cannot be installed',
+    ],
   ])('describes %j', (reason, words) => {
     expect(describeReason(reason)).toBe(words);
   });

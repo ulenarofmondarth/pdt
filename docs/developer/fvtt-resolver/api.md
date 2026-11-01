@@ -83,11 +83,13 @@ interface Requirements {
   prefer?: { package: PackageKey; version: string }[];
 }
 
-// As built: overrides and core limits. Reasons are shown as written, so already translated.
+// As built: overrides, core limits and the versions installed. Reasons are shown as written, so already translated.
 interface Declarations {
   overrides?: Override[];
   /** Core builds the caller cannot run, each with its reason ("there is no felddy/foundryvtt image for it"). */
   coreLimits?: { version: string; reason: string }[];
+  /** The versions installed, which need no manifest URL of their own under `versionManifest: 'require'`. */
+  installed?: { package: PackageKey; version: string }[];
 }
 
 /** Each corrects the releases of `package`: the `versions` listed (a leading `v` aside), or every version. */
@@ -116,7 +118,11 @@ interface Policy {
   relationshipBounds: 'foundry' | 'prefix';
   versionOrder: 'foundry' | 'semver';
   listingCompatibility: 'prefer' | 'ignore';
+  versionManifest: 'any' | 'require';
 }
+
+/** Whether a release was found, loaded or not loadable, but has no `versionManifest` to install it from. */
+function missingManifest(release: Release): boolean;
 
 // setup: { core: '14.368', system: { package: 'system:dnd5e', version: '5.3.3' }, modules: [...] }
 // CheckResult: valid, and for each release its Foundry availability code and the

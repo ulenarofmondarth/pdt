@@ -275,6 +275,24 @@ describe('check', () => {
       });
     });
 
+    it('finds a release with no manifest of its own when the policy requires one, unless it is installed', () => {
+      const bare = makeRelease({ id: 'bare', version: '1.0.0', origin: 'bare', compatibility: { minimum: '14' } });
+      const setup = {
+        core: '14.368',
+        system: { package: 'system:dnd5e', version: '5.3.3' },
+        modules: [{ package: 'module:bare', version: '1.0.0' }],
+      } as const;
+      const policy = { versionManifest: 'require' } as const;
+      expect(about(check(universe(dnd5eOld, bare), setup, { policy }), 'bare').broken).toEqual([
+        'unusable versionManifest',
+      ]);
+      const installed = check(universe(dnd5eOld, bare), setup, {
+        policy,
+        declarations: { installed: [{ package: 'module:bare', version: '1.0.0' }] },
+      });
+      expect(about(installed, 'bare').broken).toEqual([]);
+    });
+
     it('finds a core newer than a release is verified on', () => {
       const result = check(universe(dnd5eOld), { core: '15.1', system: { package: 'system:dnd5e', version: '5.3.3' } });
       expect(about(result, 'dnd5e')).toMatchObject({

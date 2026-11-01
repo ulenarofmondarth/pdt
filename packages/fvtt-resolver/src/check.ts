@@ -80,7 +80,7 @@ export interface CheckOptions {
  */
 export function check(universe: Universe, setup: SetupSpec, options: CheckOptions = {}): CheckResult {
   const policy = withDefaults(options.policy);
-  const { overrides = [], coreLimits = [] } = options.declarations ?? {};
+  const { overrides = [], coreLimits = [], installed = [] } = options.declarations ?? {};
   const orders = chooseOrders(universe, policy, overrides);
 
   const wanted = [setup.system, ...(setup.modules ?? [])];
@@ -149,7 +149,7 @@ export function check(universe: Universe, setup: SetupSpec, options: CheckOption
   }
 
   const checked = releases.map((release): ReleaseCheck => {
-    const constraints = releaseConstraints(release, { orders, policy, overrides });
+    const constraints = releaseConstraints(release, { orders, policy, overrides, installed });
     return {
       release,
       availability: availability(release),
