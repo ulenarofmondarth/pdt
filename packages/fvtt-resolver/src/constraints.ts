@@ -5,13 +5,14 @@
  * valid. Soft ones (preferences, advisories) decide which valid setup is best, and what is reported.
  * Every constraint carries its provenance, so that an explanation can say where it came from.
  */
-import { overridesFor } from './declarations.js';
+import { isInstalled, overridesFor } from './declarations.js';
 import { coreRange, coreVerifiedRange, relationshipRange } from './range/compatibility.js';
 import { rangeOps } from './range/range.js';
+import { missingManifest } from './release.js';
 import { CORE, packageKey } from './universe.js';
 import { foundryOrder } from './version/foundry.js';
 
-import type { CompatibilityOverride, IndexedOverride, Override } from './declarations.js';
+import type { CompatibilityOverride, IndexedOverride, InstalledVersion, Override } from './declarations.js';
 import type { Policy } from './policy.js';
 import type { Compatibility } from './range/compatibility.js';
 import type { Range } from './range/range.js';
@@ -67,10 +68,14 @@ export interface Choice extends Common {
   readonly options: readonly { readonly on: PackageKey; readonly range: Range }[];
 }
 
-/** `from` cannot be used at all: it declares no core compatibility and the policy rejects that, or an override says so. */
+/**
+ * `from` cannot be used at all: it declares no core compatibility and the policy rejects that, it
+ * is not installed and has no manifest URL of its own and the policy requires one, or an override
+ * says so.
+ */
 export interface Unusable extends Common {
   readonly kind: 'unusable';
-  readonly reason: 'missing-compatibility' | 'override';
+  readonly reason: 'missing-compatibility' | 'missing-manifest' | 'override';
 }
 
 /** If `from` and `on` are both used, a version of `on` in `range` is better. */
@@ -96,6 +101,8 @@ export interface ConstraintContext {
   readonly orders: Orders;
   readonly policy: Policy;
   readonly overrides?: readonly Override[];
+  /** The versions installed, which need no manifest URL of their own. */
+  readonly installed?: readonly InstalledVersion[];
 }
 
 /** Every version: the range of a system option whose own range is not enforced. */
@@ -140,7 +147,7 @@ function corrected(compatibility: Compatibility, bounds: CompatibilityOverride['
  */
 export function releaseConstraints(
   release: Release,
-  { orders, policy, overrides = [] }: ConstraintContext,
+  { orders, policy, overrides = [], installed = [] }: ConstraintContext,
 ): Constraint[] {
   const from: ReleaseRef = { package: packageKey(release.package), version: release.version };
   const corrections = overridesFor(release, overrides);
@@ -180,6 +187,16 @@ export function releaseConstraints(
     const bounds = { ...(minimum !== undefined && { minimum }), ...(maximum !== undefined && { maximum }) };
     const range = on === CORE ? coreRange(bounds) : boundsRange(on, bounds, field);
     constraints.push({ kind: 'exclusion', from, on, range, provenance: provenance(field, undefined, correction) });
+  }
+
+  // A release that cannot be installed, as no manifest URL gives its version.
+  if (policy.versionManifest === 'require' && missingManifest(release) && !isInstalled(release, installed)) {
+    constraints.push({
+      kind: 'unusable',
+      reason: 'missing-manifest',
+      from,
+      provenance: provenance('versionManifest', 'versionManifest'),
+    });
   }
 
   // Relationships an override says to ignore.

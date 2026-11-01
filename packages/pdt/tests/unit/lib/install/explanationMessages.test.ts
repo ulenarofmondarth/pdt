@@ -29,6 +29,7 @@ describe('explanationMessages, in English', () => {
           conflictsWith: [a, b],
           runsIn: [a, b],
           unusable: [a],
+          missingManifest: [a],
           excluded: [a, b],
           excludedWith: [a, b, c],
           overridden: [a, b],

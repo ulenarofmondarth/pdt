@@ -28,6 +28,11 @@ export interface Policy {
   readonly versionOrder: VersionOrderName;
   /** Whether a version's core bounds from Foundry's listing win over its manifest's. */
   readonly listingCompatibility: 'prefer' | 'ignore';
+  /**
+   * Whether a release that is not installed may be chosen without a manifest URL for its version
+   * alone, which installing it needs (see `missingManifest`).
+   */
+  readonly versionManifest: 'any' | 'require';
 }
 
 /** The decided defaults. */
@@ -42,6 +47,7 @@ export const DEFAULT_POLICY: Policy = {
   relationshipBounds: 'foundry',
   versionOrder: 'foundry',
   listingCompatibility: 'prefer',
+  versionManifest: 'any',
 };
 
 /** A policy with the defaults for every setting not given. */

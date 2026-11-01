@@ -125,7 +125,7 @@ export function looksLikePrerelease(version: string): boolean {
  */
 export function resolve(universe: Universe, requirements: Requirements, options: ResolveOptions = {}): Resolution {
   const policy = withDefaults(options.policy);
-  const { overrides = [], coreLimits = [] } = options.declarations ?? {};
+  const { overrides = [], coreLimits = [], installed = [] } = options.declarations ?? {};
   const orders = chooseOrders(universe, policy, overrides);
   const preferred = [...(requirements.pins ?? []), ...(requirements.prefer ?? [])];
   const isPreferred = (key: PackageKey, version: string) =>
@@ -163,7 +163,7 @@ export function resolve(universe: Universe, requirements: Requirements, options:
     const id = `${packageKey(release.package)}@${release.version}`;
     let found = constraintCache.get(id);
     if (found === undefined) {
-      found = releaseConstraints(release, { orders, policy, overrides });
+      found = releaseConstraints(release, { orders, policy, overrides, installed });
       constraintCache.set(id, found);
     }
     return found;
