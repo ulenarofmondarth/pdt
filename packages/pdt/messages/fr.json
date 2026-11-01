@@ -307,6 +307,7 @@
     "conflictsWith": "{release} est en conflit avec {on}",
     "runsIn": "{release} ne fonctionne que dans {systems}",
     "unusable": "{release} ne déclare aucune compatibilité avec Foundry VTT, ce que la politique n’accepte pas",
+    "missingManifest": "{release} a été trouvée, mais aucune URL de manifeste pour cette version, elle ne peut donc pas être installée",
     "excluded": "{release} ne peut pas être utilisé (substitution : {reason})",
     "excludedWith": "{release} ne peut pas être utilisé avec {on} (substitution : {reason})",
     "overridden": "{text} (substitution : {reason})",

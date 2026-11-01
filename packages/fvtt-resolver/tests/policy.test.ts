@@ -14,6 +14,7 @@ describe('policy', () => {
       relationshipBounds: 'foundry',
       versionOrder: 'foundry',
       listingCompatibility: 'prefer',
+      versionManifest: 'any',
     });
   });
 

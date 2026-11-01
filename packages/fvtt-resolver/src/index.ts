@@ -24,7 +24,14 @@ export {
   type Compatibility,
   type RelationshipBounds,
 } from './range/compatibility.js';
-export type { PackageRef, PackageType, Relationship, Relationships, Release } from './release.js';
+export {
+  missingManifest,
+  type PackageRef,
+  type PackageType,
+  type Relationship,
+  type Relationships,
+  type Release,
+} from './release.js';
 export {
   normaliseManifest,
   type ManifestProblem,

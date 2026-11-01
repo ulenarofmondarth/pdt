@@ -143,7 +143,7 @@ Everything the resolver must respect is a **hard constraint** of one of four sha
 | **Dependency** | If release *R* is used, package *P* must be used, at a version in range *X* | my-module 2.0.0 needs `core` 13 to 14 |
 | **Exclusion** | Release *R* and package *P* at a version in range *X* must not both be used | my-module 2.0.0 conflicts with other-module below 3.0 |
 | **Choice** | If release *R* is used, the world's system must be one of these (each with its range) | my-module 2.0.0 runs only in dnd5e 4 to 5, or pf2e 7 |
-| **Unusable** | Release *R* cannot be used at all | my-module 2.0.0 declares no core compatibility, under `missingCompatibility: reject` |
+| **Unusable** | Release *R* cannot be used at all | my-module 2.0.0 declares no core compatibility, under `missingCompatibility: reject`; or it has no manifest URL of its own and is not installed, under `versionManifest: require` |
 
 Policy can soften what a manifest declares, so there are also **soft constraints**, which decide which valid setup is best and what is reported, but never whether a setup is valid:
 
@@ -211,7 +211,7 @@ Core limits
 
 ### Overrides and core limits as built
 
-`resolve` and `check` take `declarations: { overrides, coreLimits }`. A reason is shown as the caller wrote it, so pdt passes it already translated.
+`resolve` and `check` take `declarations: { overrides, coreLimits, installed }`. A reason is shown as the caller wrote it, so pdt passes it already translated.
 
 Overrides each name a package, the versions they correct (as the releases give them, a leading `v` aside, or every version), and a reason. There are three kinds:
 
@@ -227,6 +227,8 @@ Overrides each name a package, the versions they correct (as the releases give t
 Constraints an override declares or changes carry it in their provenance, so explanations say "(override: …)". Overrides change what the resolver finds, never Foundry's verdicts in `check`: Foundry knows nothing of them.
 
 A core limit leaves the build a candidate, but the solver is told it cannot be chosen, with the limit's reason. An explanation that rests on it says so: "Foundry VTT 14.362 cannot be used: there is no felddy/foundryvtt image for it". `check` finds a setup on a limited build invalid, and lists the limits in `coreLimits`.
+
+`installed` lists the versions the caller has installed. Under `versionManifest: require`, these may be chosen without a manifest URL of their own, as nothing has to install them.
 
 (policy)=
 
@@ -246,6 +248,7 @@ Policy is the caller's choice of rules where reasonable tools could differ. Each
 | `relationshipBounds` | **foundry**: relationship bounds compare exactly | `prefix`: `"4"` means every `4.x` |
 | `versionOrder` | **foundry**: package versions ordered as `isNewerVersion` | `semver` |
 | `listingCompatibility` | **prefer**: a version's `minimum` and `verified` from Foundry's listing win over its manifest's | `ignore` |
+| `versionManifest` | **any**: a release may be chosen without a manifest URL for its version alone | `require`: a release found, loaded or not loadable, with no `versionManifest` is unusable unless it is in `declarations.installed` |
 
 The last four were added after the first review. Their defaults were decided in the second (decisions 9, 10, 11 and 13 in {doc}`questions`).
 

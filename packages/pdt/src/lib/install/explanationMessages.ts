@@ -55,6 +55,7 @@ export function explanationMessages(): ExplanationMessages {
     conflictsWith: (release, on) => m['explain.conflictsWith']({ release, on }),
     runsIn: (release, systems) => m['explain.runsIn']({ release, systems }),
     unusable: release => m['explain.unusable']({ release }),
+    missingManifest: release => m['explain.missingManifest']({ release }),
     excluded: (release, reason) => m['explain.excluded']({ release, reason }),
     excludedWith: (release, on, reason) => m['explain.excludedWith']({ release, on, reason }),
     overridden: (text, reason) => m['explain.overridden']({ text, reason }),

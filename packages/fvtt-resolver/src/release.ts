@@ -81,3 +81,13 @@ export interface Release {
    */
   readonly loadFailed?: boolean;
 }
+
+/**
+ * Whether a release was found, but no manifest URL for its version alone was: it was loaded, or
+ * could not be, and has no `versionManifest`. Installing it needs one, as a package's own manifest
+ * URL usually gives its newest version. A release only listed is not missing one yet, as loading
+ * it may find one.
+ */
+export function missingManifest(release: Release): boolean {
+  return release.versionManifest === undefined && (release.detail === 'loaded' || release.loadFailed === true);
+}

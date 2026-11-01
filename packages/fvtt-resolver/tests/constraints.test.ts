@@ -12,6 +12,7 @@ import { semverOrder } from '../src/version/semver.js';
 import { makeRelease } from './helpers.js';
 
 import type { Constraint } from '../src/constraints.js';
+import type { InstalledVersion } from '../src/declarations.js';
 import type { Policy } from '../src/policy.js';
 import type { Relationship, Relationships, Release } from '../src/release.js';
 
@@ -20,10 +21,15 @@ const origin = 'https://example.org/my-module/module.json';
 const from = { package: 'module:my-module', version: '1.0.0' };
 
 /** The constraints of releases, in a universe of just them, under a policy. */
-function constraintsOf(release: Release, policy: Partial<Policy> = {}, others: Release[] = []): Constraint[] {
+function constraintsOf(
+  release: Release,
+  policy: Partial<Policy> = {},
+  others: Release[] = [],
+  installed: InstalledVersion[] = [],
+): Constraint[] {
   const full = withDefaults(policy);
   const orders = chooseOrders({ core: [], releases: [release, ...others] }, full);
-  return releaseConstraints(release, { orders, policy: full });
+  return releaseConstraints(release, { orders, policy: full, installed });
 }
 
 const relationships = (lists: Partial<Relationships>): Relationships => ({
@@ -102,6 +108,39 @@ describe('releaseConstraints', () => {
           from,
           provenance: { origin, field: 'compatibility', policy: 'missingCompatibility' },
         },
+      ]);
+    });
+  });
+
+  describe('versionManifest', () => {
+    const compatibility = { minimum: '14' };
+    const missing = {
+      kind: 'unusable',
+      reason: 'missing-manifest',
+      from,
+      provenance: { origin, field: 'versionManifest', policy: 'versionManifest' },
+    };
+    const unusable = (release: Release, installed: InstalledVersion[] = []) =>
+      constraintsOf(release, { versionManifest: 'require' }, [], installed).filter(({ kind }) => kind === 'unusable');
+
+    it('lets a release without a manifest of its own be chosen by default', () => {
+      expect(constraintsOf(makeRelease({ compatibility })).filter(({ kind }) => kind === 'unusable')).toEqual([]);
+    });
+
+    it('makes a release loaded, or that could not be, without one unusable under versionManifest: require', () => {
+      expect(unusable(makeRelease({ compatibility }))).toEqual([missing]);
+      expect(unusable(makeRelease({ compatibility, detail: 'listed', loadFailed: true }))).toEqual([missing]);
+    });
+
+    it('keeps one with a manifest of its own, one only listed so far, and one installed', () => {
+      const manifest = 'https://example.org/my-module/releases/download/1.0.0/module.json';
+      expect(unusable(makeRelease({ compatibility, versionManifest: manifest }))).toEqual([]);
+      expect(unusable(makeRelease({ compatibility, detail: 'listed' }))).toEqual([]);
+      expect(unusable(makeRelease({ compatibility }), [{ package: 'module:my-module', version: 'v1.0.0' }])).toEqual(
+        [],
+      );
+      expect(unusable(makeRelease({ compatibility }), [{ package: 'module:my-module', version: '0.9.0' }])).toEqual([
+        missing,
       ]);
     });
   });
