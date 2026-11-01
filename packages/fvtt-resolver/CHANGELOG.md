@@ -1,3 +1,13 @@
+## [@mondarth/fvtt-resolver-v0.9.0](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.8.0...@mondarth/fvtt-resolver-v0.9.0) (2026-11-01)
+
+### Features
+
+* **resolver:** require a manifest of its own to choose a release ([93462ab](https://github.com/ulenarofmondarth/pdt/commit/93462abb14d0d9dcd9804ab847f52955241a0731))
+
+### Bug Fixes
+
+* **resolver:** count a manifest named for its version as naming it ([acddbb5](https://github.com/ulenarofmondarth/pdt/commit/acddbb5267850085454d40d4981e7aa2ef6f319a))
+
 ## [@mondarth/fvtt-resolver-v0.8.0](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.7.0...@mondarth/fvtt-resolver-v0.8.0) (2026-10-27)
 
 ### Features
