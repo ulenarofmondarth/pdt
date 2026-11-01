@@ -1,3 +1,9 @@
+## [@mondarth/pdt-v0.4.1](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/pdt-v0.4.0...@mondarth/pdt-v0.4.1) (2026-11-01)
+
+### Bug Fixes
+
+* **pdt:** word the resolver's missing-manifest reason in each locale ([80ccf1b](https://github.com/ulenarofmondarth/pdt/commit/80ccf1be9c754b69e6b325ef6bbf0d6f007286f9))
+
 ## [@mondarth/pdt-v0.4.0](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/pdt-v0.3.0...@mondarth/pdt-v0.4.0) (2026-10-21)
 
 ### Features
