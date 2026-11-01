@@ -44,6 +44,11 @@ describe('namesVersion', () => {
     ['https://gitlab.com/o/r/-/jobs/artifacts/6.4.4/raw/dist/module.json', '6.4.4', 'a GitLab job artifact'],
     ['https://raw.githubusercontent.com/o/r/v1.0.10/module.json', 'v1.0.10', 'a raw file at a tag'],
     ['https://gitlab.com/api/v4/projects/1/packages/generic/m/release%2F2.0/module.json', '2.0', 'an encoded tag'],
+    [
+      'https://r2.foundryvtt.com/packages-public/epic-rolls-5e/module-6.1.0.json',
+      '6.1.0',
+      "a manifest named for its version, as Foundry VTT's listing gives a premium package's",
+    ],
   ])('finds %s names %s: %s', (url, version) => {
     expect(namesVersion(url, version)).toBe(true);
   });
@@ -54,6 +59,16 @@ describe('namesVersion', () => {
     ['https://gitlab.com/o/r/raw/v14/package/module.json', '14.0.18', 'a branch named for a generation'],
     ['https://github.com/o/r/archive/14.01.zip', '14.01', 'a file named for the version'],
     ['https://github.com/o/r/releases/download/v1.1.40/module.json', '1.1.4', 'another version'],
+    [
+      'https://r2.foundryvtt.com/packages-public/epic-rolls-5e/module-6.0.0.json',
+      '6.1.0',
+      'a manifest of another version',
+    ],
+    [
+      'https://r2.foundryvtt.com/packages-public/epic-rolls-5e/module.json',
+      '6.1.0',
+      'a manifest that gives the newest',
+    ],
     ['https://example.org/module.json?version=1.1.4', '1.1.4', 'a query'],
     ['https://example.org/%E0%A4%A/module.json', '1.1.4', 'a segment that cannot be decoded'],
     ['not a url', '1.1.4', 'something that is not a URL'],
