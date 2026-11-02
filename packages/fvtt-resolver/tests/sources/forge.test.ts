@@ -111,6 +111,52 @@ describe('githubSource', () => {
   });
 });
 
+describe('a repository of several packages', () => {
+  const PF2E_RELEASES = 'https://api.github.com/repos/foundryvtt/pf2e/releases?per_page=100';
+  const pf2e = { type: 'system' as const, id: 'pf2e' };
+  const file = (tag: string, name: string) => ({
+    name,
+    browser_download_url: `https://github.com/foundryvtt/pf2e/releases/download/${tag}/${name}`,
+  });
+  const release = (tag: string, name = 'system.json') => ({ tag_name: tag, assets: [file(tag, name)] });
+
+  it("lists only the package's own tags, once any is named for it, with the version after its ID", async () => {
+    const { fetch } = fakeFetch({
+      [PF2E_RELEASES]: {
+        body: [
+          release('sf2e-1.6.1'),
+          release('pf2e-8.6.1'),
+          release('pf2e-anachronism-2.4.0', 'module.json'),
+          release('pf2e-8.6.0'),
+          release('7.0.0'),
+          release('v6.0.0'),
+        ],
+      },
+    });
+    const found = await githubSource(httpClient({ fetch })).releases(
+      pf2e,
+      declared('https://github.com/foundryvtt/pf2e/releases/latest/download/system.json'),
+    );
+
+    expect(found.ok && found.value.map(({ version, manifest }) => [version, manifest])).toEqual([
+      ['8.6.1', file('pf2e-8.6.1', 'system.json').browser_download_url],
+      ['8.6.0', file('pf2e-8.6.0', 'system.json').browser_download_url],
+      ['7.0.0', file('7.0.0', 'system.json').browser_download_url],
+      ['6.0.0', file('v6.0.0', 'system.json').browser_download_url],
+    ]);
+  });
+
+  it('keeps tags named otherwise while none is named for the package', async () => {
+    const { fetch } = fakeFetch({ [PF2E_RELEASES]: { body: [release('release-2.0.0'), release('v1.0.0')] } });
+    const found = await githubSource(httpClient({ fetch })).releases(
+      pf2e,
+      declared('https://github.com/foundryvtt/pf2e/releases/latest/download/system.json'),
+    );
+
+    expect(found.ok && found.value.map(({ version }) => version)).toEqual(['2.0.0', '1.0.0']);
+  });
+});
+
 describe('gitlabSource', () => {
   const link = (tag: string, fields: Record<string, string> = {}) => ({
     name: 'Manifest',
