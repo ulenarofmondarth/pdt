@@ -12,7 +12,7 @@
 import { z } from 'zod';
 
 import { packageKey } from '../universe.js';
-import { githubRepository, gitlabProject, tagVersion } from './repository.js';
+import { githubRepository, gitlabProject, tagName, tagVersion } from './repository.js';
 
 import type { PackageRef, Release } from '../release.js';
 import type { HttpClient } from './http.js';
@@ -35,10 +35,26 @@ function zipOf(ref: PackageRef, files: ForgeRelease['files']): string | undefine
   return named ?? (urls.size === 1 ? [...urls][0] : undefined);
 }
 
+/**
+ * Whether a release tag may be of a package, for a repository that holds several, each tagging its
+ * releases with its ID, as `pf2e-8.6.1` and `sf2e-1.6.1` are of one repository. Once any tag names
+ * the package, only those that name it, or name nothing before the version, are its own.
+ */
+function ownTags(ref: PackageRef, releases: readonly ForgeRelease[]): (tag: string) => boolean {
+  const id = ref.id.toLowerCase();
+  const named = releases.some(({ tag }) => tagName(tag) === id);
+  return tag => {
+    const name = tagName(tag);
+    return !named || name === id || name === '';
+  };
+}
+
 /** A listed release of each forge release with the package's manifest attached. */
 function listed(ref: PackageRef, releases: readonly ForgeRelease[], origin: string): Release[] {
   const manifestName = `${ref.type}.json`;
+  const own = ownTags(ref, releases);
   return releases.flatMap(({ tag, files }): Release[] => {
+    if (!own(tag)) return [];
     const version = tagVersion(tag);
     const manifest = files.find(file => file.name === manifestName)?.url;
     if (version === undefined || manifest === undefined) return [];

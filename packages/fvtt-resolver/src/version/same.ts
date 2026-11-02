@@ -22,14 +22,43 @@ export function sameVersion(a: string, b: string): boolean {
 }
 
 /**
- * The version a release tag names: the tag without what comes before its first digit, so
- * `v1.1.4` and `release-6.0.6` name `1.1.4` and `6.0.6`.
+ * Where the version in a release tag starts: at the first digit that starts the tag or follows a
+ * separator, a character other than a letter, digit or dot, which is within a version, a `v` or `V`
+ * before it aside, so that a name with digits in it before the version is not read as part of it;
+ * or else at its first digit.
+ */
+function versionStart(tag: string): number {
+  const bounded = /(?:^|[^\p{L}\p{N}.])[vV]?(\d)/u.exec(tag);
+  return bounded === null ? tag.search(/\d/) : bounded.index + bounded[0].length - 1;
+}
+
+/**
+ * The version a release tag names: the tag without what comes before it, so `v1.1.4`,
+ * `release-6.0.6` and `pf2e-8.6.1` name `1.1.4`, `6.0.6` and `8.6.1`. The version starts at the
+ * first digit that starts the tag or follows a separator, a `v` before it aside, or else at the
+ * first digit, so `release2.0` names `2.0`.
  *
  * @returns The version, or `undefined` when the tag has no digit
  */
 export function tagVersion(tag: string): string | undefined {
-  const start = tag.search(/\d/);
+  const start = versionStart(tag);
   return start === -1 ? undefined : tag.slice(start);
+}
+
+/**
+ * What a release tag names before its version, without the separators and `v` between them,
+ * lowercased: `pf2e` for `pf2e-8.6.1`, and an empty string for `v1.1.4` or `1.1.4`.
+ *
+ * @returns The name, or `undefined` when the tag has no digit
+ */
+export function tagName(tag: string): string | undefined {
+  const start = versionStart(tag);
+  if (start === -1) return undefined;
+  return tag
+    .slice(0, start)
+    .replace(/[vV]$/, '')
+    .replace(/[^\p{L}\p{N}]+$/u, '')
+    .toLowerCase();
 }
 
 /**
