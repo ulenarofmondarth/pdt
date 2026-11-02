@@ -54,4 +54,4 @@ export function gitlabProject(url: string, hosts: readonly string[] = ['gitlab.c
   return path.includes('/') ? { host: parsed.hostname, path } : undefined;
 }
 
-export { tagVersion } from '../version/same.js';
+export { tagName, tagVersion } from '../version/same.js';

@@ -1,6 +1,6 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { namesVersion, sameVersion } from '../../src/version/same.js';
+import { namesVersion, sameVersion, tagName, tagVersion } from '../../src/version/same.js';
 
 describe('sameVersion', () => {
   it.each([
@@ -32,6 +32,29 @@ describe('sameVersion', () => {
   });
 });
 
+describe('tagVersion and tagName', () => {
+  it.each([
+    ['v1.1.4', '1.1.4', ''],
+    ['1.1.4', '1.1.4', ''],
+    ['release-6.0.6', '6.0.6', 'release'],
+    ['pf2e-8.6.1', '8.6.1', 'pf2e'],
+    ['sf2e-anachronism-2.4.0', '2.4.0', 'sf2e-anachronism'],
+    ['module-v2.0.0', '2.0.0', 'module'],
+    ['release/2.0', '2.0', 'release'],
+    ['1.0.0-beta.1', '1.0.0-beta.1', ''],
+    ['release2.0', '2.0', 'release'],
+    ['Foo_V3', '3', 'foo'],
+  ])('reads %s as version %s, named %j', (tag, version, name) => {
+    expect(tagVersion(tag)).toBe(version);
+    expect(tagName(tag)).toBe(name);
+  });
+
+  it('reads no version from a tag without a digit', () => {
+    expect(tagVersion('nightly')).toBeUndefined();
+    expect(tagName('nightly')).toBeUndefined();
+  });
+});
+
 describe('namesVersion', () => {
   it.each([
     ['https://github.com/o/r/releases/download/v1.1.4/module.json', '1.1.4', 'a GitHub release asset'],
@@ -39,6 +62,11 @@ describe('namesVersion', () => {
       'https://github.com/o/r/releases/download/release-6.0.6/system.json',
       '6.0.6',
       'a tag with text before its number',
+    ],
+    [
+      'https://github.com/foundryvtt/pf2e/releases/download/pf2e-8.6.1/system.json',
+      '8.6.1',
+      'a tag named for a package with digits in its ID',
     ],
     ['https://gitlab.com/o/r/-/releases/v14.0.18/downloads/module.json', '14.0.18', 'a GitLab release link'],
     ['https://gitlab.com/o/r/-/jobs/artifacts/6.4.4/raw/dist/module.json', '6.4.4', 'a GitLab job artifact'],

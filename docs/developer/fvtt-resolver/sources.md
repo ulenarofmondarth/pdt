@@ -380,7 +380,8 @@ The core package (`@mondarth/fvtt-resolver`) contains no I/O at all. The sources
 
 `githubSource(http, { token })` and `gitlabSource(http, { token, hosts })`
 : List a repository's releases (the newest 100) from GitHub's or GitLab's API. Each with the package's manifest attached (`module.json` or `system.json`) becomes a listed release.
-  - **Version:** read from the tag (`v1.1.4`, `release-6.0.6`). Loading the manifest checks it.
+  - **Version:** read from the tag (`v1.1.4`, `release-6.0.6`, `pf2e-8.6.1`), from its first digit that starts it or follows a separator other than a dot, a `v` aside, so digits in a name before the version are not part of it; or else from its first digit (`release2.0`). Loading the manifest checks it.
+  - **Several packages in one repository:** once any tag is named for the package's ID (`pf2e-8.6.1`), only those, and those named for nothing (`v7.0.0`), are its own, so another package's (`sf2e-1.6.1`) are left out.
   - **Repository:** found from the package's manifest URLs, through the hints the source set gives each source:
     - *declared* URLs, from a relationship's `manifest` or the caller;
     - *seen* URLs, of the releases earlier sources listed.
