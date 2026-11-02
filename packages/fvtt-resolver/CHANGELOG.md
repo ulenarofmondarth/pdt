@@ -1,3 +1,9 @@
+## [@mondarth/fvtt-resolver-v0.9.1](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.9.0...@mondarth/fvtt-resolver-v0.9.1) (2026-11-02)
+
+### Bug Fixes
+
+* **resolver:** read a tag's version after a name with digits in it ([2b674c3](https://github.com/ulenarofmondarth/pdt/commit/2b674c337d234c20b2cb36eeda65d48b18a1fbe4))
+
 ## [@mondarth/fvtt-resolver-v0.9.0](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.8.0...@mondarth/fvtt-resolver-v0.9.0) (2026-11-01)
 
 ### Features
