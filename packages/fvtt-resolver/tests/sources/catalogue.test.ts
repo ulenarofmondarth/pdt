@@ -197,3 +197,194 @@ describe('catalogueSource', () => {
     expect(() => catalogueSource({ url: 'catalogue', key: 'k', fetch: vi.fn() })).toThrow(/catalogue/);
   });
 });
+
+describe('catalogueSource, version 2', () => {
+  const { package: ref, ...given } = makeRelease({ id: 'a', version: '1.0.0' });
+  const looked = (overrides: Record<string, unknown> = {}) => ({
+    core: [{ version: '14.368', generation: 14, channel: 'stable' }],
+    packages: [
+      {
+        package: ref,
+        title: 'A',
+        latest: null,
+        premium: false,
+        syncedAt: '2026-11-05T09:00:00.000Z',
+        own: { version: null, readAt: null, checkedAt: null },
+        releases: [given],
+      },
+    ],
+    pending: [],
+    unavailable: [],
+    unreached: [],
+    asOf: '2026-11-05T09:00:00.000Z',
+    ...overrides,
+  });
+  const of = (fetch: typeof globalThis.fetch) =>
+    catalogueSource({ url: URL_BASE, key: 'k', client: 'EMMA/1.0.0', fetch });
+
+  it('looks packages up, with what the client knows of them and the generation to look from', async () => {
+    const { fetch } = fetchAnswering(() => Response.json(looked()));
+    const asked = {
+      packages: [{ ...module('a'), installed: '1.0.0', manifest: 'https://example.test/a.json' }],
+      fromGeneration: 14,
+    };
+    expect(await of(fetch).lookup(asked)).toEqual({ ok: true, value: looked() });
+    const [url, init] = fetch.mock.calls[0] ?? [];
+    expect(String(url)).toBe('https://catalogue.test/api/v2/lookup');
+    expect(init).toMatchObject({
+      method: 'POST',
+      headers: { 'X-API-Key': 'k', 'X-Catalogue-Client': 'EMMA/1.0.0', 'Content-Type': 'application/json' },
+      body: JSON.stringify(asked),
+    });
+  });
+
+  it('looks many packages up in parts, and joins the answers', async () => {
+    const many = Array.from({ length: 1001 }, (_, i) => module(`m${String(i)}`));
+    const b = { ...looked().packages[0], package: module('b') };
+    const { fetch, bodies } = fetchAnswering(
+      () =>
+        Response.json(
+          looked({
+            pending: [
+              { package: module('b'), retryAfter: 30 },
+              { package: module('x'), retryAfter: 30 },
+            ],
+            unreached: [module('a')],
+            unavailable: [{ package: module('gone'), reason: 'gone' }],
+          }),
+        ),
+      () =>
+        Response.json(
+          looked({
+            core: [{ version: '14.369', generation: 14, channel: 'testing' }],
+            // A package the first part gave already is given once, as the first part gave it.
+            packages: [b, { ...looked().packages[0], title: 'Another A' }],
+            unreached: [module('a')],
+            unavailable: [{ package: module('gone'), reason: 'gone' }],
+            asOf: '2026-11-05T08:00:00.000Z',
+          }),
+        ),
+    );
+    const found = await of(fetch).lookup({ packages: many });
+    expect(bodies().map(body => body.packages.length)).toEqual([1000, 1]);
+    expect(found).toEqual({
+      ok: true,
+      value: {
+        core: [
+          { version: '14.368', generation: 14, channel: 'stable' },
+          { version: '14.369', generation: 14, channel: 'testing' },
+        ],
+        packages: [looked().packages[0], b],
+        // b is held by the second part.
+        pending: [{ package: module('x'), retryAfter: 30 }],
+        unavailable: [{ package: module('gone'), reason: 'gone' }],
+        unreached: [module('a')],
+        asOf: '2026-11-05T08:00:00.000Z',
+      },
+    });
+  });
+
+  it('is as of no time when a part of a lookup is', async () => {
+    const many = Array.from({ length: 1001 }, (_, i) => module(`m${String(i)}`));
+    const { fetch } = fetchAnswering(
+      () => Response.json(looked({ asOf: null })),
+      () => Response.json(looked()),
+    );
+    const found = await of(fetch).lookup({ packages: many });
+    expect(found.ok && found.value.asOf).toBeNull();
+  });
+
+  it('asks the catalogue of an empty lookup, which says what is wrong with it', async () => {
+    const { fetch } = fetchAnswering(() => new Response('', { status: 400 }));
+    expect(await of(fetch).lookup({ packages: [] })).toMatchObject({ ok: false, gap: { reason: 'http', status: 400 } });
+  });
+
+  it('gives the listing, of a type, with the ETag to revalidate it by', async () => {
+    const listing = { packages: [], asOf: null };
+    const { fetch } = fetchAnswering(
+      () => Response.json(listing, { headers: { ETag: '"l1"' } }),
+      () => Response.json(listing),
+    );
+    const catalogue = of(fetch);
+    expect(await catalogue.listing({ type: 'module' })).toEqual({
+      ok: true,
+      value: { notModified: false, value: listing, etag: '"l1"' },
+    });
+    expect(String(fetch.mock.calls[0]?.[0])).toBe('https://catalogue.test/api/v2/listing?type=module');
+    expect(fetch.mock.calls[0]?.[1]).toMatchObject({ method: 'GET' });
+    expect(fetch.mock.calls[0]?.[1]?.headers).not.toHaveProperty('Content-Type');
+    // Both types, and no ETag given back.
+    expect(await catalogue.listing()).toEqual({ ok: true, value: { notModified: false, value: listing } });
+    expect(String(fetch.mock.calls[1]?.[0])).toBe('https://catalogue.test/api/v2/listing');
+  });
+
+  it('is told the listing it kept is still the listing', async () => {
+    const { fetch } = fetchAnswering(() => new Response(null, { status: 304 }));
+    expect(await of(fetch).listing({ etag: '"l1"' })).toEqual({ ok: true, value: { notModified: true } });
+    expect(fetch.mock.calls[0]?.[1]?.headers).toMatchObject({ 'If-None-Match': '"l1"' });
+  });
+
+  it('gives an http gap for a 304 to a request that kept nothing', async () => {
+    const { fetch } = fetchAnswering(() => new Response(null, { status: 304 }));
+    expect(await of(fetch).listing()).toMatchObject({ ok: false, gap: { reason: 'http', status: 304 } });
+  });
+
+  it("gives Foundry VTT's builds, revalidated as the listing is", async () => {
+    const core = { core: [{ version: '14.368', generation: 14, channel: 'stable' }] };
+    const { fetch } = fetchAnswering(
+      () => Response.json(core, { headers: { ETag: '"c1"' } }),
+      () => new Response(null, { status: 304 }),
+    );
+    const catalogue = of(fetch);
+    expect(await catalogue.core()).toEqual({ ok: true, value: { notModified: false, value: core, etag: '"c1"' } });
+    expect(String(fetch.mock.calls[0]?.[0])).toBe('https://catalogue.test/api/v2/core');
+    expect(await catalogue.core({ etag: '"c1"' })).toEqual({ ok: true, value: { notModified: true } });
+  });
+
+  it('has own manifests rechecked, in parts of at most fifty, joined', async () => {
+    const many = Array.from({ length: 51 }, (_, i) => module(`m${String(i)}`));
+    const checked = (id: string) => ({
+      package: module(id),
+      own: { version: '2.0.0', readAt: null, checkedAt: null },
+      changed: true,
+    });
+    const { fetch, bodies } = fetchAnswering(
+      () => Response.json({ packages: [checked('m0')], pending: [{ package: module('m0'), retryAfter: 30 }] }),
+      () => Response.json({ packages: [checked('m50')], pending: [] }),
+    );
+    expect(await of(fetch).recheck(many)).toEqual({
+      ok: true,
+      value: { packages: [checked('m0'), checked('m50')], pending: [{ package: module('m0'), retryAfter: 30 }] },
+    });
+    expect(bodies().map(body => body.packages.length)).toEqual([50, 1]);
+    expect(String(fetch.mock.calls[0]?.[0])).toBe('https://catalogue.test/api/v2/recheck');
+  });
+
+  it('reads a manifest URL a user gives', async () => {
+    const answerGiven = { ok: false, problem: 'not-manifest' };
+    const { fetch } = fetchAnswering(() => Response.json(answerGiven));
+    expect(await of(fetch).manifest('https://example.test/module.json', 'module')).toEqual({
+      ok: true,
+      value: answerGiven,
+    });
+    expect(String(fetch.mock.calls[0]?.[0])).toBe('https://catalogue.test/api/v2/manifest');
+    expect(fetch.mock.calls[0]?.[1]?.body).toBe(
+      JSON.stringify({ url: 'https://example.test/module.json', type: 'module' }),
+    );
+  });
+
+  it('gives the gaps of version 2 as of version 1', async () => {
+    for (const [response, reason] of [
+      [() => Promise.reject(new TypeError('fetch failed')), 'network'],
+      [() => new Response('', { status: 503 }), 'http'],
+      [() => new Response('<html>'), 'invalid'],
+      [() => Response.json({ packages: 'no' }), 'invalid'],
+    ] as const) {
+      const { fetch } = fetchAnswering(response);
+      expect(await of(fetch).listing()).toMatchObject({
+        ok: false,
+        gap: { source: 'catalogue', url: 'https://catalogue.test/api/v2/listing', reason },
+      });
+    }
+  });
+});

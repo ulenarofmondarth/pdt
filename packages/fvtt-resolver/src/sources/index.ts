@@ -5,7 +5,20 @@
  * @packageDocumentation
  */
 export { memoryCache, type Cache, type CacheEntry } from './cache.js';
-export { catalogueSource, type Catalogue, type CatalogueOptions, type CatalogueUniverse } from './catalogue.js';
+export {
+  catalogueSource,
+  type Catalogue,
+  type CatalogueOptions,
+  type CatalogueUniverse,
+  type Revalidated,
+} from './catalogue.js';
+export {
+  catalogueSet,
+  type CatalogueLookup,
+  type CataloguePackage,
+  type CatalogueSet,
+  type CatalogueSetOptions,
+} from './catalogue-set.js';
 export {
   DEFAULT_BUDGET,
   httpClient,
