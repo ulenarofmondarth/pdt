@@ -138,14 +138,20 @@ describe('catalogueSource', () => {
     expect(found.ok && found.value.pending).toEqual([]);
   });
 
-  it('is as of no time when a part is', async () => {
+  it('is as of no time when a part is, whichever part it is', async () => {
     const many = Array.from({ length: 1001 }, (_, i) => module(`m${String(i)}`));
-    const { fetch } = fetchAnswering(
-      () => Response.json(answer()),
-      () => Response.json(answer({ asOf: null })),
-    );
-    const found = await catalogueSource({ url: URL_BASE, key: 'k', fetch }).universe(many);
-    expect(found.ok && found.value.asOf).toBeNull();
+    for (const [first, second] of [
+      ['2026-10-25T12:00:00.000Z', null],
+      // Regression: a part of no time, then one of a time, was taken as of that time.
+      [null, '2026-10-25T12:00:00.000Z'],
+    ] as const) {
+      const { fetch } = fetchAnswering(
+        () => Response.json(answer({ asOf: first })),
+        () => Response.json(answer({ asOf: second })),
+      );
+      const found = await catalogueSource({ url: URL_BASE, key: 'k', fetch }).universe(many);
+      expect(found.ok && found.value.asOf).toBeNull();
+    }
   });
 
   it('gives an http gap for an error answer', async () => {

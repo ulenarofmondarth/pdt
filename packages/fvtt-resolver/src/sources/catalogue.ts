@@ -127,7 +127,7 @@ function joined(parts: readonly UniverseResponse[]): CatalogueUniverse {
     for (const ref of part.pending) pending.set(packageKey(ref), ref);
     for (const gone of part.unavailable) unavailable.set(packageKey(gone.package), gone);
     gaps.push(...part.gaps);
-    asOf = asOf === undefined || asOf === null || part.asOf === null || part.asOf < asOf ? part.asOf : asOf;
+    asOf = older(asOf, part.asOf);
   }
   // A package one part holds is not pending because another part needed it.
   const held = new Set([...releases.values()].map(release => packageKey(release.package)));
@@ -139,4 +139,11 @@ function joined(parts: readonly UniverseResponse[]): CatalogueUniverse {
     unavailable: [...unavailable.values()],
     asOf: asOf ?? null,
   };
+}
+
+/** The older of the time so far and a part's, where null, never, is older than any; undefined is none so far. */
+function older(sofar: string | null | undefined, part: string | null): string | null {
+  if (sofar === undefined) return part;
+  if (sofar === null || part === null) return null;
+  return part < sofar ? part : sofar;
 }
