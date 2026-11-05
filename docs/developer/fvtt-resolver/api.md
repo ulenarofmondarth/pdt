@@ -184,6 +184,11 @@ function foundryCoreReleases(http: HttpClient): Promise<SourceResult<CoreRelease
  * (which the set then gives as `unavailable()`).
  */
 function catalogueSource(options: { url: string; key: string; fetch: typeof globalThis.fetch; client?: string }): Catalogue;
+/**
+ * The catalogue alone, as a source set, through version 2 of its API: one lookup for a universe, nothing to load, and
+ * what the catalogue said of each package (how fresh it is), what is pending and what could not be reached.
+ */
+function catalogueSet(options: { catalogue: Catalogue; fromGeneration?: number }): CatalogueSet;
 /** A fetch through a CORS proxy, for a browser: `{url}` in the template becomes the target, percent-encoded. */
 function proxiedFetch(fetch: typeof globalThis.fetch, proxy: string | ((url: string) => string)): typeof globalThis.fetch;
 

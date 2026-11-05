@@ -708,6 +708,12 @@ describe('sourceSet, with a catalogue', () => {
           found.ok ? { ok: true, value: { unavailable: [], ...found.value, core: [], asOf: null } } : found,
         );
       },
+      // A source set asks version 1 only.
+      lookup: () => Promise.reject(new Error('not asked')),
+      listing: () => Promise.reject(new Error('not asked')),
+      core: () => Promise.reject(new Error('not asked')),
+      recheck: () => Promise.reject(new Error('not asked')),
+      manifest: () => Promise.reject(new Error('not asked')),
     };
   }
 
