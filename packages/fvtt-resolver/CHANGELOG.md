@@ -1,3 +1,13 @@
+## [@mondarth/fvtt-resolver-v0.10.0](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.9.1...@mondarth/fvtt-resolver-v0.10.0) (2026-11-05)
+
+### Features
+
+* **resolver:** ask the catalogue's version 2, and the catalogue alone ([eb72f8a](https://github.com/ulenarofmondarth/pdt/commit/eb72f8a6cf78974373ed09b8e9ce7b10552b0cb9))
+
+### Bug Fixes
+
+* **resolver:** give a catalogue universe as of no time if any part is ([187cc51](https://github.com/ulenarofmondarth/pdt/commit/187cc517508f9ef7dcce095f6e6f3485028d108d))
+
 ## [@mondarth/fvtt-resolver-v0.9.1](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.9.0...@mondarth/fvtt-resolver-v0.9.1) (2026-11-02)
 
 ### Bug Fixes
