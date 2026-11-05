@@ -404,6 +404,16 @@ The core package (`@mondarth/fvtt-resolver`) contains no I/O at all. The sources
 `sourceSet({ …, catalogue })`
 : With a catalogue, `universe(packages)` asks it first. What it holds comes from it alone, still left out by `core` like any release; the sources list only what it does not hold (worlds aside), with the manifests its releases declare as hints. A package it gave is known, so `load` does not list it again. A package it says cannot be had is known too, so no source looks for it, then or when a release loaded later needs it; `unavailable()` gives every such package so far, for the caller to leave out of what it resolves and say why. When the catalogue fails, its gap is recorded and the sources list every package, as without one. `unlisted` and `manifestBounds` do not change what it gives: it decides those itself.
 
+`catalogueSource(…)`, version 2
+: The same catalogue's version 2 API, for a client that asks it alone. Each call gives a `SourceResult`, with the same gaps as version 1.
+  - **`lookup({ packages, fromGeneration? })`:** `POST {url}/api/v2/lookup`, each package `{ type, id, installed?, manifest? }`, in parts of up to 1,000, joined. Each package of the closure comes once, with its releases (without their `package`), its listing's `title`, `latest` and `premium`, its `syncedAt`, and `own`, what its own manifest last gave and when. It also gives `pending` (each with a `retryAfter`), `unavailable`, `unreached` and Foundry VTT's builds. `fromGeneration` leaves out releases that cannot run from that generation on, but for the versions `installed`. A package the catalogue does not hold is found by its `manifest`.
+  - **`listing({ type?, etag? })`** and **`core({ etag? })`:** `GET {url}/api/v2/listing` and `/core`, revalidated: `{ notModified: false, value, etag? }`, or `{ notModified: true }` when the catalogue answers `304` to the `etag` given.
+  - **`recheck(packages)`:** `POST {url}/api/v2/recheck`, in parts of up to 50: the packages' own manifests checked again now, and those queued for giving a version not held.
+  - **`manifest(url, type)`:** `POST {url}/api/v2/manifest`: a manifest URL a user gives, read by the catalogue, which refuses private addresses.
+
+`catalogueSet({ catalogue, fromGeneration? })`
+: The catalogue alone, as a `SourceSet`: what `resolveInRounds` and other callers of `sourceSet` take, with no other source behind it. `universe(packages)` is one lookup; `lookUp(packages)` takes the versions installed and manifest URLs too, and gives what the catalogue said of each package beside its releases. `load` loads nothing, as the catalogue gives every release it could load, loaded. `packageOf(key)`, `pending()`, `unreached()`, `unavailable()` and `core()` keep what the lookups said: a package pending is so until a lookup gives it. When the catalogue cannot be reached, nothing is found and `gaps()` says so, so a client has only what is installed and can say the catalogue is unreachable.
+
 `localSource(manifests)`
 : The caller's own manifests, read by the caller, such as the working copy of the package under development. Those it cannot read are listed in `problems`.
 
