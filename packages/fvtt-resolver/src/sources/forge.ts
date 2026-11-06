@@ -38,14 +38,21 @@ function zipOf(ref: PackageRef, files: ForgeRelease['files']): string | undefine
 /**
  * Whether a release tag may be of a package, for a repository that holds several, each tagging its
  * releases with its ID, as `pf2e-8.6.1` and `sf2e-1.6.1` are of one repository. Once any tag names
- * the package, only those that name it, or name nothing before the version, are its own.
+ * the package, only those that name it, or name nothing before the version, are its own. So are
+ * they once the tags give two names or more, though none is the package's: the repository holds
+ * other packages, which a manifest URL another package declares for this one may lead to, and their
+ * tags are not this one's versions. Tags that all give one name, as `release-2.0.0` does, are the
+ * package's own, named otherwise.
  */
 function ownTags(ref: PackageRef, releases: readonly ForgeRelease[]): (tag: string) => boolean {
   const id = ref.id.toLowerCase();
-  const named = releases.some(({ tag }) => tagName(tag) === id);
+  const names = new Set(
+    releases.map(({ tag }) => tagName(tag)).filter((name): name is string => name !== undefined && name !== ''),
+  );
+  const several = names.has(id) || names.size > 1;
   return tag => {
     const name = tagName(tag);
-    return !named || name === id || name === '';
+    return !several || name === id || name === '';
   };
 }
 

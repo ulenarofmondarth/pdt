@@ -146,7 +146,29 @@ describe('a repository of several packages', () => {
     ]);
   });
 
-  it('keeps tags named otherwise while none is named for the package', async () => {
+  // Regression: a module in a repository of several Tagmar modules declared socketlib with a manifest URL into that
+  // repository, and every other module's tag there, such as `tagmar-calendario-v1.1.5`, became a socketlib version.
+  it("lists none of another package's tags, in a repository whose tags give several names, none the package's", async () => {
+    const { fetch } = fakeFetch({
+      [PF2E_RELEASES]: {
+        body: [
+          // Each with a manifest of the type asked for, so that only its tag leaves it out.
+          release('tagmar-calendario-v1.1.5'),
+          release('barbrawl-v1.9.3.1'),
+          release('3.0.0'),
+        ],
+      },
+    });
+    const found = await githubSource(httpClient({ fetch })).releases(
+      pf2e,
+      declared('https://github.com/foundryvtt/pf2e/releases/latest/download/system.json'),
+    );
+
+    // A tag that names nothing may still be the package's own.
+    expect(found.ok && found.value.map(({ version }) => version)).toEqual(['3.0.0']);
+  });
+
+  it('keeps tags all named one way, not for the package, as its own', async () => {
     const { fetch } = fakeFetch({ [PF2E_RELEASES]: { body: [release('release-2.0.0'), release('v1.0.0')] } });
     const found = await githubSource(httpClient({ fetch })).releases(
       pf2e,
