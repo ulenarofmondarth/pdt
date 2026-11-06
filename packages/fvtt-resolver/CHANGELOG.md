@@ -1,3 +1,9 @@
+## [@mondarth/fvtt-resolver-v0.10.2](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.10.1...@mondarth/fvtt-resolver-v0.10.2) (2026-11-06)
+
+### Bug Fixes
+
+* **resolver:** take 1.2 as 1.2.0, and IDs in any case, when loading ([9aed80e](https://github.com/ulenarofmondarth/pdt/commit/9aed80e4bdb1e712386196ca95972df08d52e2cd))
+
 ## [@mondarth/fvtt-resolver-v0.10.1](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.10.0...@mondarth/fvtt-resolver-v0.10.1) (2026-11-06)
 
 ### Bug Fixes
