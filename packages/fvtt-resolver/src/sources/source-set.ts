@@ -79,11 +79,30 @@ export interface SourceSet {
 const MANIFEST_SOURCE = 'manifest';
 
 /**
- * Whether a manifest's version is that of the release listed: the same version, or the version a
- * tag gives, for a release listed from a tag such as `release-1.1.4`.
+ * A version of numbers alone, such as `1.2.0`, without the zeros that end it, as Foundry VTT reads
+ * `1.2` and `1.2.0` as one version; `undefined` for any other, such as `1.2.0-beta`.
  */
-const isListedVersion = (manifestVersion: string, listed: string) =>
-  sameVersion(manifestVersion, listed) || tagVersion(manifestVersion) === listed;
+const numbersOf = (version: string): string | undefined => {
+  const plain = unprefixed(version);
+  return /^\d+(\.\d+)*$/.test(plain) ? plain.replace(/(\.0+)+$/, '') : undefined;
+};
+
+/**
+ * Whether a manifest's version is that of the release listed: the same version, or the version a
+ * tag gives, for a release listed from a tag such as `release-1.1.4`, or the same numbers but for
+ * the zeros that end them, as a listing gives `1.2` of a manifest's `1.2.0`.
+ */
+const isListedVersion = (manifestVersion: string, listed: string) => {
+  if (sameVersion(manifestVersion, listed) || tagVersion(manifestVersion) === listed) return true;
+  const numbers = numbersOf(manifestVersion);
+  return numbers !== undefined && numbers === numbersOf(listed);
+};
+
+/**
+ * Whether a manifest is of the package listed: the same ID, but for case, as Foundry VTT's listing
+ * gives `locknkey` of a manifest's `LocknKey`.
+ */
+const isListedPackage = (manifestId: string, listed: string) => manifestId.toLowerCase() === listed.toLowerCase();
 
 /** A release's manifest URL for its version alone: the one it has, or its manifest URL if that names the version. */
 const versionManifestOf = (release: Release): string | undefined =>
@@ -221,7 +240,7 @@ export function sourceSet({
     });
     if (
       !read.ok ||
-      read.release.package.id !== release.package.id ||
+      !isListedPackage(read.release.package.id, release.package.id) ||
       !isListedVersion(read.release.version, release.version)
     )
       return release;
@@ -254,10 +273,11 @@ export function sourceSet({
       if (!fetched.ok) return fetched;
       const read = normaliseManifest(fetched.value, { origin, type });
       // A manifest of another version than the one listed is not this release (see isListedVersion).
-      // The release keeps the listed version, so that it stays the release the solver asked for.
+      // The release keeps the listed package and version, so that it stays the release the solver
+      // asked for, whatever case the manifest gives its ID in, and however it writes its version.
       if (
         !read.ok ||
-        read.release.package.id !== release.package.id ||
+        !isListedPackage(read.release.package.id, release.package.id) ||
         !isListedVersion(read.release.version, release.version)
       )
         return { ok: false, gap: { url: origin, reason: 'invalid' } };
@@ -266,6 +286,7 @@ export function sourceSet({
         ok: true,
         value: {
           ...read.release,
+          package: release.package,
           version: release.version,
           ...(own !== undefined && { versionManifest: own }),
           ...(release.listing && { listing: release.listing }),

@@ -571,6 +571,52 @@ describe('sourceSet', () => {
       expect((await set.load([listed])).map(r => `${r.version}:${r.detail}`)).toEqual(['1.1.4:loaded']);
     });
 
+    it.each([
+      ['1.2', '1.2.0'],
+      ['1.0', '1.0.0'],
+      ['2.0.0', '2'],
+      ['v1.2', '1.2.0'],
+    ])(
+      'reads a release listed as %s from a manifest of %s, as Foundry reads the zeros that end a version',
+      async (listedAs, version) => {
+        const listed = makeRelease({
+          id: 'zeros',
+          version: listedAs,
+          manifest: 'https://example.org/zeros.json',
+          detail: 'listed',
+        });
+        const { set } = setup({ 'https://example.org/zeros.json': { body: { id: 'zeros', version } } });
+        expect((await set.load([listed])).map(r => `${r.version}:${r.detail}`)).toEqual([`${listedAs}:loaded`]);
+      },
+    );
+
+    it.each([
+      ['another version, but for zeros', '1.2', '1.2.1'],
+      ['a pre-release of the version', '1.2', '1.2.0-beta'],
+    ])('does not read a manifest of %s as the version listed', async (_, listedAs, version) => {
+      const listed = makeRelease({
+        id: 'zeros',
+        version: listedAs,
+        manifest: 'https://example.org/z.json',
+        detail: 'listed',
+      });
+      const { set } = setup({ 'https://example.org/z.json': { body: { id: 'zeros', version } } });
+      expect(await set.load([listed])).toEqual([]);
+    });
+
+    it('reads a manifest whose ID is the listed one in another case, keeping the package listed', async () => {
+      const listed = makeRelease({
+        id: 'locknkey',
+        version: '4.1.16',
+        manifest: 'https://example.org/LocknKey.json',
+        detail: 'listed',
+      });
+      const { set } = setup({ 'https://example.org/LocknKey.json': { body: { id: 'LocknKey', version: '4.1.16' } } });
+      expect((await set.load([listed])).map(r => `${r.package.id}@${r.version}:${r.detail}`)).toEqual([
+        'locknkey@4.1.16:loaded',
+      ]);
+    });
+
     it('does not list a package already known again', async () => {
       const { set, requests } = setup();
       const universe = await set.universe([
