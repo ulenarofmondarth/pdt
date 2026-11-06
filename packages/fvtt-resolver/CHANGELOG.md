@@ -1,3 +1,9 @@
+## [@mondarth/fvtt-resolver-v0.10.1](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.10.0...@mondarth/fvtt-resolver-v0.10.1) (2026-11-06)
+
+### Bug Fixes
+
+* **resolver:** take no other package's tags from a repository of several ([936c3c6](https://github.com/ulenarofmondarth/pdt/commit/936c3c6ba07678037abec78ce222f79dbca90753))
+
 ## [@mondarth/fvtt-resolver-v0.10.0](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.9.1...@mondarth/fvtt-resolver-v0.10.0) (2026-11-05)
 
 ### Features
