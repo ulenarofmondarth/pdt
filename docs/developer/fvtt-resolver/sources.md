@@ -381,7 +381,7 @@ The core package (`@mondarth/fvtt-resolver`) contains no I/O at all. The sources
 `githubSource(http, { token })` and `gitlabSource(http, { token, hosts })`
 : List a repository's releases (the newest 100) from GitHub's or GitLab's API. Each with the package's manifest attached (`module.json` or `system.json`) becomes a listed release.
   - **Version:** read from the tag (`v1.1.4`, `release-6.0.6`, `pf2e-8.6.1`), from its first digit that starts it or follows a separator other than a dot, a `v` aside, so digits in a name before the version are not part of it; or else from its first digit (`release2.0`). Loading the manifest checks it.
-  - **Several packages in one repository:** once any tag is named for the package's ID (`pf2e-8.6.1`), only those, and those named for nothing (`v7.0.0`), are its own, so another package's (`sf2e-1.6.1`) are left out.
+  - **Several packages in one repository:** once any tag is named for the package's ID (`pf2e-8.6.1`), only those, and those named for nothing (`v7.0.0`), are its own, so another package's (`sf2e-1.6.1`) are left out. So it is once the tags give two names or more, though none is the package's: a manifest URL another package declares for this one can lead into a repository of other packages (one of Tagmar modules, for socketlib), whose tags (`tagmar-calendario-v1.1.5`, `barbrawl-v1.9.3.1`) are not its versions. Tags that all give one name (`release-2.0.0`) are still its own.
   - **Repository:** found from the package's manifest URLs, through the hints the source set gives each source:
     - *declared* URLs, from a relationship's `manifest` or the caller;
     - *seen* URLs, of the releases earlier sources listed.
