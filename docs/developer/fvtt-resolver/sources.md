@@ -219,7 +219,7 @@ A mirror is a central cache: a separate project, not part of this one, that keep
 :::{note}
 **As built:** the [Foundry VTT package catalogue](https://github.com/Mondarth/fvtt-package-catalogue) is such a mirror, though a server with a database rather than static files: it crawls a package when it is first asked for, with everything its releases require or run in, and keeps them up to date. `catalogueSource` reads it (see [As built](#as-built)). Its format is its own contract, `@mondarth/fvtt-package-catalogue-contract`, whose types are the resolver's.
 
-It is not quite "one more source": `sourceSet` asks every source for every package, so a mirror among them would save nothing. `sourceSet` asks it first instead, and the other sources only for what it does not hold.
+It is not quite "one more source": `sourceSet` asks every source for every package, so a mirror among them would save nothing. A client asks it alone instead, through `catalogueSet`, a source set of its own that needs no other source behind it.
 :::
 
 ### What it would give
@@ -394,18 +394,9 @@ The core package (`@mondarth/fvtt-resolver`) contains no I/O at all. The sources
 : Reads the release a *declared* manifest URL describes, already loaded. It never reads the URLs other sources listed, since those are one per version, and reading them all would spend the request budget.
 
 `catalogueSource({ url, key, fetch, client })`
-: Asks the [catalogue](#a-shared-mirror) for the universe of some packages: `POST {url}/api/v1/universe`, with the key in `X-API-Key` and the client, such as `EMMA/0.7.0`, in `X-Catalogue-Client`. Not a source of its own, but `sourceSet`'s `catalogue` option.
-  - **One request** for up to 1,000 packages, more for more, gives every release of each, loaded, and of every package their releases require or run in, all the way down, with Foundry's builds and the catalogue's own gaps.
-  - **`pending`:** the packages it does not hold yet. It crawls them once asked, so they are held the next time.
-  - **`unavailable`:** the packages that cannot be had, each `{ package, reason, note? }`: `archived`, when Foundry VTT's listing of it is archived, so its Setup screen no longer offers it, or `gone`, when the catalogue's maintainers found its files are no longer there. It gives none of their releases. A catalogue that predates the field names none.
-  - **Checked:** the answer is read with the contract's `UniverseResponse`. An error answer is an `http` gap, an unreachable catalogue a `network` gap, and an answer the contract refuses an `invalid` one, all from `catalogue`.
+: Asks the [catalogue](#a-shared-mirror), through version 2 of its API, the only one, for a client that asks it alone (see `catalogueSet`). Every request sends the key in `X-API-Key` and the client, such as `EMMA/0.7.0`, in `X-Catalogue-Client`. Each call gives a `SourceResult`.
+  - **Checked:** each answer is read with the contract's schema. An error answer is an `http` gap, an unreachable catalogue a `network` gap, and an answer the contract refuses an `invalid` one, all from `catalogue`.
   - **Outside the budget:** it fetches with its own `fetch`, not through the `httpClient`, as its answers are not cached: the catalogue keeps its own data fresh.
-
-`sourceSet({ …, catalogue })`
-: With a catalogue, `universe(packages)` asks it first. What it holds comes from it alone, still left out by `core` like any release; the sources list only what it does not hold (worlds aside), with the manifests its releases declare as hints. A package it gave is known, so `load` does not list it again. A package it says cannot be had is known too, so no source looks for it, then or when a release loaded later needs it; `unavailable()` gives every such package so far, for the caller to leave out of what it resolves and say why. When the catalogue fails, its gap is recorded and the sources list every package, as without one. `unlisted` and `manifestBounds` do not change what it gives: it decides those itself.
-
-`catalogueSource(…)`, version 2
-: The same catalogue's version 2 API, for a client that asks it alone. Each call gives a `SourceResult`, with the same gaps as version 1.
   - **`lookup({ packages, fromGeneration? })`:** `POST {url}/api/v2/lookup`, each package `{ type, id, installed?, manifest? }`, in parts of up to 1,000, joined. Each package of the closure comes once, with its releases (without their `package`), its listing's `title`, `latest` and `premium`, its `syncedAt`, and `own`, what its own manifest last gave and when. It also gives `pending` (each with a `retryAfter`), `unavailable`, `unreached` and Foundry VTT's builds. `fromGeneration` leaves out releases that cannot run from that generation on, but for the versions `installed`. A package the catalogue does not hold is found by its `manifest`.
   - **`listing({ type?, etag? })`** and **`core({ etag? })`:** `GET {url}/api/v2/listing` and `/core`, revalidated: `{ notModified: false, value, etag? }`, or `{ notModified: true }` when the catalogue answers `304` to the `etag` given.
   - **`recheck(packages)`:** `POST {url}/api/v2/recheck`, in parts of up to 50: the packages' own manifests checked again now, and those queued for giving a version not held.

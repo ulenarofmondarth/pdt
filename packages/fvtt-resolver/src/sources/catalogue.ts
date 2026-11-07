@@ -1,17 +1,12 @@
 /**
  * The Foundry VTT package catalogue (Mondarth/fvtt-package-catalogue): a server that keeps every release of the
- * packages it is asked for, loaded from their manifests, with what they require and run in, all the way down. One
- * request gives a whole universe, where the other sources take one or more requests for each package and each
- * release. Its answers are checked against its own contract, `@mondarth/fvtt-package-catalogue-contract`.
+ * packages it is asked for, loaded from their manifests, with what they require and run in, all the way down. Its
+ * answers are checked against its own contract, `@mondarth/fvtt-package-catalogue-contract`.
  *
- * It is not a {@link ReleaseSource}: `sourceSet` asks every source for every package, so a catalogue among them
- * would save nothing. `sourceSet` asks it first instead, when given one, and the other sources only for what it does
- * not hold. See the `catalogue` option of `sourceSet`.
- *
- * Version 2 of its API is for clients that ask the catalogue alone, as few times as they can: a lookup gives each
- * package of a closure once, with how fresh it is; the listing and Foundry VTT's builds are revalidated by their ETags;
- * a recheck has packages' own manifests checked again now; and a manifest URL a user gives is read for them. See
- * `catalogueSet`, which asks the catalogue and nothing else.
+ * Version 2 of its API, the only one, is for clients that ask the catalogue alone, as few times as they can: a lookup
+ * gives each package of a closure once, with how fresh it is; the listing and Foundry VTT's builds are revalidated by
+ * their ETags; a recheck has packages' own manifests checked again now; and a manifest URL a user gives is read for
+ * them. See `catalogueSet`, which asks the catalogue and nothing else.
  */
 import {
   API_KEY_HEADER,
@@ -28,20 +23,17 @@ import {
   ManifestResponse,
   RECHECK_PATH,
   RecheckResponse,
-  UNIVERSE_PATH,
-  UniverseResponse,
   packageKey,
 } from '@mondarth/fvtt-package-catalogue-contract';
 
 import type { LookupPackageRequest, LookupRequest } from '@mondarth/fvtt-package-catalogue-contract';
 import type { z } from 'zod';
 
-import type { PackageRef, Release } from '../release.js';
-import type { CoreRelease } from '../universe.js';
-import type { SourceGap, SourceResult, UnavailablePackage } from './types.js';
+import type { PackageRef } from '../release.js';
+import type { SourceGap, SourceResult } from './types.js';
 
 export interface CatalogueOptions {
-  /** Where the catalogue is, such as `https://catalogue.example/`; the API is under `api/v1/` there. */
+  /** Where the catalogue is, such as `https://catalogue.example/`; the API is under `api/v2/` there. */
   readonly url: string;
   /** The catalogue's API key: it says which client is asking, rather than keeping the data secret. */
   readonly key: string;
@@ -49,22 +41,6 @@ export interface CatalogueOptions {
   readonly fetch: typeof globalThis.fetch;
   /** The client and its version, such as `EMMA/0.7.0`, which the catalogue logs. */
   readonly client?: string;
-}
-
-/** What the catalogue gave for a set of packages. */
-export interface CatalogueUniverse {
-  /** Foundry VTT's builds. */
-  readonly core: CoreRelease[];
-  /** The releases of the packages it holds: those asked for, and what their releases require or run in. */
-  readonly releases: Release[];
-  /** What the catalogue's own sources could not fetch or read for these packages. */
-  readonly gaps: SourceGap[];
-  /** The packages asked for or needed that it does not hold yet: it fetches them, for next time. */
-  readonly pending: PackageRef[];
-  /** The packages asked for or needed that cannot be had, and why: none of their releases are given. */
-  readonly unavailable: UnavailablePackage[];
-  /** The oldest time a package it holds was brought up to date, as an ISO 8601 time; null if never. */
-  readonly asOf: string | null;
 }
 
 /**
@@ -78,8 +54,6 @@ export type Revalidated<T> =
 export interface Catalogue {
   /** The source its gaps are recorded as. */
   readonly name: string;
-  /** The universe of some packages, asked for in as many requests as the catalogue needs. */
-  universe(packages: readonly PackageRef[]): Promise<SourceResult<CatalogueUniverse>>;
   /**
    * Version 2: some packages, with what the client knows of them, and every package they need, each once, with how
    * fresh it is; asked for in as many requests as the catalogue needs, joined.
@@ -192,18 +166,6 @@ export function catalogueSource({ url, key, fetch, client }: CatalogueOptions): 
 
   return {
     name: NAME,
-    async universe(packages) {
-      const parts: UniverseResponse[] = [];
-      for (let start = 0; start < packages.length; start += MAX_UNIVERSE_PACKAGES) {
-        const part = await post(UNIVERSE_PATH, UniverseResponse, {
-          packages: packages.slice(start, start + MAX_UNIVERSE_PACKAGES),
-        });
-        if (!part.ok) return part;
-        parts.push(part.value);
-      }
-      return { ok: true, value: joined(parts) };
-    },
-
     lookup({ packages, fromGeneration }) {
       return inParts<LookupPackageRequest, LookupResponse>(
         packages,
@@ -238,36 +200,6 @@ export function catalogueSource({ url, key, fetch, client }: CatalogueOptions): 
     manifest(url, type) {
       return post(MANIFEST_PATH, ManifestResponse, { url, type });
     },
-  };
-}
-
-/** The answers to several parts of a request, as one: each build and release once, and the oldest time. */
-function joined(parts: readonly UniverseResponse[]): CatalogueUniverse {
-  const core = new Map<string, CoreRelease>();
-  const releases = new Map<string, Release>();
-  const pending = new Map<string, PackageRef>();
-  const unavailable = new Map<string, UnavailablePackage>();
-  const gaps: SourceGap[] = [];
-  let asOf: string | null | undefined;
-  for (const part of parts) {
-    for (const build of part.universe.core) core.set(build.version, build);
-    for (const release of part.universe.releases) {
-      releases.set(`${packageKey(release.package)}@${release.version}`, release);
-    }
-    for (const ref of part.pending) pending.set(packageKey(ref), ref);
-    for (const gone of part.unavailable) unavailable.set(packageKey(gone.package), gone);
-    gaps.push(...part.gaps);
-    asOf = older(asOf, part.asOf);
-  }
-  // A package one part holds is not pending because another part needed it.
-  const held = new Set([...releases.values()].map(release => packageKey(release.package)));
-  return {
-    core: [...core.values()],
-    releases: [...releases.values()],
-    gaps,
-    pending: [...pending.values()].filter(ref => !held.has(packageKey(ref))),
-    unavailable: [...unavailable.values()],
-    asOf: asOf ?? null,
   };
 }
 
