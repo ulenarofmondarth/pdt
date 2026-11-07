@@ -48,7 +48,6 @@ function catalogueAnswering(...answers: SourceResult<Partial<LookupResponse>>[])
   const unused = () => Promise.reject(new Error('not asked'));
   const catalogue: Catalogue = {
     name: 'catalogue',
-    universe: unused,
     lookup,
     listing: unused,
     core: unused,

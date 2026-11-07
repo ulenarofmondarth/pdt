@@ -179,9 +179,8 @@ function gitlabSource(http: HttpClient, options?: { token?: string; hosts?: stri
 function manifestUrlSource(http: HttpClient): ReleaseSource;
 function foundryCoreReleases(http: HttpClient): Promise<SourceResult<CoreRelease[]>>;
 /**
- * The Foundry VTT package catalogue, asked first by `sourceSet({ …, catalogue })`: the whole universe of some packages
- * in one request, with what it does not hold yet as `pending`, and what cannot be had, and why, as `unavailable`
- * (which the set then gives as `unavailable()`).
+ * The Foundry VTT package catalogue, through version 2 of its API: lookups, its listing and Foundry VTT's builds,
+ * rechecks, and manifest URLs read for a client; see `catalogueSet`.
  */
 function catalogueSource(options: { url: string; key: string; fetch: typeof globalThis.fetch; client?: string }): Catalogue;
 /**

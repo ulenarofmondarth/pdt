@@ -5,13 +5,7 @@
  * @packageDocumentation
  */
 export { memoryCache, type Cache, type CacheEntry } from './cache.js';
-export {
-  catalogueSource,
-  type Catalogue,
-  type CatalogueOptions,
-  type CatalogueUniverse,
-  type Revalidated,
-} from './catalogue.js';
+export { catalogueSource, type Catalogue, type CatalogueOptions, type Revalidated } from './catalogue.js';
 export {
   catalogueSet,
   type CatalogueLookup,
