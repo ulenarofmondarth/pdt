@@ -5,20 +5,7 @@ import { makeRelease } from '../helpers.js';
 import type { PackageRef } from '../../src/release.js';
 
 const URL_BASE = 'https://catalogue.test/';
-const UNIVERSE = 'https://catalogue.test/api/v1/universe';
 const module = (id: string): PackageRef => ({ type: 'module', id });
-
-/** What the catalogue answers, as the contract shapes it. */
-const answer = (overrides: Record<string, unknown> = {}) => ({
-  universe: {
-    core: [{ version: '14.368', generation: 14, channel: 'stable' }],
-    releases: [makeRelease({ id: 'a', version: '1.0.0' })],
-  },
-  gaps: [],
-  pending: [],
-  asOf: '2026-10-25T12:00:00.000Z',
-  ...overrides,
-});
 
 /** A `fetch` answering each request with the next of these, recording what was asked. */
 function fetchAnswering(...responses: (() => Response | Promise<Response>)[]) {
@@ -32,173 +19,6 @@ function fetchAnswering(...responses: (() => Response | Promise<Response>)[]) {
 }
 
 describe('catalogueSource', () => {
-  it('posts the packages to the universe, with the key and the client, and reads the answer', async () => {
-    const { fetch } = fetchAnswering(() => Response.json(answer()));
-    const catalogue = catalogueSource({ url: URL_BASE, key: 'k', client: 'EMMA/0.7.0', fetch });
-    expect(await catalogue.universe([module('a')])).toEqual({
-      ok: true,
-      value: {
-        core: [{ version: '14.368', generation: 14, channel: 'stable' }],
-        releases: [makeRelease({ id: 'a', version: '1.0.0' })],
-        gaps: [],
-        pending: [],
-        // A catalogue that predates it names none.
-        unavailable: [],
-        asOf: '2026-10-25T12:00:00.000Z',
-      },
-    });
-    const [url, init] = fetch.mock.calls[0] ?? [];
-    expect(String(url)).toBe(UNIVERSE);
-    expect(init).toMatchObject({
-      method: 'POST',
-      headers: { 'X-API-Key': 'k', 'X-Catalogue-Client': 'EMMA/0.7.0', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ packages: [module('a')] }),
-    });
-  });
-
-  it('finds the API under a base with a path of its own, with or without a trailing slash', async () => {
-    for (const url of ['https://example.test/catalogue/', 'https://example.test/catalogue']) {
-      const { fetch } = fetchAnswering(() => Response.json(answer()));
-      await catalogueSource({ url, key: 'k', fetch }).universe([module('a')]);
-      expect(String(fetch.mock.calls[0]?.[0])).toBe('https://example.test/catalogue/api/v1/universe');
-    }
-  });
-
-  it('sends no client header when none is named', async () => {
-    const { fetch } = fetchAnswering(() => Response.json(answer()));
-    await catalogueSource({ url: URL_BASE, key: 'k', fetch }).universe([module('a')]);
-    expect(fetch.mock.calls[0]?.[1]?.headers).not.toHaveProperty('X-Catalogue-Client');
-  });
-
-  it('asks nothing for no packages', async () => {
-    const { fetch } = fetchAnswering();
-    expect(await catalogueSource({ url: URL_BASE, key: 'k', fetch }).universe([])).toEqual({
-      ok: true,
-      value: { core: [], releases: [], gaps: [], pending: [], unavailable: [], asOf: null },
-    });
-    expect(fetch).not.toHaveBeenCalled();
-  });
-
-  it('asks for many packages in parts the catalogue accepts, and joins the answers', async () => {
-    const many = Array.from({ length: 1001 }, (_, i) => module(`m${String(i)}`));
-    const { fetch, bodies } = fetchAnswering(
-      () =>
-        Response.json(
-          answer({
-            pending: [module('x')],
-            unavailable: [{ package: module('gone'), reason: 'gone', note: 'Deleted' }],
-            gaps: [{ source: 's', url: 'u', reason: 'http' }],
-            asOf: '2026-10-25T12:00:00.000Z',
-          }),
-        ),
-      () =>
-        Response.json(
-          answer({
-            universe: {
-              core: [{ version: '14.368', generation: 14, channel: 'stable' }],
-              releases: [makeRelease({ id: 'b', version: '2.0.0' })],
-            },
-            pending: [module('x'), module('y')],
-            unavailable: [
-              { package: module('gone'), reason: 'gone', note: 'Deleted' },
-              { package: module('old'), reason: 'archived' },
-            ],
-            asOf: '2026-10-25T09:00:00.000Z',
-          }),
-        ),
-    );
-    const found = await catalogueSource({ url: URL_BASE, key: 'k', fetch }).universe(many);
-    expect(bodies().map(body => body.packages.length)).toEqual([1000, 1]);
-    expect(found).toEqual({
-      ok: true,
-      value: {
-        // Builds and releases once each, however many parts gave them.
-        core: [{ version: '14.368', generation: 14, channel: 'stable' }],
-        releases: [makeRelease({ id: 'a', version: '1.0.0' }), makeRelease({ id: 'b', version: '2.0.0' })],
-        gaps: [{ source: 's', url: 'u', reason: 'http' }],
-        pending: [module('x'), module('y')],
-        // Each once, however many parts named it.
-        unavailable: [
-          { package: module('gone'), reason: 'gone', note: 'Deleted' },
-          { package: module('old'), reason: 'archived' },
-        ],
-        // The oldest of the parts'.
-        asOf: '2026-10-25T09:00:00.000Z',
-      },
-    });
-  });
-
-  it('gives a package once when it is held by one part and pending in another', async () => {
-    const many = Array.from({ length: 1001 }, (_, i) => module(`m${String(i)}`));
-    const { fetch } = fetchAnswering(
-      () => Response.json(answer({ universe: { core: [], releases: [makeRelease({ id: 'a', version: '1.0.0' })] } })),
-      () => Response.json(answer({ universe: { core: [], releases: [] }, pending: [module('a')] })),
-    );
-    const found = await catalogueSource({ url: URL_BASE, key: 'k', fetch }).universe(many);
-    expect(found.ok && found.value.pending).toEqual([]);
-  });
-
-  it('is as of no time when a part is, whichever part it is', async () => {
-    const many = Array.from({ length: 1001 }, (_, i) => module(`m${String(i)}`));
-    for (const [first, second] of [
-      ['2026-10-25T12:00:00.000Z', null],
-      // Regression: a part of no time, then one of a time, was taken as of that time.
-      [null, '2026-10-25T12:00:00.000Z'],
-    ] as const) {
-      const { fetch } = fetchAnswering(
-        () => Response.json(answer({ asOf: first })),
-        () => Response.json(answer({ asOf: second })),
-      );
-      const found = await catalogueSource({ url: URL_BASE, key: 'k', fetch }).universe(many);
-      expect(found.ok && found.value.asOf).toBeNull();
-    }
-  });
-
-  it('gives an http gap for an error answer', async () => {
-    const { fetch } = fetchAnswering(() =>
-      Response.json({ error: { code: 'unauthorised', message: 'no' } }, { status: 401 }),
-    );
-    expect(await catalogueSource({ url: URL_BASE, key: 'k', fetch }).universe([module('a')])).toEqual({
-      ok: false,
-      gap: { source: 'catalogue', url: UNIVERSE, reason: 'http', status: 401 },
-    });
-  });
-
-  it('gives a network gap when it cannot be reached', async () => {
-    const { fetch } = fetchAnswering(() => Promise.reject(new TypeError('fetch failed')));
-    expect(await catalogueSource({ url: URL_BASE, key: 'k', fetch }).universe([module('a')])).toEqual({
-      ok: false,
-      gap: { source: 'catalogue', url: UNIVERSE, reason: 'network' },
-    });
-  });
-
-  it('gives an invalid gap for an answer that is not JSON, or breaks the contract', async () => {
-    for (const response of [() => new Response('<html>'), () => Response.json({ universe: 'no' })]) {
-      const { fetch } = fetchAnswering(response);
-      expect(await catalogueSource({ url: URL_BASE, key: 'k', fetch }).universe([module('a')])).toEqual({
-        ok: false,
-        gap: { source: 'catalogue', url: UNIVERSE, reason: 'invalid' },
-      });
-    }
-  });
-
-  it('gives the gap of the first part that fails, asking no more', async () => {
-    const many = Array.from({ length: 2001 }, (_, i) => module(`m${String(i)}`));
-    const { fetch } = fetchAnswering(
-      () => Response.json(answer()),
-      () => new Response('', { status: 503 }),
-    );
-    const found = await catalogueSource({ url: URL_BASE, key: 'k', fetch }).universe(many);
-    expect(found).toMatchObject({ ok: false, gap: { status: 503 } });
-    expect(fetch).toHaveBeenCalledTimes(2);
-  });
-
-  it('refuses a base that is not a URL', () => {
-    expect(() => catalogueSource({ url: 'catalogue', key: 'k', fetch: vi.fn() })).toThrow(/catalogue/);
-  });
-});
-
-describe('catalogueSource, version 2', () => {
   const { package: ref, ...given } = makeRelease({ id: 'a', version: '1.0.0' });
   const looked = (overrides: Record<string, unknown> = {}) => ({
     core: [{ version: '14.368', generation: 14, channel: 'stable' }],
@@ -294,6 +114,21 @@ describe('catalogueSource, version 2', () => {
     expect(found.ok && found.value.asOf).toBeNull();
   });
 
+  it('is as of the oldest time of the parts of a lookup, whichever part it is', async () => {
+    const many = Array.from({ length: 1001 }, (_, i) => module(`m${String(i)}`));
+    for (const [first, second] of [
+      ['2026-11-05T09:00:00.000Z', '2026-11-04T09:00:00.000Z'],
+      ['2026-11-04T09:00:00.000Z', '2026-11-05T09:00:00.000Z'],
+    ]) {
+      const { fetch } = fetchAnswering(
+        () => Response.json(looked({ asOf: first })),
+        () => Response.json(looked({ asOf: second })),
+      );
+      const found = await of(fetch).lookup({ packages: many });
+      expect(found.ok && found.value.asOf).toBe('2026-11-04T09:00:00.000Z');
+    }
+  });
+
   it('asks the catalogue of an empty lookup, which says what is wrong with it', async () => {
     const { fetch } = fetchAnswering(() => new Response('', { status: 400 }));
     expect(await of(fetch).lookup({ packages: [] })).toMatchObject({ ok: false, gap: { reason: 'http', status: 400 } });
@@ -373,7 +208,35 @@ describe('catalogueSource, version 2', () => {
     );
   });
 
-  it('gives the gaps of version 2 as of version 1', async () => {
+  it('finds the API under a base with a path of its own, with or without a trailing slash', async () => {
+    for (const url of ['https://example.test/catalogue/', 'https://example.test/catalogue']) {
+      const { fetch } = fetchAnswering(() => Response.json(looked()));
+      await catalogueSource({ url, key: 'k', fetch }).lookup({ packages: [module('a')] });
+      expect(String(fetch.mock.calls[0]?.[0])).toBe('https://example.test/catalogue/api/v2/lookup');
+    }
+  });
+
+  it('sends no client header when none is named', async () => {
+    const { fetch } = fetchAnswering(() => Response.json(looked()));
+    await catalogueSource({ url: URL_BASE, key: 'k', fetch }).lookup({ packages: [module('a')] });
+    expect(fetch.mock.calls[0]?.[1]?.headers).not.toHaveProperty('X-Catalogue-Client');
+  });
+
+  it('gives the gap of the first part of a lookup that fails, asking no more', async () => {
+    const many = Array.from({ length: 2001 }, (_, i) => module(`m${String(i)}`));
+    const { fetch } = fetchAnswering(
+      () => Response.json(looked()),
+      () => new Response('', { status: 503 }),
+    );
+    expect(await of(fetch).lookup({ packages: many })).toMatchObject({ ok: false, gap: { status: 503 } });
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('refuses a base that is not a URL', () => {
+    expect(() => catalogueSource({ url: 'catalogue', key: 'k', fetch: vi.fn() })).toThrow(/catalogue/);
+  });
+
+  it('gives a gap for what it cannot reach, an error answer, and one that breaks the contract', async () => {
     for (const [response, reason] of [
       [() => Promise.reject(new TypeError('fetch failed')), 'network'],
       [() => new Response('', { status: 503 }), 'http'],
