@@ -1,3 +1,9 @@
+## [@mondarth/fvtt-resolver-v0.11.0](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.10.2...@mondarth/fvtt-resolver-v0.11.0) (2026-11-07)
+
+### Features
+
+* **fvtt-resolver:** drop the catalogue's version 1 API ([473a150](https://github.com/ulenarofmondarth/pdt/commit/473a150c2598cf1cc5da40cf9f9f9922ad3ecc30))
+
 ## [@mondarth/fvtt-resolver-v0.10.2](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.10.1...@mondarth/fvtt-resolver-v0.10.2) (2026-11-06)
 
 ### Bug Fixes
