@@ -1,3 +1,9 @@
+## [@mondarth/fvtt-resolver-v0.11.2](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.11.1...@mondarth/fvtt-resolver-v0.11.2) (2026-11-10)
+
+### Performance Improvements
+
+* **fvtt-resolver:** parse each version once to order it ([ae3d6d1](https://github.com/ulenarofmondarth/pdt/commit/ae3d6d17e0c1ade72cf0daf1df5f6e36438d9bb3))
+
 ## [@mondarth/fvtt-resolver-v0.11.1](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.11.0...@mondarth/fvtt-resolver-v0.11.1) (2026-11-10)
 
 ### Performance Improvements
