@@ -40,6 +40,26 @@ function compareText(a: string, b: string): number {
   return a === b ? 0 : a > b ? 1 : -1;
 }
 
+/** One part of a version, read once: its text, and the number it starts with and the text after it, if any. */
+interface Part {
+  readonly text: string;
+  readonly value?: number;
+  readonly rest: string;
+}
+
+/**
+ * Read one part of a version, as {@link compareParts} compares it.
+ * @param part - The part
+ * @returns It, read
+ */
+function readPart(part: string): Part {
+  const leading = /^\d+/.exec(part)?.[0];
+  if (leading === undefined) return { text: part, rest: '' };
+  return isNumeric(part)
+    ? { text: part, value: Number(part), rest: '' }
+    : { text: part, value: Number(leading), rest: part.slice(leading.length) };
+}
+
 /**
  * Compares one part of a version with another.
  *
@@ -50,14 +70,30 @@ function compareText(a: string, b: string): number {
  * part starts with a digit. That makes this a total order, and it agrees with Foundry except where
  * Foundry would compare two parts that start with digits as text.
  */
-function compareParts(a: string, b: string): number {
-  const aNumber = /^\d+/.exec(a)?.[0];
-  const bNumber = /^\d+/.exec(b)?.[0];
-  if (aNumber === undefined || bNumber === undefined) return compareText(a, b);
-  const [aValue, aRest] = isNumeric(a) ? [Number(a), ''] : [Number(aNumber), a.slice(aNumber.length)];
-  const [bValue, bRest] = isNumeric(b) ? [Number(b), ''] : [Number(bNumber), b.slice(bNumber.length)];
-  if (aValue !== bValue) return aValue > bValue ? 1 : -1;
-  return compareText(aRest, bRest) || compareText(a, b);
+function compareParts(a: Part, b: Part): number {
+  if (a.value === undefined || b.value === undefined) return compareText(a.text, b.text);
+  if (a.value !== b.value) return a.value > b.value ? 1 : -1;
+  return compareText(a.rest, b.rest) || compareText(a.text, b.text);
+}
+
+/** The most versions kept read; past it, they are read afresh. */
+const READ_LIMIT = 10_000;
+const read = new Map<string, readonly Part[]>();
+
+/**
+ * A version's parts, read once: the solver compares the same versions over and over, and reading
+ * them again each time was most of its work.
+ * @param version - The version
+ * @returns Its parts
+ */
+function partsOf(version: string): readonly Part[] {
+  let parts = read.get(version);
+  if (parts === undefined) {
+    if (read.size >= READ_LIMIT) read.clear();
+    parts = version.split('.').map(readPart);
+    read.set(version, parts);
+  }
+  return parts;
 }
 
 /**
@@ -74,15 +110,17 @@ export const foundryOrder: VersionOrder = {
   name: 'foundry',
 
   compare(a, b) {
-    const aParts = a.split('.');
-    const bParts = b.split('.');
+    if (a === b) return 0;
+    const aParts = partsOf(a);
+    const bParts = partsOf(b);
     for (const [i, aPart] of aParts.entries()) {
       const bPart = bParts[i];
       if (bPart === undefined) return 1;
       const order = compareParts(aPart, bPart);
       if (order !== 0) return order;
     }
-    return aParts.length === bParts.length ? 0 : -1;
+    // Every part of `a` is `b`'s, and parts that compare equal are the same text, so `b`, not being `a`, extends it.
+    return -1;
   },
 
   read: version => version,
