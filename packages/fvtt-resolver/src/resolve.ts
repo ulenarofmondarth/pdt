@@ -92,6 +92,9 @@ export type Resolution =
    */
   | { readonly ok: false; readonly needs: readonly PackageVersion[]; readonly warnings: readonly OrderWarning[] };
 
+/** Each kind of resolution, without its warnings. */
+type Unwarned<T> = T extends unknown ? Omit<T, 'warnings'> : never;
+
 export interface ResolveOptions {
   readonly policy?: Partial<Policy>;
   /** Overrides and core limits, beyond what the manifests declare. */
@@ -157,6 +160,15 @@ export function resolve(universe: Universe, requirements: Requirements, options:
   const worldSystems = worldSystemOrder(key => orders.orderOf(key));
   const orderOf = (key: PackageKey): VersionOrder => (key === WORLD_SYSTEM ? worldSystems : orders.orderOf(key));
   const opsOf = (key: PackageKey) => rangeOps(orderOf(key));
+
+  /**
+   * A resolution, with the warnings about version orders read only when wanted: working them out compares every pair
+   * of each package's versions, which is most of a resolution's cost in a large universe, and is rarely read.
+   * @param resolution - The resolution, without its warnings
+   * @returns It, with them
+   */
+  const withWarnings = (resolution: Unwarned<Resolution>): Resolution =>
+    Object.defineProperty(resolution, 'warnings', { get: () => orders.warnings, enumerable: true }) as Resolution;
 
   const constraintCache = new Map<string, Constraint[]>();
   const constraintsOf = (release: Release) => {
@@ -338,9 +350,7 @@ export function resolve(universe: Universe, requirements: Requirements, options:
         })
       : [];
     const needs = listedAmong([...leaning, ...unexplored]);
-    return needs.length > 0
-      ? { ok: false, needs, warnings: orders.warnings }
-      : { ok: false, failure: result.failure, warnings: orders.warnings };
+    return needs.length > 0 ? withWarnings({ ok: false, needs }) : withWarnings({ ok: false, failure: result.failure });
   }
 
   const chosen = [...result.versions].flatMap(([key, version]) => {
@@ -348,14 +358,13 @@ export function resolve(universe: Universe, requirements: Requirements, options:
     return release === undefined ? [] : [release];
   });
   const needs = listedAmong([...result.versions].map(([key, version]) => ({ package: key, version })));
-  if (needs.length > 0) return { ok: false, needs, warnings: orders.warnings };
-  return {
+  if (needs.length > 0) return withWarnings({ ok: false, needs });
+  return withWarnings({
     ok: true,
     setup: {
       core: result.versions.get(CORE) as string,
       system: chosen.find(release => release.package.type === 'system') as Release,
       modules: chosen.filter(release => release.package.type === 'module'),
     },
-    warnings: orders.warnings,
-  };
+  });
 }
