@@ -168,6 +168,16 @@ describe('foundryOrder, its versions read once', () => {
     );
   });
 
+  it('orders as before once more versions are read than are kept', () => {
+    const many = Array.from({ length: 10_050 }, (_, i) => `1.${String(i)}`);
+    for (const [i, version] of many.entries()) {
+      if (i > 0) expect(foundryOrder.compare(version, many[i - 1] ?? '')).toBe(1);
+    }
+    // Read before the kept ones were let go, and read again since.
+    expect(foundryOrder.compare('1.0', '1.10049')).toBe(-1);
+    expect(foundryOrder.compare('1.10049', '1.0')).toBe(1);
+  });
+
   it('orders the same pair the same, compared again', () => {
     expect(foundryOrder.compare('10a', '9')).toBe(foundryOrder.compare('10a', '9'));
     expect(foundryOrder.compare('1.0', '1.0.0')).toBe(-1);

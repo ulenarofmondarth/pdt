@@ -119,7 +119,8 @@ export const foundryOrder: VersionOrder = {
       const order = compareParts(aPart, bPart);
       if (order !== 0) return order;
     }
-    return aParts.length === bParts.length ? 0 : -1;
+    // Every part of `a` is `b`'s, and parts that compare equal are the same text, so `b`, not being `a`, extends it.
+    return -1;
   },
 
   read: version => version,
