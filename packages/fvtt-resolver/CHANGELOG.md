@@ -1,3 +1,9 @@
+## [@mondarth/fvtt-resolver-v0.11.4](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.11.3...@mondarth/fvtt-resolver-v0.11.4) (2026-11-10)
+
+### Performance Improvements
+
+* **fvtt-resolver:** tell subsets and disjoint ranges by their intervals ([56ec452](https://github.com/ulenarofmondarth/pdt/commit/56ec452a38e7274f94fc31a6677c5bebe067f0d4))
+
 ## [@mondarth/fvtt-resolver-v0.11.3](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.11.2...@mondarth/fvtt-resolver-v0.11.3) (2026-11-10)
 
 ### Performance Improvements
