@@ -1,6 +1,6 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { namesVersion, sameVersion, tagName, tagVersion } from '../../src/version/same.js';
+import { namesVersion, sameVersion, tagName, tagVersion, unprefixed } from '../../src/version/same.js';
 
 describe('sameVersion', () => {
   it.each([
@@ -27,6 +27,18 @@ describe('sameVersion', () => {
     fc.assert(
       fc.property(fc.stringMatching(/^\d[0-9a-z.-]{0,8}$/), fc.constantFrom('v', 'V'), (version, v) => {
         expect(sameVersion(`${v}${version}`, version)).toBe(true);
+      }),
+    );
+  });
+});
+
+describe('unprefixed', () => {
+  // It reads a version further only where it starts with a "v" or "V", for speed: what it gives is what the pattern
+  // alone would give, for any text.
+  it('takes a leading "v" or "V" off a version starting with a digit after it, and changes nothing else', () => {
+    fc.assert(
+      fc.property(fc.oneof(fc.string(), fc.stringMatching(/^[vVx]?\d?[0-9a-z.-]{0,6}$/)), version => {
+        expect(unprefixed(version)).toBe(version.replace(/^[vV](?=\d)/, ''));
       }),
     );
   });
