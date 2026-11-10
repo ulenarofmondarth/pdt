@@ -1,3 +1,9 @@
+## [@mondarth/fvtt-resolver-v0.11.3](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.11.2...@mondarth/fvtt-resolver-v0.11.3) (2026-11-10)
+
+### Performance Improvements
+
+* **fvtt-resolver:** work out once what orders a package's versions ([3eac188](https://github.com/ulenarofmondarth/pdt/commit/3eac188b26dac2d61ced30a34b8793edf051fcf1))
+
 ## [@mondarth/fvtt-resolver-v0.11.2](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.11.1...@mondarth/fvtt-resolver-v0.11.2) (2026-11-10)
 
 ### Performance Improvements
