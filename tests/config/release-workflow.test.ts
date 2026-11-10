@@ -11,7 +11,9 @@ import { describe, expect, it } from 'vitest';
  */
 
 interface Step {
+  name?: string;
   uses?: string;
+  run?: string;
   with?: Record<string, string>;
 }
 
@@ -42,6 +44,30 @@ describe('release workflow', () => {
     const uploaded = inputsOf('actions/upload-pages-artifact').name;
     expect(uploaded).toContain('${{ github.run_attempt }}');
     expect(inputsOf('actions/deploy-pages').artifact_name).toBe(uploaded);
+  });
+});
+
+describe('bringing dev up to date', () => {
+  /*
+   * When the release could not push to dev, it opened a pull request from main itself. The
+   * repository deletes a pull request's branch once it is merged, and the release App may delete
+   * main, so merging that pull request deleted main. Its only commit was the release commit,
+   * marked `[skip ci]`, so the required check never ran on it either.
+   */
+  const run = workflow.jobs['sync-dev']?.steps?.find(step => step.name === 'Merge main into dev')?.run ?? '';
+
+  it('still fast-forwards dev when it can', () => {
+    expect(run).toContain('git push origin HEAD:dev');
+  });
+
+  it('never opens a pull request from main', () => {
+    expect(run).not.toMatch(/--head\s+main\b/);
+    expect(run).toMatch(/--head\s+"?\$\{?branch/);
+  });
+
+  it('opens it from a merge commit, which is not marked to skip CI', () => {
+    expect(run).toContain('git merge --no-ff');
+    expect(run).toContain('git push origin "HEAD:refs/heads/${branch}"');
   });
 });
 
