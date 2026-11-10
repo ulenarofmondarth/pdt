@@ -42,7 +42,7 @@ Runs on every push to `main`:
    6. creates the GitHub release.
 
    pdt is not published to npm. Its release builds the documentation, which shows the version from `packages/pdt/package.json`, and attaches it to the GitHub release as a zip.
-3. **Bring dev up to date**, if anything was released: fast-forwards `dev` to the release commits, or opens a pull request from `main` to `dev` if it cannot.
+3. **Bring dev up to date**, if anything was released: fast-forwards `dev` to the release commits. If it cannot, it merges the release into a branch of `dev`, `release/sync-<commit>`, and opens a pull request from that branch, never from `main`: the repository deletes a merged pull request's branch, and the release App may delete `main`.
 4. **Pages**: builds the documentation for pdt's released tag (or for `main`, if nothing was released) and deploys it to GitHub Pages. Publishing uses GitHub's own Pages actions; there is no `gh-pages` branch.
 
 It can also be started by hand from the Actions tab (**Release** > **Run workflow**, on `main`; other branches are skipped). That releases only if there are releasable commits, and otherwise just publishes the documentation again. Use it when a Pages deployment fails or stalls: Pages names a deployment after its commit, so once the deployment for a commit has been cancelled, re-running that job cannot replace it, but a manual run deploys the current head of `main`.

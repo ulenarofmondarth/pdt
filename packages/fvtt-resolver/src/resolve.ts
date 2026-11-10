@@ -21,7 +21,7 @@ import {
   worldSystemVersion,
 } from './world-system.js';
 
-import type { Constraint } from './constraints.js';
+import type { Constraint, Preference } from './constraints.js';
 import type { Declarations } from './declarations.js';
 import type { Policy } from './policy.js';
 import type { Range } from './range/range.js';
@@ -182,26 +182,49 @@ export function resolve(universe: Universe, requirements: Requirements, options:
   };
 
   /** How many of the releases decided on prefer this version. */
-  function preferenceScore(key: PackageKey, version: string, decided: ReadonlyMap<PackageKey, string>): number {
+  function preferenceScore(key: PackageKey, version: string, preferences: readonly Preference[]): number {
     let score = 0;
+    if (key === WORLD_SYSTEM) {
+      const { system, version: systemVersion } = splitWorldSystem(version);
+      for (const { on, range } of preferences)
+        if (on === system && opsOf(system).contains(range, systemVersion)) score++;
+    } else {
+      for (const { range } of preferences) if (opsOf(key).contains(range, version)) score++;
+    }
+    return score;
+  }
+
+  /**
+   * The preferences the releases decided on have for a package's versions, or, for the world's system, for any game
+   * system's: what {@link preferenceScore} counts, gathered once for all of the package's versions rather than for
+   * each.
+   */
+  function preferencesOn(key: PackageKey, decided: ReadonlyMap<PackageKey, string>): Preference[] {
+    const found: Preference[] = [];
     for (const [decidedKey, decidedVersion] of decided) {
       const release = releaseOf(decidedKey, decidedVersion);
       if (release === undefined) continue;
       for (const constraint of constraintsOf(release)) {
         if (constraint.kind !== 'preference') continue;
-        if (key === WORLD_SYSTEM) {
-          const { system, version: systemVersion } = splitWorldSystem(version);
-          if (constraint.on === system && opsOf(system).contains(constraint.range, systemVersion)) score++;
-        } else if (constraint.on === key && opsOf(key).contains(constraint.range, version)) {
-          score++;
-        }
+        if (key === WORLD_SYSTEM ? constraint.on.startsWith('system:') : constraint.on === key) found.push(constraint);
       }
     }
-    return score;
+    return found;
+  }
+
+  /** Every candidate version of a package, newest first, sorted once in a resolution: the solver asks for them often. */
+  const sorted = new Map<PackageKey, readonly string[]>();
+  function candidates(key: PackageKey): readonly string[] {
+    let found = sorted.get(key);
+    if (found === undefined) {
+      found = candidatesOf(key);
+      sorted.set(key, found);
+    }
+    return found;
   }
 
   /** Every candidate version of a package, newest first. */
-  function candidates(key: PackageKey): string[] {
+  function candidatesOf(key: PackageKey): string[] {
     const newestFirst = (list: string[], order: VersionOrder) => list.sort((a, b) => order.compare(b, a));
     if (key === CORE) return newestFirst([...coreVersions], foundryOrder);
     if (key === WORLD_SYSTEM) {
@@ -249,25 +272,29 @@ export function resolve(universe: Universe, requirements: Requirements, options:
 
     versions(key, decided) {
       const all = candidates(key);
-      const score = new Map(all.map(version => [version, preferenceScore(key, version, decided)]));
-      const pinned = (version: string) => {
-        const named = key === WORLD_SYSTEM ? splitWorldSystem(version) : { system: key, version };
-        return isPreferred(named.system, named.version);
-      };
-      const releaseFor = (version: string) => {
-        const named = key === WORLD_SYSTEM ? splitWorldSystem(version) : { system: key, version };
-        return releaseOf(named.system, named.version);
-      };
-      const unlisted = (version: string) => releaseFor(version)?.unlisted === true;
-      // Little is known of a release that could not be loaded, so any that could be come first.
-      const failed = (version: string) => releaseFor(version)?.loadFailed === true;
-      return [...all].sort(
-        (a, b) =>
-          Number(pinned(b)) - Number(pinned(a)) ||
-          Number(unlisted(a)) - Number(unlisted(b)) ||
-          Number(failed(a)) - Number(failed(b)) ||
-          (score.get(b) as number) - (score.get(a) as number),
+      const preferences = preferencesOn(key, decided);
+      // What orders each version, worked out once for it rather than at each comparison the sort makes.
+      const facts = new Map(
+        all.map(version => {
+          const named = key === WORLD_SYSTEM ? splitWorldSystem(version) : { system: key, version };
+          const release = releaseOf(named.system, named.version);
+          return [
+            version,
+            {
+              pinned: Number(isPreferred(named.system, named.version)),
+              unlisted: Number(release?.unlisted === true),
+              // Little is known of a release that could not be loaded, so any that could be come first.
+              failed: Number(release?.loadFailed === true),
+              score: preferenceScore(key, version, preferences),
+            },
+          ];
+        }),
       );
+      return [...all].sort((a, b) => {
+        const x = facts.get(a) as { pinned: number; unlisted: number; failed: number; score: number };
+        const y = facts.get(b) as typeof x;
+        return y.pinned - x.pinned || x.unlisted - y.unlisted || x.failed - y.failed || y.score - x.score;
+      });
     },
 
     incompatibilities(key, version) {
