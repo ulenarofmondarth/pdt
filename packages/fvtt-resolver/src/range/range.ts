@@ -50,6 +50,8 @@ export interface RangeOps {
   difference(a: Range, b: Range): Range;
   /** Whether every version in `a` is in `b`. */
   isSubset(a: Range, b: Range): boolean;
+  /** Whether no version is in both ranges. */
+  isDisjoint(a: Range, b: Range): boolean;
   /** Whether the range has no versions. */
   isEmpty(range: Range): boolean;
   /** Whether the range has every version. */
@@ -102,6 +104,11 @@ export function rangeOps(order: VersionOrder): RangeOps {
   }
 
   function isEmptyInterval({ lower, upper }: Interval): boolean {
+    return isEmptyBetween(lower, upper);
+  }
+
+  /** Whether there is no version between two bounds. */
+  function isEmptyBetween(lower: Bound | undefined, upper: Bound | undefined): boolean {
     if (lower === undefined || upper === undefined) return false;
     const compared = order.compare(lower.version, upper.version);
     return compared > 0 || (compared === 0 && !(lower.inclusive && upper.inclusive));
@@ -158,6 +165,44 @@ export function rangeOps(order: VersionOrder): RangeOps {
   const isEmpty = (range: Range) => range.intervals.length === 0;
   const difference = (a: Range, b: Range) => intersect(a, complement(b));
 
+  /** Whether a range is as {@link normalise} leaves one: non-empty intervals, sorted, that neither overlap nor touch. */
+  function isNormalised({ intervals }: Range): boolean {
+    let last: Interval | undefined;
+    for (const next of intervals) {
+      if (isEmptyInterval(next)) return false;
+      if (last !== undefined && (compareLower(last.lower, next.lower) >= 0 || joins(last.upper, next.lower)))
+        return false;
+      last = next;
+    }
+    return true;
+  }
+
+  /**
+   * Whether every version in `a` is in `b`, read from their intervals: each of `a`'s within one of `b`'s, as `b`'s,
+   * normalised, leave gaps between them. The solver asks it of every term it propagates, and working out the
+   * difference to see whether it is empty was most of its work.
+   */
+  function isSubset(a: Range, b: Range): boolean {
+    const within = isNormalised(b) ? b.intervals : normalise([...b.intervals]).intervals;
+    return a.intervals.every(
+      x =>
+        isEmptyInterval(x) ||
+        within.some(y => compareLower(y.lower, x.lower) <= 0 && compareUpper(x.upper, y.upper) <= 0),
+    );
+  }
+
+  /** Whether no version is in both ranges: no interval of one overlaps one of the other. */
+  function isDisjoint(a: Range, b: Range): boolean {
+    for (const x of a.intervals) {
+      for (const y of b.intervals) {
+        const lower = compareLower(x.lower, y.lower) >= 0 ? x.lower : y.lower;
+        const upper = compareUpper(x.upper, y.upper) <= 0 ? x.upper : y.upper;
+        if (!isEmptyBetween(lower, upper)) return false;
+      }
+    }
+    return true;
+  }
+
   return {
     any: { intervals: [{}] },
     none: { intervals: [] },
@@ -169,7 +214,8 @@ export function rangeOps(order: VersionOrder): RangeOps {
     intersect,
     complement,
     difference,
-    isSubset: (a, b) => isEmpty(difference(a, b)),
+    isSubset,
+    isDisjoint,
     isEmpty,
     isAny: range => range.intervals.length === 1 && range.intervals.every(i => !i.lower && !i.upper),
     equals: (a, b) => isEmpty(difference(a, b)) && isEmpty(difference(b, a)),
