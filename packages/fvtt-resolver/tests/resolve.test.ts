@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { normaliseManifest } from '../src/manifest/normalise.js';
 import { rangeOps } from '../src/range/range.js';
 import { REQUIREMENTS, WORLD_SYSTEM, looksLikePrerelease, resolve, worldSystemVersion } from '../src/resolve.js';
@@ -10,6 +10,19 @@ import type { Incompatibility } from '../src/solver/solver.js';
 import type { Reason, Resolution } from '../src/resolve.js';
 import type { Relationship, Release } from '../src/release.js';
 import type { CoreRelease, Universe } from '../src/universe.js';
+
+// The pairwise comparison behind the order warnings, watched: a resolution must not need it.
+const disagreements = vi.hoisted(() => ({ calls: 0 }));
+vi.mock('../src/version/foundry.js', async importOriginal => {
+  const actual = await importOriginal<typeof import('../src/version/foundry.js')>();
+  return {
+    ...actual,
+    foundryDisagreements: (versions: readonly string[]) => {
+      disagreements.calls++;
+      return actual.foundryDisagreements(versions);
+    },
+  };
+});
 
 const ops = rangeOps(foundryOrder);
 
@@ -370,5 +383,18 @@ describe('resolve', () => {
     expect(resolution.warnings).toEqual([
       { code: 'foundry-disagreement', package: 'module:odd', pairs: [['9', '10a']] },
     ]);
+  });
+
+  // Regression: each resolution compared every pair of each package's versions for the order warnings, which nothing
+  // reads, so it was about half of EMMA's planning time with twenty modules and every version of each.
+  it('does not compare every pair of versions to find a setup', () => {
+    const odd = [module('odd', '9'), module('odd', '10a')];
+    disagreements.calls = 0;
+    const resolution = resolve(universe(dnd5eOld, ...odd), { require: [{ package: 'module:odd' }] });
+    expect(resolution.ok).toBe(true);
+    expect(disagreements.calls).toBe(0);
+    // Read, they are worked out once, and are the same each time.
+    expect(resolution.warnings).toBe(resolution.warnings);
+    expect(disagreements.calls).toBeGreaterThan(0);
   });
 });
