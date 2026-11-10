@@ -1,3 +1,9 @@
+## [@mondarth/fvtt-resolver-v0.11.1](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.11.0...@mondarth/fvtt-resolver-v0.11.1) (2026-11-10)
+
+### Performance Improvements
+
+* **fvtt-resolver:** work out a resolution's warnings only when read ([33ab1b3](https://github.com/ulenarofmondarth/pdt/commit/33ab1b3a7f72c4badcecc9c6b8ce3507b28f205e))
+
 ## [@mondarth/fvtt-resolver-v0.11.0](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.10.2...@mondarth/fvtt-resolver-v0.11.0) (2026-11-07)
 
 ### Features
