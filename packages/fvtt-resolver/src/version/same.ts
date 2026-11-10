@@ -13,7 +13,10 @@
 
 /** A version without a leading `v` or `V` before a digit: what counts when matching versions. */
 export function unprefixed(version: string): string {
-  return version.replace(/^[vV](?=\d)/, '');
+  // Most versions start with a digit: only one starting with `v` or `V` is read further, as the solver asks this of
+  // every version it looks a release up by.
+  const first = version.charCodeAt(0);
+  return first === 118 || first === 86 ? version.replace(/^[vV](?=\d)/, '') : version;
 }
 
 /** Whether two versions are the same version, a leading `v` or `V` aside. */
