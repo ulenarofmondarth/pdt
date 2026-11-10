@@ -21,6 +21,11 @@ const range: fc.Arbitrary<Range> = fc
   .array(fc.tuple(bound, bound), { maxLength: 3 })
   .map(pairs => pairs.reduce((all, [lower, upper]) => ops.union(all, ops.between(lower, upper)), ops.none));
 
+/** Ranges as plain data may hold them, not normalised: intervals empty, unsorted, overlapping or touching. */
+const raw: fc.Arbitrary<Range> = fc.array(fc.tuple(bound, bound), { maxLength: 4 }).map(pairs => ({
+  intervals: pairs.map(([lower, upper]) => ({ ...(lower && { lower }), ...(upper && { upper }) })),
+}));
+
 /** The probes a range contains, as the set it stands for. */
 const members = (r: Range) => probes.filter(p => ops.contains(r, p));
 
@@ -100,6 +105,21 @@ describe('rangeOps', () => {
           expect(ops.union(a, b)).toEqual(ops.union(b, a));
         }),
       );
+    });
+
+    it('reads subsets and disjoint ranges from their intervals, as their difference and intersection say', () => {
+      // A range not normalised is read as the versions it holds: as the same range normalised, which `complement`, and
+      // so `difference`, needs.
+      const normalised = (r: Range) => ops.union(r, ops.none);
+      for (const ranges of [range, raw]) {
+        fc.assert(
+          fc.property(ranges, ranges, (a, b) => {
+            expect(ops.isSubset(a, b)).toBe(ops.isEmpty(ops.difference(normalised(a), normalised(b))));
+            expect(ops.isDisjoint(a, b)).toBe(ops.isEmpty(ops.intersect(a, b)));
+          }),
+          { numRuns: 2000 },
+        );
+      }
     });
 
     it('reports a strict subset as a subset, but not the other way', () => {

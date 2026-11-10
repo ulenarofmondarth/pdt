@@ -42,7 +42,7 @@ export function termOps(opsOf: (key: PackageKey) => RangeOps) {
   function isSubset(a: Term, b: Term): boolean {
     const ops = opsOf(a.package);
     if (a.positive && b.positive) return ops.isSubset(a.range, b.range);
-    if (a.positive) return ops.isEmpty(ops.intersect(a.range, b.range));
+    if (a.positive) return ops.isDisjoint(a.range, b.range);
     if (b.positive) return false;
     return ops.isSubset(b.range, a.range);
   }
@@ -50,7 +50,7 @@ export function termOps(opsOf: (key: PackageKey) => RangeOps) {
   /** Whether no state is allowed by both. Both negative terms allow the package to be absent. */
   function isDisjoint(a: Term, b: Term): boolean {
     const ops = opsOf(a.package);
-    if (a.positive && b.positive) return ops.isEmpty(ops.intersect(a.range, b.range));
+    if (a.positive && b.positive) return ops.isDisjoint(a.range, b.range);
     if (a.positive) return ops.isSubset(a.range, b.range);
     if (b.positive) return ops.isSubset(b.range, a.range);
     return false;
