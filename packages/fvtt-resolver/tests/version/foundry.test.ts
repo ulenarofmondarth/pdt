@@ -115,3 +115,61 @@ describe('foundryDisagreements', () => {
     expect(foundryDisagreements(['1.0.0', '1.0.0-beta', '1.10.0', '1.9.0'])).toEqual([]);
   });
 });
+
+// The order as it was before versions were read once, kept to check that reading them once changes nothing.
+function comparedAsBefore(a: string, b: string): number {
+  const isNumeric = (part: string) => part !== '' && !Number.isNaN(Number(part));
+  const text = (x: string, y: string) => (x === y ? 0 : x > y ? 1 : -1);
+  const parts = (x: string, y: string) => {
+    const xNumber = /^\d+/.exec(x)?.[0];
+    const yNumber = /^\d+/.exec(y)?.[0];
+    if (xNumber === undefined || yNumber === undefined) return text(x, y);
+    const [xValue, xRest] = isNumeric(x) ? [Number(x), ''] : [Number(xNumber), x.slice(xNumber.length)];
+    const [yValue, yRest] = isNumeric(y) ? [Number(y), ''] : [Number(yNumber), y.slice(yNumber.length)];
+    if (xValue !== yValue) return xValue > yValue ? 1 : -1;
+    return text(xRest, yRest) || text(x, y);
+  };
+  const aParts = a.split('.');
+  const bParts = b.split('.');
+  for (const [i, aPart] of aParts.entries()) {
+    const bPart = bParts[i];
+    if (bPart === undefined) return 1;
+    const order = parts(aPart, bPart);
+    if (order !== 0) return order;
+  }
+  return aParts.length === bParts.length ? 0 : -1;
+}
+
+describe('foundryOrder, its versions read once', () => {
+  const parts = ['0', '1', '01', '9', '10', '10a', 'a', 'v1', '1e3', '1000', '-1', '', ' 1', '0x10', 'beta', '2b3'];
+  const versions = [
+    ...parts,
+    ...parts.flatMap(x => parts.map(y => `${x}.${y}`)),
+    '1.2.3',
+    '1.2.3.4',
+    '14.368',
+    '0.4.0.02',
+    '2.0.0-rc1',
+    '13.4.1-alpha-2',
+  ];
+
+  it('orders every pair as before', () => {
+    for (const a of versions) {
+      for (const b of versions) {
+        expect([a, b, Math.sign(foundryOrder.compare(a, b))]).toEqual([a, b, comparedAsBefore(a, b)]);
+      }
+    }
+  });
+
+  it('orders any versions as before', () => {
+    fc.assert(
+      fc.property(anyVersion, anyVersion, (a, b) => Math.sign(foundryOrder.compare(a, b)) === comparedAsBefore(a, b)),
+      { numRuns: 2000 },
+    );
+  });
+
+  it('orders the same pair the same, compared again', () => {
+    expect(foundryOrder.compare('10a', '9')).toBe(foundryOrder.compare('10a', '9'));
+    expect(foundryOrder.compare('1.0', '1.0.0')).toBe(-1);
+  });
+});
