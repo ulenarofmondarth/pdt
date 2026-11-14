@@ -35,8 +35,13 @@ export interface UnavailablePackage {
   readonly note?: string;
 }
 
+/**
+ * What a source found, or the gap that stopped it. A source that asks several places, such as several repositories,
+ * gives what those that answered gave, with `gaps` for those that did not.
+ */
 export type SourceResult<T> =
-  { readonly ok: true; readonly value: T } | { readonly ok: false; readonly gap: SourceGap };
+  | { readonly ok: true; readonly value: T; readonly gaps?: readonly SourceGap[] }
+  | { readonly ok: false; readonly gap: SourceGap };
 
 /** What is known of where a package's manifests are, which a source may use to find its releases. */
 export interface SourceHints {

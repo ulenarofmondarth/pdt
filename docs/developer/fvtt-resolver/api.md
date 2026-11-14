@@ -165,6 +165,9 @@ interface ReleaseSource {
   load(release: Release, signal?: AbortSignal): Promise<SourceResult<Release>>;
 }
 
+/** What a source found, with gaps where it asked several places and some could not be read; or the gap that stopped it. */
+type SourceResult<T> = { ok: true; value: T; gaps?: SourceGap[] } | { ok: false; gap: SourceGap };
+
 interface CoreSource {
   releases(signal?: AbortSignal): Promise<SourceResult<CoreRelease[]>>;
 }
