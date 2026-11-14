@@ -1,3 +1,9 @@
+## [@mondarth/fvtt-resolver-v0.11.5](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.11.4...@mondarth/fvtt-resolver-v0.11.5) (2026-11-14)
+
+### Bug Fixes
+
+* **fvtt-resolver:** keep each repository's releases when another fails ([9503741](https://github.com/ulenarofmondarth/pdt/commit/950374158a6da99c1c4058cd2941b58db5b479cd))
+
 ## [@mondarth/fvtt-resolver-v0.11.4](https://github.com/ulenarofmondarth/pdt/compare/@mondarth/fvtt-resolver-v0.11.3...@mondarth/fvtt-resolver-v0.11.4) (2026-11-10)
 
 ### Performance Improvements
