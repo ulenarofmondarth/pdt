@@ -153,6 +153,8 @@ export function sourceSet({
         gaps.push(found.gap);
         continue;
       }
+      // What it could not reach, beside what it found.
+      gaps.push(...(found.gaps ?? []));
       for (const release of found.value) {
         if (release.manifest !== undefined) seen.add(release.manifest);
         if (source.name === listing) {

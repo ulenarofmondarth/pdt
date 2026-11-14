@@ -67,6 +67,16 @@ A token is optional, and raises the rate limit.
 
 The same for packages on GitLab (gitlab.com, or a self-hosted instance named by the manifest URL's host), from the GitLab releases API. A token is optional.
 
+### A package in several repositories
+
+A package's manifests may name more than one repository over its life: midi-qol's oldest name `github.com/kakaroto/Midi-QOL`, its first home, and its newest `github.com/tposney/midi-qol`. Each source lists every repository named, each apart:
+
+- **One that is gone** (404: deleted, or made private) has no releases, and is no gap: asking again would not find it. A renamed repository is redirected to its new name, so it is not gone.
+- **One that cannot be read now** (an error, the network, an answer that is not a release list) is a gap, given beside the releases the others listed, so that the package is known to be incomplete and is asked again.
+- **The source fails** only when no repository could be read, as when there is one.
+
+Until 0.11.5, a repository that could not be read failed its whole source, and its 404 was a gap: midi-qol, listing nothing from GitHub, had none of the releases there, and was never complete.
+
 ## Where core releases come from
 
 Foundry has no public API for its releases: its own update check sends the licence. Two public sources together give what pdt needs:
