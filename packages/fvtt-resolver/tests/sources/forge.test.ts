@@ -245,3 +245,49 @@ describe('gitlabSource', () => {
     });
   });
 });
+
+describe('a package whose manifests name several repositories', () => {
+  // Regression: midi-qol's oldest manifests name its first home, github.com/kakaroto/Midi-QOL, which is gone. Its 404
+  // failed the whole source, so none of its releases on github.com/tposney/midi-qol were found, and the package was
+  // never complete, crawled again and again.
+  const OLD_HOME = 'https://api.github.com/repos/someone/old-home/releases?per_page=100';
+  const hints = {
+    declared: ['https://github.com/someone/old-home/releases/download/v0.1.0/module.json'],
+    seen: [asset('v2.0.0').browser_download_url],
+  };
+
+  it('finds the releases of each repository there is, and none of one that is gone, which is no gap', async () => {
+    const { fetch, requests } = fakeFetch({ [GITHUB_RELEASES]: { body: githubReleases }, [OLD_HOME]: { status: 404 } });
+    const found = await githubSource(httpClient({ fetch })).releases(module, hints);
+    expect(found).toEqual({ ok: true, value: expect.any(Array) as unknown });
+    expect(found.ok && found.value.map(r => r.version)).toEqual(['2.0.0', '1.5.0']);
+    expect(requests.map(({ url }) => url)).toEqual([OLD_HOME, GITHUB_RELEASES]);
+  });
+
+  it('keeps what the others gave when one cannot be read now, with its gap', async () => {
+    for (const failing of [{ status: 500 }, { unreachable: true }, { body: { message: 'not releases' } }]) {
+      const { fetch } = fakeFetch({ [GITHUB_RELEASES]: { body: githubReleases }, [OLD_HOME]: failing });
+      const found = await githubSource(httpClient({ fetch })).releases(module, hints);
+      expect(found.ok && found.value.map(r => r.version)).toEqual(['2.0.0', '1.5.0']);
+      expect(found.ok && found.gaps).toEqual([
+        expect.objectContaining({ source: 'github', url: OLD_HOME, package: 'module:example-module' }),
+      ]);
+    }
+  });
+
+  it('fails when no repository could be read, as with one', async () => {
+    const { fetch } = fakeFetch({ [GITHUB_RELEASES]: { status: 503 }, [OLD_HOME]: { unreachable: true } });
+    expect(await githubSource(httpClient({ fetch })).releases(module, hints)).toMatchObject({
+      ok: false,
+      gap: { source: 'github', url: OLD_HOME, reason: 'network' },
+    });
+  });
+
+  it('knows no releases, and no gap, of a package whose only repository is gone', async () => {
+    const { fetch } = fakeFetch({ [OLD_HOME]: { status: 404 } });
+    expect(await githubSource(httpClient({ fetch })).releases(module, { declared: hints.declared, seen: [] })).toEqual({
+      ok: true,
+      value: [],
+    });
+  });
+});

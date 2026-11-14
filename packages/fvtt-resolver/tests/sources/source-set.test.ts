@@ -54,6 +54,23 @@ describe('sourceSet', () => {
     ]);
   });
 
+  it('records the gaps a source gives beside what it found, keeping what it found', async () => {
+    const own = makeRelease({ id: 'example-lib', version: '2.1.0', origin: 'own' });
+    const partial: ReleaseSource = {
+      name: 'partial',
+      releases: () =>
+        Promise.resolve({
+          ok: true,
+          value: [own],
+          gaps: [{ source: 'partial', url: 'y', reason: 'http', status: 500 }],
+        }),
+    };
+    const { set } = setup({}, () => [partial]);
+    const universe = await set.universe([module('example-lib')]);
+    expect(universe.releases.map(r => r.version)).toEqual(['2.1.0']);
+    expect(set.gaps()).toEqual([{ source: 'partial', url: 'y', reason: 'http', status: 500 }]);
+  });
+
   it('takes each version from the first source that lists it, and records the gaps of those that fail', async () => {
     const own = makeRelease({ id: 'example-lib', version: '2.1.0', origin: 'own' });
     const extra = makeRelease({ id: 'example-lib', version: '1.0.0', origin: 'own' });

@@ -16,7 +16,7 @@ import { githubRepository, gitlabProject, tagName, tagVersion } from './reposito
 
 import type { PackageRef, Release } from '../release.js';
 import type { HttpClient } from './http.js';
-import type { ReleaseSource, SourceHints, SourceResult } from './types.js';
+import type { ReleaseSource, SourceGap, SourceHints, SourceResult } from './types.js';
 
 const ONE_HOUR = 60 * 60 * 1000;
 const ONE_DAY = 24 * ONE_HOUR;
@@ -95,15 +95,30 @@ function forgeSource(
     async releases(ref, hints: SourceHints = { declared: [], seen: [] }): Promise<SourceResult<Release[]>> {
       const urls = [...new Set([...hints.declared, ...hints.seen].map(releasesUrl).filter(url => url !== undefined))];
       const found: Release[] = [];
+      const gaps: SourceGap[] = [];
+      // Each repository apart: one that cannot be read, such as an old home of the package, takes nothing from the
+      // others.
       for (const url of urls) {
         const fetched = await http.getJson(url, { maxAge: ONE_HOUR, staleIfError: ONE_DAY, headers });
-        if (!fetched.ok) return { ok: false, gap: { ...fetched.gap, source: name, package: packageKey(ref) } };
+        if (!fetched.ok) {
+          // A repository that is not there has no releases: it was deleted, or made private, and asking again will
+          // not find it. (A renamed one is redirected to its new name, which the request follows.)
+          if (fetched.gap.reason !== 'http' || fetched.gap.status !== 404) {
+            gaps.push({ ...fetched.gap, source: name, package: packageKey(ref) });
+          }
+          continue;
+        }
         const releases = read(fetched.value);
-        if (releases === undefined)
-          return { ok: false, gap: { source: name, url, reason: 'invalid', package: packageKey(ref) } };
+        if (releases === undefined) {
+          gaps.push({ source: name, url, reason: 'invalid', package: packageKey(ref) });
+          continue;
+        }
         found.push(...listed(ref, releases, url));
       }
-      return { ok: true, value: found };
+      // Nothing found, and something could not be read: the source failed, as it did before it asked several.
+      const [first] = gaps;
+      if (found.length === 0 && first !== undefined && gaps.length === urls.length) return { ok: false, gap: first };
+      return { ok: true, value: found, ...(gaps.length > 0 && { gaps }) };
     },
   };
 }
