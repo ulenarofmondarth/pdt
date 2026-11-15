@@ -227,7 +227,7 @@ A single mirror shared by every user would reduce requests further (see [A share
 A mirror is a central cache: a separate project, not part of this one, that keeps Foundry's package data and serves it to everyone. To the resolver it is one more source, an adapter whose only option is the mirror's URL. The core and the other adapters do not change, and no user needs the mirror.
 
 :::{note}
-**As built:** the [Foundry VTT package catalogue](https://github.com/Mondarth/fvtt-package-catalogue) is such a mirror, though a server with a database rather than static files: it crawls a package when it is first asked for, with everything its releases require or run in, and keeps them up to date. `catalogueSource` reads it (see [As built](#as-built)). Its format is its own contract, `@mondarth/fvtt-package-catalogue-contract`, whose types are the resolver's.
+**As built:** the [Foundry VTT package catalogue](https://mondarth.github.io/fvtt-package-catalogue/) is such a mirror, though a server with a database rather than static files: it crawls a package when it is first asked for, with everything its releases require or run in, and keeps them up to date. `catalogueSource` reads it (see [As built](#as-built)). Its format is its own contract, `@mondarth/fvtt-package-catalogue-contract`, whose types are the resolver's.
 
 It is not quite "one more source": `sourceSet` asks every source for every package, so a mirror among them would save nothing. A client asks it alone instead, through `catalogueSet`, a source set of its own that needs no other source behind it.
 :::
