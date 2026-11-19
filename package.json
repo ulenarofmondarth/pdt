@@ -61,7 +61,7 @@
     "jiti": "^2.7.0",
     "lint-staged": "^17.6.0",
     "prettier": "^3.3.3",
-    "semantic-release": "^25.0.9",
+    "semantic-release": "^26.0.1",
     "semantic-release-monorepo": "^8.0.2",
     "typedoc": "^0.28.20",
     "typedoc-plugin-rename-defaults": "^0.7.3",
